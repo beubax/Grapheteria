@@ -1,0 +1,14 @@
+{
+  "workflow_id": "async_demo",
+  "workflow_name": "Async Demo",
+  "initial_state": {},
+  "nodes": [
+    {
+      "id": "1739314435008",
+      "class": "AgentNode",
+      "config": {}
+    }
+  ],
+  "edges": [],
+  "start": "1739314435008"
+}
