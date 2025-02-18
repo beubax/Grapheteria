@@ -25,7 +25,7 @@ class SystemScanner:
         BaseNode.clear_registry()
         
         for root, dirs, files in os.walk('.'):
-            if any(skip in root for skip in ('venv', '__pycache__', 'ui')):
+            if any(skip in root for skip in ('venv', '__pycache__', 'ui', 'server')):
                 continue
                 
             for file in files:
@@ -41,8 +41,8 @@ class SystemScanner:
         found_workflows = {}
         found_files = {}
         
-        for root, _, files in os.walk('.'):
-            if 'venv' in root or 'ui' in root:
+        for root, dirs, files in os.walk('.'):
+            if any(skip in root for skip in ('venv', '__pycache__', 'ui', 'server')):
                 continue
                 
             for file in files:

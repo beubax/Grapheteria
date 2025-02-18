@@ -54,7 +54,7 @@ class ExecutionState:
         )
 
 class BaseNode(ABC):
-    """Abstract base class for all nodes"""
+    """Unified base class for all nodes"""
     def __init__(self, id: Optional[str] = None, config: Optional[Dict[str, Any]] = None, 
                  max_retries: int = 1, wait: float = 0):
         self.id = id or f"{self.__class__.__name__}_{id(self)}"
@@ -100,29 +100,33 @@ class BaseNode(ABC):
             )
         return node_type(id=data['id'], config=data.get('config', {}))
 
-class SyncNode(BaseNode):
-    """Base class for synchronous nodes"""
-    def run(self, state: ExecutionState) -> Any:
+    async def run(self, state: ExecutionState, queue: asyncio.Queue) -> Any:
         state.node_statuses[self.id] = NodeStatus.ACTIVE
-        prepared_result = self.prepare(state.shared)
+        prep_result = self.prepare(state.shared, queue)
+        prepared_result = await prep_result if inspect.isawaitable(prep_result) else prep_result
         
         for self.cur_retry in range(self.max_retries):
             try:
-                execution_result = self.execute(prepared_result)
+                # Handle both sync and async execution automatically
+                result = self.execute(prepared_result)
+                execution_result = await result if inspect.isawaitable(result) else result
+                
                 state.node_statuses[self.id] = NodeStatus.COMPLETED
-                return self.cleanup(state.shared, prepared_result, execution_result)
+                cleanup_result = self.cleanup(state.shared, prepared_result, execution_result)
+                return await cleanup_result if inspect.isawaitable(cleanup_result) else cleanup_result
+                
             except Exception as e:
                 if self.cur_retry == self.max_retries - 1:
                     state.node_statuses[self.id] = NodeStatus.FAILED
-                    return self.exec_fallback(prepared_result, e)
+                    fallback_result = self.exec_fallback(prepared_result, e)
+                    return await fallback_result if inspect.isawaitable(fallback_result) else fallback_result
                 if self.wait > 0:
-                    time.sleep(self.wait)
-        
+                    await asyncio.sleep(self.wait)
         return None
 
-    def prepare(self, shared: Dict[str, Any]) -> Any:
+    def prepare(self, shared: Dict[str, Any], queue: asyncio.Queue) -> Any:
         return None
-    
+
     @abstractmethod
     def execute(self, prepared_result: Any) -> Any:
         pass
@@ -131,39 +135,6 @@ class SyncNode(BaseNode):
         return execution_result
 
     def exec_fallback(self, prepared_result: Any, e: Exception) -> Any:
-        raise e
-
-class AsyncNode(BaseNode):
-    """Base class for asynchronous nodes"""
-    async def run(self, state: ExecutionState) -> Any:
-        state.node_statuses[self.id] = NodeStatus.ACTIVE
-        prepared_result = await self.prepare(state.shared)
-        
-        for self.cur_retry in range(self.max_retries):
-            try:
-                execution_result = await self.execute(prepared_result)
-                state.node_statuses[self.id] = NodeStatus.COMPLETED
-                return await self.cleanup(state.shared, prepared_result, execution_result)
-            except Exception as e:
-                if self.cur_retry == self.max_retries - 1:
-                    state.node_statuses[self.id] = NodeStatus.FAILED
-                    return await self.exec_fallback(prepared_result, e)
-                if self.wait > 0:
-                    await asyncio.sleep(self.wait)
-        
-        return None
-    
-    async def prepare(self, shared: Dict[str, Any]) -> Any:
-        return None
-
-    @abstractmethod
-    async def execute(self, prepared_result: Any) -> Any:
-        pass
-
-    async def cleanup(self, shared: Dict[str, Any], prepared_result: Any, execution_result: Any) -> Any:
-        return execution_result
-
-    async def exec_fallback(self, prepared_result: Any, e: Exception) -> Any:
         raise e
 
 class Transition:
@@ -208,6 +179,7 @@ class WorkflowEngine:
             history=[],
             workflow_status=WorkflowStatus.NOT_STARTED
         )
+        self.communication_queues: Dict[str, asyncio.Queue] = {}
 
     @classmethod
     def from_json(cls, json_path: str):
@@ -236,12 +208,10 @@ class WorkflowEngine:
     async def execute_node(self, node_id: str) -> Set[str]:
         """Execute a single node and return its next node IDs."""
         node = copy.copy(self.nodes[node_id])
+        queue = self.communication_queues.setdefault(node_id, asyncio.Queue())
         
-        # Handle both sync and async nodes
-        if isinstance(node, AsyncNode):
-            _ = await node.run(self.execution_state)
-        else:
-            _ = node.run(self.execution_state)
+        if isinstance(node, BaseNode):
+            _ = await node.run(self.execution_state, queue=queue)
             
         next_node_ids = node.get_next_node_ids(self.execution_state)
         

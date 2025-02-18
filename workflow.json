@@ -4,8 +4,8 @@
   "initial_state": {},
   "nodes": [
     {
-      "id": "1739314435008",
-      "class": "AgentNode",
+      "id": "1739505206987",
+      "class": "TestNode",
       "config": {}
     }
   ],

@@ -2,13 +2,7 @@
   "workflow_id": "workflowTwo",
   "workflow_name": "Workflow Two",
   "initial_state": {},
-  "nodes": [
-    {
-      "id": "1739337026775",
-      "class": "AgentNode",
-      "config": {}
-    }
-  ],
+  "nodes": [],
   "edges": [],
   "start": "1739255199632"
 }

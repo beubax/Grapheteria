@@ -59,3 +59,15 @@ class WorkflowServer:
     async def handle_client_message(self, websocket, message):
         data = json.loads(message)
         await InboundHandler.handle_client_message(self, websocket, data)
+
+    async def scan_workflow_file(self, file_path):
+        """Scan a single workflow file that was modified"""
+        try:
+            with open(file_path, 'r') as f:
+                workflow_data = json.load(f)
+                if workflow_id := workflow_data.get('workflow_id'):
+                    self.workflows[workflow_id] = workflow_data
+                    self.workflow_paths[workflow_id] = file_path
+                    await self.broadcast_workflows()
+        except Exception as e:
+            print(f"Error loading workflow {file_path}: {e}")

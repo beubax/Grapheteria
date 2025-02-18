@@ -16,6 +16,7 @@ class FileChangeHandler(FileSystemEventHandler):
             current_time = time.time()
             if current_time - self.last_scan > 1.0:
                 self.last_scan = current_time
+                self.last_modified_path = event.src_path
                 self.trigger_scan()
 
 class NodeChangeHandler(FileChangeHandler):
@@ -36,6 +37,6 @@ class WorkflowChangeHandler(FileChangeHandler):
 
     def trigger_scan(self):
         asyncio.run_coroutine_threadsafe(
-            self.server.scan_workflows(),
+            self.server.scan_workflow_file(self.last_modified_path),
             self.loop
         )
