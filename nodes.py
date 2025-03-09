@@ -1,10 +1,10 @@
-from machine import SyncNode, AsyncNode, WorkflowEngine
+from machine import Node, WorkflowEngine
 import asyncio
 import json
 import random
 
-class AgentNode(AsyncNode):
-    async def prepare(self, _):
+class AgentNode(Node):
+    async def prepare(self, _, queue):
         message = "Hello from agent node!"
         return message
         
@@ -16,8 +16,8 @@ class AgentNode(AsyncNode):
         shared["messages"] = execution_result
     
     
-class TestNode(SyncNode):
-    def prepare(self, _):
+class TestNode(Node):
+    async def prepare(self, _, queue):
         return "Hello from test node!"
         
     def execute(self, prepared_result):
@@ -30,13 +30,13 @@ class TestNode(SyncNode):
 # Example usage:
 async def main():
     
-    workflow = WorkflowEngine.from_json("workflow.json")
+    workflow = WorkflowEngine(json_path="workflow.json")
     
     # Continue execution
     while True:
-        has_more_steps = await workflow.step()
-        print(workflow.execution_state)
-        if not has_more_steps:
+        state = await workflow.step()
+        print(state)
+        if not state.current_node_ids:
             break
     
     print("\nFinal state:", workflow.execution_state.to_dict())  # Changed to access execution_state directly

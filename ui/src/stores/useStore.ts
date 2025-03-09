@@ -3,6 +3,8 @@ import { Workflow, AvailableNode, ContextMenu } from '../types/types';
 import { NodeChange, EdgeChange, applyNodeChanges, applyEdgeChanges, Node, Edge } from '@xyflow/react';
 import { getLayoutedElements } from '../utils/layoutUtils';
 import { createMessageHandlers } from '../utils/messageHandler';
+import { DebugState } from '../types/types';
+import { startDebugSession, endDebugSession } from '../utils/debugActions';
 
 export interface StoreState {
   nodes: Node[];
@@ -25,6 +27,16 @@ export interface StoreState {
   updateFlow: () => void;
   initWebSocket: () => void;
   sendMessage: (message: any) => void;
+  debugMode: boolean;
+  debugRunId: string | null;
+  debugStates: DebugState[];
+  currentDebugStateIndex: number;
+  toggleDebugMode: (setTo?: boolean) => void;
+  setDebugRunId: (runId: string | null) => void;
+  addDebugState: (state: DebugState) => void;
+  setDebugStates: (states: DebugState[]) => void;
+  goToNextDebugState: () => void;
+  goToPreviousDebugState: () => void;
 }
 
 const useStore = create<StoreState>((set, get) => ({
@@ -135,6 +147,142 @@ const useStore = create<StoreState>((set, get) => ({
 
     const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(flowNodes, flowEdges);
     set({ nodes: layoutedNodes, edges: layoutedEdges });
+  },
+
+  // Debug State
+  debugMode: false,
+  debugRunId: null,
+  debugStates: [],
+  currentDebugStateIndex: -1,
+  
+  toggleDebugMode: (setTo?: boolean) => {
+    const newDebugMode = setTo !== undefined ? setTo : !get().debugMode;
+    const { debugMode, selectedWorkflow, nodes } = get();
+    
+    // Only take action if the state is actually changing
+    if (newDebugMode === debugMode) return;
+    
+    set({ debugMode: newDebugMode });
+    
+    if (!newDebugMode) {
+      set({ debugStates: [], currentDebugStateIndex: -1, debugRunId: null });
+      endDebugSession();
+    }
+    else if (selectedWorkflow) {
+      // Set all nodes to pending status when entering debug mode
+      const updatedNodes = nodes.map(node => ({
+        ...node,
+        data: {
+          ...node.data,
+          status: "pending"
+        }
+      }));
+      set({ nodes: updatedNodes });
+      
+      const runId = startDebugSession();
+      set({ debugRunId: runId });
+    }
+  },
+  
+  setDebugRunId: (runId) => {
+    set({ debugRunId: runId });
+  },
+  
+  addDebugState: (state) => {
+    set(prev => ({ 
+      debugStates: [...prev.debugStates, state]
+    }));
+    get().goToNextDebugState();
+  },
+  
+  setDebugStates: (states) => {
+    set({ 
+      debugStates: states
+    });
+  },
+  
+  goToNextDebugState: () => {
+    set(prev => {
+      const nextIndex = Math.min(prev.currentDebugStateIndex + 1, prev.debugStates.length - 1);
+      
+      // Update node statuses based on the debug state at the new index
+      if (nextIndex >= 0 && prev.debugStates.length > 0) {
+        const currentDebugState = prev.debugStates[nextIndex];
+        const { node_statuses, current_node_ids } = currentDebugState;
+        
+        const updatedNodes = prev.nodes.map(node => {
+          // Set default status to pending
+          let status = "pending";
+          
+          // Apply status from node_statuses if available
+          if (node_statuses && node_statuses[node.id]) {
+            status = node_statuses[node.id];
+          }
+          
+          // If the node is in current_node_ids, mark it as queued
+          if (current_node_ids && current_node_ids.includes(node.id)) {
+            status = "queued";
+          }
+          
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              status
+            }
+          };
+        });
+        
+        return { 
+          currentDebugStateIndex: nextIndex,
+          nodes: updatedNodes
+        };
+      }
+      
+      return { currentDebugStateIndex: nextIndex };
+    });
+  },
+  
+  goToPreviousDebugState: () => {
+    set(prev => {
+      const prevIndex = Math.max(prev.currentDebugStateIndex - 1, 0);
+      
+      // Update node statuses based on the debug state at the new index
+      if (prevIndex >= 0 && prev.debugStates.length > 0) {
+        const currentDebugState = prev.debugStates[prevIndex];
+        const { node_statuses, current_node_ids } = currentDebugState;
+        
+        const updatedNodes = prev.nodes.map(node => {
+          // Set default status to pending
+          let status = "pending";
+          
+          // Apply status from node_statuses if available
+          if (node_statuses && node_statuses[node.id]) {
+            status = node_statuses[node.id];
+          }
+          
+          // If the node is in current_node_ids, mark it as queued
+          if (current_node_ids && current_node_ids.includes(node.id)) {
+            status = "queued";
+          }
+          
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              status
+            }
+          };
+        });
+        
+        return { 
+          currentDebugStateIndex: prevIndex,
+          nodes: updatedNodes
+        };
+      }
+      
+      return { currentDebugStateIndex: prevIndex };
+    });
   },
 }));
 

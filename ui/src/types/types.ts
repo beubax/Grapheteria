@@ -33,3 +33,10 @@ export interface Node {
     nodes?: AvailableNode[];
     [key: string]: any;
   }
+
+  export interface DebugState {
+    timestamp: string;
+    stateVariables: any;
+    node_statuses: any;
+    current_node_ids: string[];
+  }

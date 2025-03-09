@@ -1,6 +1,6 @@
 import json
 import asyncio
-from machine import AsyncNode, SyncNode
+from machine import Node
 
 class OutboundHandler:
     @staticmethod
@@ -21,7 +21,7 @@ class OutboundHandler:
         """Send registered node types to client"""
         node_list = [{
             "name": name,
-            "type": "async" if issubclass(cls, AsyncNode) else "sync"
+            "type": "Node"
         } for name, cls in node_registry.items()]
         
         await websocket.send(json.dumps({
@@ -52,7 +52,7 @@ class OutboundHandler:
             "type": "available_nodes",
             "nodes": [{
                 "name": name,
-                "type": "async" if issubclass(cls, AsyncNode) else "sync"
+                "type": "Node"
             } for name, cls in node_registry.items()]
         })
 
@@ -62,4 +62,41 @@ class OutboundHandler:
         await OutboundHandler.send_to_all(clients, {
             "type": "available_workflows",
             "workflows": list(workflows.values())
+        })
+
+    @staticmethod
+    async def send_execution_state(websocket, state_data):
+        """Send execution state to a client"""
+        print(state_data)
+        await websocket.send(json.dumps({
+            "type": "execution_state_update",
+            "data": state_data
+        }))
+    
+    @staticmethod
+    async def send_workflow_runs(websocket, workflow_id, runs):
+        """Send workflow runs to a client"""
+        await websocket.send(json.dumps({
+            "type": "workflow_runs_list",
+            "workflow_id": workflow_id,
+            "runs": runs
+        }))
+    
+    @staticmethod
+    async def send_run_states(websocket, workflow_id, run_id, states):
+        """Send run states to a client"""
+        await websocket.send(json.dumps({
+            "type": "run_states_list",
+            "workflow_id": workflow_id,
+            "run_id": run_id,
+            "states": states
+        }))
+    
+    @staticmethod
+    async def broadcast_workflow_runs(clients, workflow_id, runs):
+        """Broadcast updated run list for a workflow"""
+        await OutboundHandler.send_to_all(clients, {
+            "type": "workflow_runs_update",
+            "workflow_id": workflow_id,
+            "runs": runs
         })

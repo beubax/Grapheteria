@@ -10,6 +10,7 @@ import CustomConnectionLine from './components/CustomConnectionLine';
 import { useGraphActions } from './utils/graphActions';
 import useStore from './stores/useStore';
 import CustomEdge from './components/CustomEdge';
+import DebugDrawer from './components/DebugDrawer';
 
 // Node types registration
 
@@ -141,6 +142,8 @@ function App() {
           </div>
         )}
       </ReactFlow>
+      
+      <DebugDrawer />
     </div>
   );
 }

@@ -2,7 +2,7 @@ import asyncio
 import websockets
 from watchdog.observers import Observer
 from server.workflow_server import WorkflowServer
-from server.handlers.file_handlers import NodeChangeHandler, WorkflowChangeHandler
+from server.handlers.file_handlers import NodeChangeHandler, WorkflowChangeHandler, LogWatcher
 
 async def main():
     """Main server entry point"""
@@ -12,6 +12,7 @@ async def main():
     observer = Observer()
     observer.schedule(NodeChangeHandler(server), path='.', recursive=True)
     observer.schedule(WorkflowChangeHandler(server), path='.', recursive=True)
+    observer.schedule(LogWatcher(server), path='./logs', recursive=True)
     observer.start()
 
     # Initial system scan
