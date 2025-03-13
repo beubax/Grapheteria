@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
+import time
 from typing import Callable, Dict, Any, Optional, List, Type, ClassVar, Set
 from enum import Enum, auto
 from datetime import datetime
-import time
 import copy
 import json
 import asyncio
@@ -10,8 +10,6 @@ from abc import ABC, abstractmethod
 import inspect
 import os
 from uuid import uuid4
-import glob
-import logging
 # At the top of machine.py, before the class definitions
 _NODE_REGISTRY: Dict[str, Type['Node']] = {}
 
@@ -21,11 +19,10 @@ class WorkflowStatus(Enum):
     RUNNING = auto()
     COMPLETED = auto()
     FAILED = auto()
-
+    WAITING_FOR_INPUT = auto()
+    
 class NodeStatus(str, Enum):
     """Represents the current status of a node during execution."""
-    PENDING = "pending"
-    ACTIVE = "active"
     WAITING_FOR_INPUT = "waiting_for_input"
     COMPLETED = "completed"
     FAILED = "failed"
@@ -34,37 +31,47 @@ class NodeStatus(str, Enum):
 class ExecutionState:
     """Represents the complete state of a workflow execution."""
     shared: Dict[str, Any]
-    current_node_ids: Set[str]
-    node_statuses: Dict[str, NodeStatus]
+    next_node_id: Optional[str]
     history: List[Dict[str, Any]]
     workflow_status: WorkflowStatus
-    awaiting_inputs: Optional[Dict[str, Dict[str, Any]]] = None
-    input_data: Optional[Dict[str, Any]] = None
-    previous_node_ids: Set[str] = field(default_factory=set)  # Track nodes from previous step
+    node_statuses: Dict[str, NodeStatus] = field(default_factory=dict)
+    awaiting_input: Optional[Dict[str, Any]] = None
+    previous_node_id: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)  # Add metadata field
+    step: int = 0  # Track the step number
 
     def to_dict(self) -> dict:
-        return {
+        result = {
             'shared': self.shared,
-            'current_node_ids': list(self.current_node_ids),
-            'node_statuses': {k: v.value for k, v in self.node_statuses.items()},
+            'next_node_id': self.next_node_id,
             'history': self.history,
             'workflow_status': self.workflow_status.name,
-            'input_data': self.input_data,
-            'awaiting_inputs': {k: v for k, v in self.awaiting_inputs.items()} if self.awaiting_inputs else None,
-            'previous_node_ids': list(self.previous_node_ids)
+            'node_statuses': {k: v.value for k, v in self.node_statuses.items()},
+            'awaiting_input': self.awaiting_input,
+            'previous_node_id': self.previous_node_id,
+            'metadata': self.metadata,
+            'step': self.step
         }
+        # Return a deep copy to ensure independence from the original state
+        return copy.deepcopy(result)
 
     @classmethod
     def from_dict(cls, data: dict) -> 'ExecutionState':
+        # Convert string node statuses back to enum values
+        node_statuses = {}
+        if 'node_statuses' in data:
+            node_statuses = {k: NodeStatus(v) for k, v in data['node_statuses'].items()}
+            
         return cls(
             shared=data['shared'],
-            current_node_ids=set(data['current_node_ids']),
-            node_statuses={k: NodeStatus(v) for k, v in data['node_statuses'].items()},
+            next_node_id=data['next_node_id'],
             history=data['history'],
             workflow_status=WorkflowStatus[data['workflow_status']],
-            input_data=data.get('input_data'),
-            awaiting_inputs={k: v for k, v in data.get('awaiting_inputs', {})} if data.get('awaiting_inputs') else None,
-            previous_node_ids=set(data.get('previous_node_ids', []))
+            node_statuses=node_statuses,
+            awaiting_input=data.get('awaiting_input'),
+            previous_node_id=data.get('previous_node_id'),
+            metadata=data.get('metadata', {}),
+            step=data.get('step', 0)
         )
 
 class InputRequest:
@@ -101,12 +108,12 @@ class Node(ABC):
     def clear_registry(cls) -> None:
         _NODE_REGISTRY.clear()
 
-    def get_next_node_ids(self, state: ExecutionState) -> Set[str]:
-        return {
-            transition.to_id 
-            for transition in self.transitions.values() 
-            if transition.should_transition(state)
-        }
+    def get_next_node_id(self, state: ExecutionState) -> Optional[str]:
+        """Return only the first matching transition, or None if none match."""
+        for transition in self.transitions.values():
+            if transition.should_transition(state):
+                return transition.to_id  # Return just the first match
+        return None  # No transitions matched
 
     def add_transition(self, transition: 'Transition') -> None:
         self.transitions[transition.to_id] = transition
@@ -124,9 +131,6 @@ class Node(ABC):
 
     async def run(self, state: ExecutionState, request_input: Callable[[str, str, str, str], Any]) -> Any:
         
-        state.node_statuses[self.id] = NodeStatus.ACTIVE
-        
-        # Pass the request_input function to prepare instead of the queue
         prep_result = self.prepare(state.shared, request_input)
         prepared_result = await prep_result if inspect.isawaitable(prep_result) else prep_result
         
@@ -136,9 +140,10 @@ class Node(ABC):
                 result = self.execute(prepared_result)
                 execution_result = await result if inspect.isawaitable(result) else result
                 
-                state.node_statuses[self.id] = NodeStatus.COMPLETED
                 cleanup_result = self.cleanup(state.shared, prepared_result, execution_result)
-                return await cleanup_result if inspect.isawaitable(cleanup_result) else cleanup_result
+                final_result = await cleanup_result if inspect.isawaitable(cleanup_result) else cleanup_result
+                state.node_statuses[self.id] = NodeStatus.COMPLETED
+                return final_result
                 
             except Exception as e:
                 if self.cur_retry == self.max_retries - 1:
@@ -195,33 +200,25 @@ class WorkflowEngine:
                  workflow_id: Optional[str] = None, 
                  workflow_name: Optional[str] = None,
                  initial_shared_state: Optional[Dict[str, Any]] = None,
-                 max_parallel_nodes: int = 10,
                  run_id: Optional[str] = None,
-                 auto_resume: bool = False,
-                 resume_timestamp: Optional[str] = None):
+                 resume_from: Optional[int] = None,
+                 fork: bool = False):
         # Load from JSON if path provided
         if json_path:
             with open(json_path, "r") as f:
                 data = json.load(f)
-                
-            # Extract workflow definition
-            nodes_dict = {
-                node_data['id']: Node.from_dict(node_data) 
-                for node_data in data['nodes']
-            }
+            
+            nodes_dict = {node_data['id']: Node.from_dict(node_data) for node_data in data['nodes']}
             
             # Add transitions
             for edge_data in data['edges']:
                 transition = Transition.from_dict(edge_data)
-                source_node = nodes_dict[transition.from_id]
-                source_node.add_transition(transition)
-                
-            # Set other parameters from JSON
+                nodes_dict[transition.from_id].add_transition(transition)
+
             start_node_id = data['start']
             workflow_id = data['workflow_id']
             workflow_name = data.get('workflow_name')
             initial_shared_state = data.get('initial_state', {})
-            max_parallel_nodes = data.get('max_parallel_nodes', max_parallel_nodes)
         
         # Validate required parameters
         if not nodes_dict or not start_node_id or not workflow_id:
@@ -232,348 +229,166 @@ class WorkflowEngine:
         self.start_node_id = start_node_id
         self.workflow_id = workflow_id
         self.workflow_name = workflow_name or workflow_id
-        self.max_parallel_nodes = max_parallel_nodes
-        self.run_id = run_id or f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid4().hex[:8]}"
-        self.communication_queues = {}
-        
-        # Set up logging directory
-        self.log_dir = f"logs/{self.workflow_id}/{self.run_id}"
-        os.makedirs(self.log_dir, exist_ok=True)
-        
-        # Handle state initialization/resumption
-        if resume_timestamp:
-            self._resume_from_timestamp(resume_timestamp)
-        elif auto_resume:
-            self._resume_latest()
+
+        if run_id:
+            # Load source state for existing run
+            source_dir = f"logs/{self.workflow_id}/{run_id}"
+            source_file = os.path.join(source_dir, "state.json")
+            
+            if not os.path.exists(source_file):
+                raise FileNotFoundError(f"No state file found for run_id: {run_id}")
+            
+            with open(source_file, 'r') as f:
+                source_data = json.load(f)
+
+            if resume_from is None:
+                resume_from = len(source_data['steps']) - 1
+                
+            if resume_from >= len(source_data['steps']):
+                raise ValueError(f"Step {resume_from} not found. Run has {len(source_data['steps'])} steps.")
+
+            step_data = source_data['steps'][resume_from]
+            self.execution_state = ExecutionState.from_dict(step_data)
+            self._validate_node_compatibility()
+
+            if fork:
+                # Fork into new branch
+                self.run_id = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_fork_{uuid4().hex[:6]}"
+                self.execution_state.metadata.update({
+                    'forked_from': {'run_id': run_id, 'step': resume_from},
+                    'fork_time': datetime.now().isoformat(),
+                    'run_id': self.run_id
+                })
+                self.steps = [self.execution_state.to_dict()]
+            else:
+                self.run_id = run_id
+                # Continue in same run, purging newer steps
+                self.steps = source_data['steps'][:resume_from + 1]
         else:
+            self.run_id = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid4().hex[:8]}"
+            # New execution
             self.execution_state = ExecutionState(
                 shared=initial_shared_state or {},
-                current_node_ids={start_node_id},
-                node_statuses={},
+                next_node_id=start_node_id,
                 history=[],
-                workflow_status=WorkflowStatus.NOT_STARTED
+                workflow_status=WorkflowStatus.NOT_STARTED,
+                metadata={
+                    'workflow_id': self.workflow_id,
+                    'run_id': self.run_id,
+                    'start_time': datetime.now().isoformat()
+                },
+                step=0
             )
+            self.steps = [self.execution_state.to_dict()]
 
-        # Keep futures separate from serializable state
+        self.log_dir = f"logs/{self.workflow_id}/{self.run_id}"
+        os.makedirs(self.log_dir, exist_ok=True)
+        self.state_file = os.path.join(self.log_dir, "state.json")
+        self._save_steps()
         self._input_futures = {}
 
-    def _resume_latest(self):
-        """Resume from the most recent state in the run directory"""
-        state_files = sorted(
-            [f for f in os.listdir(self.log_dir) if f.startswith("state_")],
-            key=lambda x: os.path.getmtime(os.path.join(self.log_dir, x)),
-            reverse=True
-        )
-        if not state_files:
-            raise FileNotFoundError(f"No state files found in {self.log_dir}")
-        self.load_state(os.path.join(self.log_dir, state_files[0]))
-
-    def _resume_from_timestamp(self, timestamp: str):
-        """Optimized timestamp resumption with direct string comparison"""
-        # Fast path for exact match
-        exact_path = os.path.join(self.log_dir, f"state_{timestamp}.json")
-        if os.path.exists(exact_path):
-            self.load_state(exact_path)
-            self._purge_newer_states(timestamp)
-            return
-            
-        # Efficient partial match without glob
-        try:
-            state_files = sorted([
-                f for f in os.listdir(self.log_dir) 
-                if f.startswith(f"state_{timestamp}") and f.endswith(".json")
-            ], reverse=True)
-            
-            if not state_files:
-                raise FileNotFoundError()
-                
-            self.load_state(os.path.join(self.log_dir, state_files[0]))
-            loaded_timestamp = state_files[0].split("_")[1].split(".")[0]
-            self._purge_newer_states(loaded_timestamp)
-            
-        except (FileNotFoundError, IndexError):
-            # Optimized available timestamps listing
-            available = sorted([
-                f.split("_")[1].split(".")[0] 
-                for f in os.listdir(self.log_dir) 
-                if f.startswith("state_") and f.endswith(".json")
-            ])[:10]  # Limit to 10 for display
-            
-            raise FileNotFoundError(
-                f"No state file matching '{timestamp}'. "
-                f"Available timestamps: {', '.join(available)}"
-                f"{' and more...' if len(available) == 10 else ''}"
-            )
-
-    def _purge_newer_states(self, loaded_timestamp: str):
-        """Optimized purging using direct string comparison"""
-        # Direct string comparison is faster than datetime parsing
-        # Our timestamp format (YYYYmmdd_HHMMSS_fff) allows lexicographical comparison
-        files_to_remove = []
-        
-        for filename in os.listdir(self.log_dir):
-            if not (filename.startswith("state_") and filename.endswith(".json")):
-                continue
-                
-            file_ts = filename.split("_", 1)[1].split(".", 1)[0]
-            # Simple string comparison works because of our timestamp format
-            if file_ts > loaded_timestamp:
-                files_to_remove.append(os.path.join(self.log_dir, filename))
-        
-        # Batch file removal
-        for filepath in files_to_remove:
-            try:
-                os.remove(filepath)
-            except OSError:
-                pass  # Ignore errors during cleanup
-
-    def save_state(self) -> None:
-        """Optimized state saving with collision avoidance"""
-        if not self.execution_state:
-            return
-            
-        # Generate timestamp with microsecond precision
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-        
-        # Use a counter to handle sub-microsecond collisions
-        counter = 0
-        while True:
-            suffix = f"_{counter}" if counter > 0 else ""
-            filename = f"state_{timestamp}{suffix}.json"
-            filepath = os.path.join(self.log_dir, filename)
-            
-            if not os.path.exists(filepath):
-                break
-                
-            counter += 1
-            if counter > 100:  # Sanity check
-                raise RuntimeError("Failed to generate unique state filename")
-        
-        # Prepare state data with metadata
-        state_data = self.execution_state.to_dict()
-        state_data['metadata'] = {
-            'workflow_id': self.workflow_id,
-            'workflow_name': self.workflow_name,
-            'run_id': self.run_id,
-            'save_time': timestamp
-        }
-        
-        # Efficient file writing with atomic operation
-        temp_path = f"{filepath}.tmp"
-        with open(temp_path, 'w') as f:
-            json.dump(state_data, f)
-        os.rename(temp_path, filepath)  # Atomic operation
-
-    async def execute_node(self, node_id: str) -> Set[str]:
-        """Execute a single node and return its next node IDs."""
+    async def execute_node(self, node_id: str, input_data: Optional[Dict[str, Any]] = None) -> Optional[str]:
         node = copy.copy(self.nodes[node_id])
-        
-        if isinstance(node, Node):
-            # Create a request_input function bound to this node
-            async def request_input(prompt=None, options=None, input_type="text", request_id=None):
-                # Determine the request ID (use custom ID if provided, otherwise use node_id)
-                actual_request_id = request_id if request_id else node_id
-                
-                # Check if we already have input data for this specific request
-                if hasattr(self.execution_state, 'input_data') and self.execution_state.input_data:
-                    # First try the specific request_id if provided
-                    node_input = self.execution_state.input_data.get(actual_request_id)
-                    if node_input is not None:
-                        # Clear consumed input
-                        del self.execution_state.input_data[actual_request_id]
-                        return node_input
-                
-                # Mark this node as waiting for input
-                self.execution_state.node_statuses[node_id] = NodeStatus.WAITING_FOR_INPUT
-                
-                # Create awaiting_inputs collection if it doesn't exist
-                if not hasattr(self.execution_state, 'awaiting_inputs'):
-                    self.execution_state.awaiting_inputs = {}
-                    
-                # Store info about this waiting node
-                self.execution_state.awaiting_inputs[actual_request_id] = {
-                    'node_id': node_id,
-                    'request_id': actual_request_id,
-                    'prompt': prompt,
-                    'options': options,
-                    'input_type': input_type
-                }
-                
-                # Set workflow status
-                self.execution_state.workflow_status = WorkflowStatus.WAITING_FOR_INPUT
-                
-                # Save the current state
-                if hasattr(self.execution_state, 'save_callback') and callable(self.execution_state.save_callback):
-                    self.execution_state.save_callback()
-                
-                # Create a future for this request
-                future = asyncio.Future()
-                self._input_futures[actual_request_id] = future
-                
-                # Await the future (execution will pause here until resumed with input)
-                return await future
-            
-            # Run the node with our request_input function
-            _ = await node.run(self.execution_state, request_input)
-            
-        next_node_ids = node.get_next_node_ids(self.execution_state)
-        
-        for next_node_id in next_node_ids:
-            self.execution_state.history.append({
-                'timestamp': datetime.now().isoformat(),
-                'from_node': node_id,
-                'to_node': next_node_id
-            })
-        
-        return next_node_ids
 
+        async def request_input(prompt=None, options=None, input_type="text", request_id=None):
+            actual_request_id = request_id if request_id else node_id
+
+            if input_data and actual_request_id in input_data:
+                node_input = input_data[actual_request_id]
+                if node_input is not None:
+                    return node_input
+            
+            self.execution_state.node_statuses[node_id] = NodeStatus.WAITING_FOR_INPUT
+            
+            self.execution_state.awaiting_input = {
+                'node_id': node_id,
+                'request_id': actual_request_id,
+                'prompt': prompt,
+                'options': options,
+                'input_type': input_type
+            }
+            
+            self.execution_state.workflow_status = WorkflowStatus.WAITING_FOR_INPUT
+            
+            if hasattr(self.execution_state, 'save_callback') and callable(self.execution_state.save_callback):
+                self.execution_state.save_callback()
+            
+            future = asyncio.Future()
+            self._input_futures[actual_request_id] = future
+            return await future
+        
+        _ = await node.run(self.execution_state, request_input)
+        next_node_id = node.get_next_node_id(self.execution_state)
+        
+        return next_node_id
+    
     async def step(self, input_data=None) -> bool:
-        """Step the workflow forward with optional input data."""
-        if self.execution_state.workflow_status not in {
-            WorkflowStatus.NOT_STARTED,
-            WorkflowStatus.RUNNING,
-            WorkflowStatus.WAITING_FOR_INPUT
-        }:
+        if not self.execution_state.next_node_id and not self.execution_state.awaiting_input:
             return False
-            
-        # Handle input data if provided
-        resume_tasks = []
         
-        if input_data and hasattr(self.execution_state, 'awaiting_inputs'):
-            # Initialize input_data dict if not exists
-            if not hasattr(self.execution_state, 'input_data'):
-                self.execution_state.input_data = {}
-            
-            for request_id, message in input_data.items():
-                if request_id in self.execution_state.awaiting_inputs:
-                    waiting_info = self.execution_state.awaiting_inputs[request_id]
-                    node_id = waiting_info['node_id']
-                    
-                    # Store input for restart capability
-                    self.execution_state.input_data[request_id] = message
-                    
-                    if request_id in self._input_futures:
-                        # Handle in-process resumption via futures
-                        future = self._input_futures[request_id]
-                        if not future.done():
-                            # Define resumption function
-                            async def resume_node(node_id, future, message):
-                                try:
-                                    # Resolve the future to resume the coroutine
-                                    future.set_result(message)
-                                    
-                                    # Allow coroutine to complete
-                                    await asyncio.sleep(0)
-                                    
-                                    # Get and process next nodes
-                                    node = self.nodes[node_id]
-                                    next_node_ids = node.get_next_node_ids(self.execution_state)
-                                    
-                                    if next_node_ids:
-                                        # Add successors to current_node_ids
-                                        self.execution_state.current_node_ids |= next_node_ids
-                                        
-                                        # Add transitions to history
-                                        timestamp = datetime.now().isoformat()
-                                        for next_id in next_node_ids:
-                                            self.execution_state.history.append({
-                                                'timestamp': timestamp,
-                                                'from_node': node_id,
-                                                'to_node': next_id
-                                            })
-                                            
-                                            # Mark as pending if not already tracked
-                                            if next_id not in self.execution_state.node_statuses:
-                                                self.execution_state.node_statuses[next_id] = NodeStatus.PENDING
-                                except Exception as e:
-                                    # Handle failures gracefully
-                                    self.execution_state.node_statuses[node_id] = NodeStatus.FAILED
-                                    logging.error(f"Error resuming node {node_id}: {str(e)}")
-                            
-                            # Schedule resumption
-                            resume_tasks.append(asyncio.create_task(
-                                resume_node(node_id, future, message)
-                            ))
-                        
-                        # Clean up after handling
-                        del self._input_futures[request_id]
-                    else:
-                        # Cross-process resumption via re-execution
-                        self.execution_state.current_node_ids.add(node_id)
-                    
-                    # Request no longer waiting for input
-                    del self.execution_state.awaiting_inputs[request_id]
-            
-            # Check if all requests for all nodes are handled
-            # Group awaiting_inputs by node_id
-            waiting_nodes = set()
-            for info in getattr(self.execution_state, 'awaiting_inputs', {}).values():
-                waiting_nodes.add(info['node_id'])
-            
-            # Update node statuses and workflow status
-            for node_id in list(self.execution_state.node_statuses.keys()):
-                if node_id not in waiting_nodes and self.execution_state.node_statuses[node_id] == NodeStatus.WAITING_FOR_INPUT:
-                    # This node was waiting but all its requests are now handled
-                    self.execution_state.node_statuses[node_id] = NodeStatus.ACTIVE
-            
-            # Update workflow status if no nodes are waiting
-            if not waiting_nodes:
-                self.execution_state.workflow_status = WorkflowStatus.RUNNING
-        
-        # Determine which nodes to execute this step
-        if self.execution_state.workflow_status == WorkflowStatus.WAITING_FOR_INPUT and not input_data:
-            # Only execute non-waiting nodes
-            awaiting_node_ids = set(getattr(self.execution_state, 'awaiting_inputs', {}).keys())
-            executable_nodes = self.execution_state.current_node_ids - awaiting_node_ids
-            
-            if not executable_nodes:
-                # Nothing to do but wait for input
+        if self.execution_state.workflow_status == WorkflowStatus.WAITING_FOR_INPUT:
+            request_id = self.execution_state.awaiting_input['request_id']
+            if not input_data or request_id not in input_data:
                 return True
+
+            message = input_data[request_id]
+            node_id = self.execution_state.awaiting_input['node_id']
+            # Clear awaiting input
+            self.execution_state.awaiting_input = None
             
-            current_nodes = list(executable_nodes)[:self.max_parallel_nodes]
-        else:
-            # Normal execution
-            current_nodes = list(self.execution_state.current_node_ids)[:self.max_parallel_nodes]
+            # We're removing the node from waiting for input status
+            # We don't mark it as "active" because we don't track future/pending nodes
+            if node_id in self.execution_state.node_statuses and self.execution_state.node_statuses[node_id] == NodeStatus.WAITING_FOR_INPUT:
+                del self.execution_state.node_statuses[node_id]  # Remove waiting status
+
+            self.execution_state.workflow_status = WorkflowStatus.RUNNING
+            
+            if request_id in self._input_futures:
+                # Handle in-process resumption via futures
+                future = self._input_futures[request_id]
+                if not future.done():
+                    # Resolve the future to resume the coroutine
+                    future.set_result(message)
+                    # Clean up after handling
+                    del self._input_futures[request_id]
+                    
+                    # Return immediately without further processing
+                    # to avoid duplicate state saves, as the resumed coroutine
+                    # will handle saving the state
+                    return True
+            
+            # Only for cross-process resumption via re-execution
+            self.execution_state.next_node_id = node_id
+        current_node = self.execution_state.next_node_id
         
         # Set up the save callback
         self.execution_state.save_callback = self.save_state
         
-        try:
-            # Wait for any resumed nodes to complete first
-            if resume_tasks:
-                await asyncio.gather(*resume_tasks)
+        try:            
+            # Execute the current node
+            next_node_id = await self.execute_node(current_node, input_data)
             
-            # Store current nodes as previous_node_ids before execution
-            # Only include nodes that will actually be executed
-            self.execution_state.previous_node_ids = set(current_nodes)
+            if self.execution_state.previous_node_id:
+                self.execution_state.history.append({
+                    'timestamp': datetime.now().isoformat(),
+                    'from_node': self.execution_state.previous_node_id,
+                    'to_node': current_node
+                })
+            # Store current node as previous_node_id before execution
+            self.execution_state.previous_node_id = current_node
             
-            # Execute current nodes
-            if current_nodes:
-                execution_tasks = [self.execute_node(node_id) for node_id in current_nodes]
-                next_node_sets = await asyncio.gather(*execution_tasks)
-                
-                # Update current_node_ids
-                self.execution_state.current_node_ids -= set(current_nodes)
-                for next_nodes in next_node_sets:
-                    self.execution_state.current_node_ids |= next_nodes
-                    
-                # Mark new nodes as pending
-                for node_id in self.execution_state.current_node_ids:
-                    if node_id not in self.execution_state.node_statuses:
-                        self.execution_state.node_statuses[node_id] = NodeStatus.PENDING
+            # Update next_node_id
+            self.execution_state.next_node_id = next_node_id
             
             # Check if workflow is complete
-            if not self.execution_state.current_node_ids and not getattr(self.execution_state, 'awaiting_inputs', {}):
+            if not self.execution_state.next_node_id and not self.execution_state.awaiting_input:
                 self.execution_state.workflow_status = WorkflowStatus.COMPLETED
             
             # Save current state
             self.save_state()
             
             # Return whether workflow is still active
-            return self.execution_state.workflow_status in {
-                WorkflowStatus.RUNNING, 
-                WorkflowStatus.WAITING_FOR_INPUT
-            }
+            return self.execution_state.workflow_status != WorkflowStatus.COMPLETED
         
         except Exception as e:
             # Handle workflow-level failures
@@ -581,80 +396,141 @@ class WorkflowEngine:
             self.save_state()
             raise
 
-    def load_state(self, filepath: str) -> None:
-        """Optimized state loading that recalculates current nodes from the previous execution step"""
-        with open(filepath, 'r') as f:
-            state_data = json.load(f)
-        
-        # Load state
-        self.execution_state = ExecutionState.from_dict(state_data)
-        
-        # Identify historical nodes and awaiting nodes for validation
-        required_nodes = set()
-        
-        # Add historical nodes
-        for entry in self.execution_state.history:
-            if 'from_node' in entry:
-                required_nodes.add(entry['from_node'])
-            if 'to_node' in entry:
-                required_nodes.add(entry['to_node'])
-        
-        # Add awaiting nodes (must be validated like historical nodes)
-        if getattr(self.execution_state, 'awaiting_inputs', None):
-            for info in self.execution_state.awaiting_inputs.values():
-                if 'node_id' in info:
-                    required_nodes.add(info['node_id'])
-        
-        # Add previous nodes (must be present in workflow)
-        required_nodes.update(self.execution_state.previous_node_ids)
-        
-        # Fast validation using set operations
-        available_nodes = set(self.nodes.keys())
-        missing_nodes = required_nodes - available_nodes
-        
-        if missing_nodes:
+    def _validate_node_compatibility(self) -> None:
+        """Validate that required nodes exist in the current workflow"""
+        # If there's a waiting node, only validate that
+        if self.execution_state.awaiting_input:
+            node_id = self.execution_state.awaiting_input['node_id']
+            if node_id not in self.nodes:
+                raise ValueError(
+                    f"Cannot resume: Waiting node '{node_id}' is missing from current workflow"
+                )
+            return
+
+        # Validate that either previous_node_id or next_node_id exists and is valid
+        if self.execution_state.previous_node_id:
+            if self.execution_state.previous_node_id not in self.nodes:
+                raise ValueError(
+                    f"Cannot resume: Previous node '{self.execution_state.previous_node_id}' is missing from current workflow"
+                )
+        elif self.execution_state.next_node_id not in self.nodes:
             raise ValueError(
-                f"Cannot load state: {len(missing_nodes)} required nodes missing. "
-                f"First few: {', '.join(sorted(missing_nodes)[:3])}. "
-                "Create a new run ID to continue."
+                f"Cannot resume: Current node '{self.execution_state.next_node_id}' is missing from current workflow"
             )
         
-        # Clear current_node_ids and rebuild it properly
-        self.execution_state.current_node_ids = set()
+        if self.execution_state.previous_node_id:
         
-        # Add next nodes from previous execution step's nodes
-        for node_id in self.execution_state.previous_node_ids:
-            if node_id in self.nodes:
-                node = self.nodes[node_id]
-                next_nodes = node.get_next_node_ids(self.execution_state)
-                self.execution_state.current_node_ids.update(next_nodes)
+            prev_node = self.nodes[self.execution_state.previous_node_id]
+            next_node_id = prev_node.get_next_node_id(self.execution_state)
+            self.execution_state.next_node_id = next_node_id
         
-        # Update workflow status based on current_node_ids and awaiting_inputs
-        waiting_exists = bool(getattr(self.execution_state, 'awaiting_inputs', None))
+    def _save_steps(self) -> None:
+        """Save all steps to a single JSON file"""
+        data = {
+            'workflow_id': self.workflow_id,
+            'workflow_name': self.workflow_name,
+            'run_id': self.run_id,
+            'steps': self.steps
+        }
         
-        if not self.execution_state.current_node_ids and not waiting_exists:
-            self.execution_state.workflow_status = WorkflowStatus.COMPLETED
-        elif waiting_exists:
-            self.execution_state.workflow_status = WorkflowStatus.WAITING_FOR_INPUT
-        else:
-            self.execution_state.workflow_status = WorkflowStatus.RUNNING
+        # Efficient file writing with atomic operation
+        temp_path = f"{self.state_file}.tmp"
+        with open(temp_path, 'w') as f:
+            json.dump(data, f)
+        os.rename(temp_path, self.state_file)  # Atomic operation
+        
+    def save_state(self) -> None:
+        """Save current execution state as a new step"""
+        if not self.execution_state:
+            return
+        
+        # Increment step number
+        self.execution_state.step = len(self.steps)
+        
+        # Update metadata
+        self.execution_state.metadata.update({
+            'save_time': datetime.now().isoformat()
+        })
+        
+        # Append to steps list
+        state_dict = self.execution_state.to_dict()
+        self.steps.append(state_dict)  # Use deepcopy to create an independent copy
+        
+        # Save all steps to file
+        self._save_steps()
 
-    def get_available_timestamps(self) -> List[str]:
-        """Returns a list of available timestamps in the log directory"""
-        return [f.split('_')[1] for f in os.listdir(self.log_dir) if f.startswith("state_")]
+    def get_available_steps(self) -> List[Dict[str, Any]]:
+        """Returns summary information about available steps"""
+        step_info = []
+        
+        for i, step in enumerate(self.steps):
+            step_info.append({
+                'step': i,
+                'node_id': step.get('next_node_id'),
+                'timestamp': step.get('metadata', {}).get('save_time'),
+                'status': step.get('workflow_status')
+            })
+            
+        return step_info
+
+    def get_step_data(self, step_num: int) -> Dict[str, Any]:
+        """Get detailed data for a specific step"""
+        if step_num < 0 or step_num >= len(self.steps):
+            raise ValueError(f"Invalid step number: {step_num}. Valid range: 0-{len(self.steps)-1}")
+        
+        return self.steps[step_num]
         
     def get_waiting_nodes(self) -> List[Dict]:
-        """Get information about nodes waiting for input."""
-        if not hasattr(self.execution_state, 'awaiting_inputs'):
+        """Get information about node waiting for input."""
+        if not self.execution_state.awaiting_input:
             return []
-            
+        
+        info = self.execution_state.awaiting_input
         return [
             {
-                'request_id': request_id,
+                'request_id': info['request_id'],
                 'node_id': info['node_id'],
                 'prompt': info['prompt'],
                 'options': info['options'],
                 'input_type': info['input_type']
             }
-            for request_id, info in self.execution_state.awaiting_inputs.items()
         ]
+
+    async def run(self, input_data=None):
+        """
+        Run the workflow continuously until it awaits input or completes.
+        
+        Args:
+            input_data: Optional dict with inputs for awaiting nodes
+        
+        Returns:
+            Dict containing workflow status and awaiting input details if any
+        """
+        
+        # Process one step with provided input data
+        if input_data and self.execution_state.awaiting_input:            
+            # Call step with input data
+            await self.step(input_data)
+            # Give the resumed coroutine a chance to complete
+            await asyncio.sleep(0)
+        
+        # Continue running until we need input or workflow completes
+        while True:
+            # Call step with no inputs to prevent accidental reuse
+            continuing = await self.step(None)
+            
+            # Stop if workflow is completed or waiting for input
+            if not continuing or self.execution_state.awaiting_input:
+                break
+        
+        # Return the current status
+        result = {
+            'status': self.execution_state.workflow_status.name,
+            'is_active': self.execution_state.workflow_status != WorkflowStatus.COMPLETED
+        }
+        
+        # Add awaiting input details if relevant
+        if self.execution_state.awaiting_input:
+            result['awaiting_input'] = self.execution_state.awaiting_input
+            
+        return result

@@ -1,14 +1,25 @@
 {
   "workflow_id": "async_demo",
   "workflow_name": "Async Demo",
-  "initial_state": {},
+  "initial_state": {"messages": []},
   "nodes": [
     {
       "id": "1741134227911",
       "class": "TestNode",
       "config": {}
+    },
+    {
+      "id": "1741134227912",
+      "class": "AgentNode",
+      "config": {}
     }
   ],
-  "edges": [],
-  "start": "1741134227911"
+  "edges": [
+    {
+      "from": "1741134227912",
+      "to": "1741134227911",
+      "condition": "True"
+    }
+  ],
+  "start": "1741134227912"
 }
