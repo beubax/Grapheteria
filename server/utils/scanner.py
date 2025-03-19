@@ -1,8 +1,8 @@
 import os
 import json
 import importlib.util
-from machine import Node
 from typing import List, Dict, Any, Optional
+from machine import Node
 import glob
 
 class SystemScanner:
@@ -21,30 +21,29 @@ class SystemScanner:
                 spec.loader.exec_module(module)
 
     @staticmethod
-    async def scan_nodes(server):
+    async def scan_nodes(manager):
         """Reload all Python modules to detect node classes"""
-        server.node_registry.clear()
+        manager.node_registry.clear()
         Node.clear_registry()
         
         for root, dirs, files in os.walk('.'):
-            if any(skip in root for skip in ('venv', '__pycache__', 'ui', 'server')):
+            if any(skip in root for skip in ('venv', '__pycache__', 'ui', 'server', 'logs')):
                 continue
                 
             for file in files:
-                if file.endswith('.py'):
+                if file.endswith('.py') and file != 'machine.py':
                     SystemScanner._load_module(root, file)
 
-        server.node_registry.update(Node.get_registry())
-        await server.broadcast_nodes()
+        manager.node_registry.update(Node.get_registry())
+        await manager.broadcast_nodes()
 
     @staticmethod
-    async def scan_workflows(server):
+    async def scan_workflows(manager):
         """Scan directory for workflow JSON files"""
         found_workflows = {}
-        found_files = {}
         
         for root, dirs, files in os.walk('.'):
-            if any(skip in root for skip in ('venv', '__pycache__', 'ui', 'server')):
+            if any(skip in root for skip in ('venv', '__pycache__', 'ui', 'server', 'logs')):
                 continue
                 
             for file in files:
@@ -53,15 +52,13 @@ class SystemScanner:
                     try:
                         with open(file_path, 'r') as f:
                             workflow_data = json.load(f)
-                            if workflow_id := workflow_data.get('workflow_id'):
-                                found_workflows[workflow_id] = workflow_data
-                                found_files[workflow_id] = file_path
+                            workflow_id = os.path.splitext(os.path.basename(file_path))[0]
+                            found_workflows[workflow_id] = workflow_data
                     except Exception as e:
                         print(f"Error loading workflow {file_path}: {e}")
 
-        server.workflows = found_workflows
-        server.workflow_paths = found_files
-        await server.broadcast_workflows()
+        manager.workflows = found_workflows
+        await manager.broadcast_workflows()
 
     @staticmethod
     def get_state_files(run_dir: str) -> List[str]:

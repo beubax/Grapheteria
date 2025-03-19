@@ -1,6 +1,4 @@
 {
-  "workflow_id": "workflowTwo",
-  "workflow_name": "Workflow Two",
   "initial_state": {},
   "nodes": [],
   "edges": [],

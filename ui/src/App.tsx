@@ -43,7 +43,7 @@ function App() {
     onEdgesChange,
     setSelectedWorkflow,
     setContextMenu,
-    updateFlow,
+    updateFlowStructure,
     connected,
     initWebSocket,
   } = useStore();
@@ -54,10 +54,9 @@ function App() {
   }, [initWebSocket]);
 
   const handleWorkflowSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const workflow = workflows.find(w => w.workflow_id === event.target.value) || null;
-    setSelectedWorkflow(workflow?.workflow_id || null);
-    updateFlow();
-
+    const workflowId = event.target.value || null;
+    setSelectedWorkflow(workflowId);
+    updateFlowStructure();
   };
 
   const onContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -80,9 +79,9 @@ function App() {
       <div style={{ position: 'absolute', top: 20, left: 20, zIndex: 4 }}>
         <select onChange={handleWorkflowSelect} value={selectedWorkflow || ''}>
           <option value="">Select a workflow...</option>
-          {workflows.map(workflow => (
-            <option key={workflow.workflow_id} value={workflow.workflow_id}>
-              {workflow.workflow_name || workflow.workflow_id}
+          {Object.entries(workflows).map(([workflowId]) => (
+            <option key={workflowId} value={workflowId}>
+              {workflowId}
             </option>
           ))}
         </select>

@@ -15,7 +15,7 @@ _NODE_REGISTRY: Dict[str, Type['Node']] = {}
 
 class WorkflowStatus(Enum):
     """Represents the overall status of a workflow."""
-    NOT_STARTED = auto()
+    IDLE = auto()
     RUNNING = auto()
     COMPLETED = auto()
     FAILED = auto()
@@ -97,6 +97,7 @@ class Node(ABC):
     def __init_subclass__(cls, **kwargs):
         """Auto-register nodes"""
         super().__init_subclass__(**kwargs)
+        print(f"Initializing subclass: {cls.__name__}")
         if not inspect.isabstract(cls):
             _NODE_REGISTRY[cls.__name__] = cls
 
@@ -194,41 +195,47 @@ class Transition:
 
 class WorkflowEngine:
     def __init__(self, 
-                 json_path: Optional[str] = None,
-                 nodes_dict: Optional[Dict[str, Node]] = None, 
+                 json_path: Optional[str] = None, 
+                 workflow_id: Optional[str] = None,
                  start_node_id: Optional[str] = None,
-                 workflow_id: Optional[str] = None, 
-                 workflow_name: Optional[str] = None,
                  initial_shared_state: Optional[Dict[str, Any]] = None,
                  run_id: Optional[str] = None,
                  resume_from: Optional[int] = None,
                  fork: bool = False):
-        # Load from JSON if path provided
+        
+        if not json_path and not workflow_id:
+            raise ValueError("Must provide json_path or workflow_id")
+        
+        # If workflow_id is provided but json_path is not, construct the path
         if json_path:
-            with open(json_path, "r") as f:
-                data = json.load(f)
-            
-            nodes_dict = {node_data['id']: Node.from_dict(node_data) for node_data in data['nodes']}
-            
-            # Add transitions
-            for edge_data in data['edges']:
-                transition = Transition.from_dict(edge_data)
-                nodes_dict[transition.from_id].add_transition(transition)
+            workflow_id = os.path.splitext(os.path.basename(json_path))[0]
+        else:
+            json_path = f"{workflow_id}.json"
 
-            start_node_id = data['start']
-            workflow_id = data['workflow_id']
-            workflow_name = data.get('workflow_name')
-            initial_shared_state = data.get('initial_state', {})
+        if not os.path.exists(json_path):
+            raise FileNotFoundError(f"No JSON file found at {json_path}")
+        
+        with open(json_path, "r") as f:
+            data = json.load(f)
+        
+        nodes_dict = {node_data['id']: Node.from_dict(node_data) for node_data in data['nodes']}
+        
+        # Add transitions
+        for edge_data in data['edges']:
+            transition = Transition.from_dict(edge_data)
+            nodes_dict[transition.from_id].add_transition(transition)
+
+        start_node_id = data.get('start', start_node_id)
+        initial_shared_state = data.get('initial_state', initial_shared_state or {})
         
         # Validate required parameters
-        if not nodes_dict or not start_node_id or not workflow_id:
-            raise ValueError("Must provide json_path and (nodes_dict, start_node_id, and workflow_id)")
+        if not nodes_dict or not start_node_id:
+            raise ValueError("Required parameters missing (nodes, start_node_id)")
             
         # Initialize workflow properties
         self.nodes = nodes_dict
         self.start_node_id = start_node_id
         self.workflow_id = workflow_id
-        self.workflow_name = workflow_name or workflow_id
 
         if run_id:
             # Load source state for existing run
@@ -271,7 +278,7 @@ class WorkflowEngine:
                 shared=initial_shared_state or {},
                 next_node_id=start_node_id,
                 history=[],
-                workflow_status=WorkflowStatus.NOT_STARTED,
+                workflow_status=WorkflowStatus.IDLE,
                 metadata={
                     'workflow_id': self.workflow_id,
                     'run_id': self.run_id,
@@ -340,8 +347,6 @@ class WorkflowEngine:
             # We don't mark it as "active" because we don't track future/pending nodes
             if node_id in self.execution_state.node_statuses and self.execution_state.node_statuses[node_id] == NodeStatus.WAITING_FOR_INPUT:
                 del self.execution_state.node_statuses[node_id]  # Remove waiting status
-
-            self.execution_state.workflow_status = WorkflowStatus.RUNNING
             
             if request_id in self._input_futures:
                 # Handle in-process resumption via futures
@@ -351,14 +356,14 @@ class WorkflowEngine:
                     future.set_result(message)
                     # Clean up after handling
                     del self._input_futures[request_id]
-                    
+                    self.execution_state.workflow_status = WorkflowStatus.RUNNING
                     # Return immediately without further processing
-                    # to avoid duplicate state saves, as the resumed coroutine
-                    # will handle saving the state
                     return True
             
             # Only for cross-process resumption via re-execution
             self.execution_state.next_node_id = node_id
+        
+        self.execution_state.workflow_status = WorkflowStatus.RUNNING
         current_node = self.execution_state.next_node_id
         
         # Set up the save callback
@@ -379,6 +384,8 @@ class WorkflowEngine:
             
             # Update next_node_id
             self.execution_state.next_node_id = next_node_id
+
+            self.execution_state.workflow_status = WorkflowStatus.IDLE
             
             # Check if workflow is complete
             if not self.execution_state.next_node_id and not self.execution_state.awaiting_input:
@@ -428,7 +435,6 @@ class WorkflowEngine:
         """Save all steps to a single JSON file"""
         data = {
             'workflow_id': self.workflow_id,
-            'workflow_name': self.workflow_name,
             'run_id': self.run_id,
             'steps': self.steps
         }
@@ -496,17 +502,7 @@ class WorkflowEngine:
             }
         ]
 
-    async def run(self, input_data=None):
-        """
-        Run the workflow continuously until it awaits input or completes.
-        
-        Args:
-            input_data: Optional dict with inputs for awaiting nodes
-        
-        Returns:
-            Dict containing workflow status and awaiting input details if any
-        """
-        
+    async def run(self, input_data=None):        
         # Process one step with provided input data
         if input_data and self.execution_state.awaiting_input:            
             # Call step with input data

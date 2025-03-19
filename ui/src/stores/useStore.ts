@@ -4,12 +4,12 @@ import { NodeChange, EdgeChange, applyNodeChanges, applyEdgeChanges, Node, Edge 
 import { getLayoutedElements } from '../utils/layoutUtils';
 import { createMessageHandlers } from '../utils/messageHandler';
 import { DebugState } from '../types/types';
-import { startDebugSession, endDebugSession } from '../utils/debugActions';
+import { startDebugSession } from '../utils/debugActions';
 
 export interface StoreState {
   nodes: Node[];
   edges: Edge[];
-  workflows: Workflow[];
+  workflows: Record<string, Workflow>;
   selectedWorkflow: string | null;
   availableNodes: AvailableNode[];
   contextMenu: ContextMenu | null;
@@ -19,12 +19,12 @@ export interface StoreState {
   setEdges: (edges: Edge[]) => void;
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
-  setWorkflows: (workflows: Workflow[]) => void;
+  setWorkflows: (workflows: Record<string, Workflow>) => void;
   setSelectedWorkflow: (workflowId: string | null) => void;
   setAvailableNodes: (nodes: AvailableNode[]) => void;
   setContextMenu: (menu: ContextMenu | null) => void;
   setConnected: (status: boolean) => void;
-  updateFlow: () => void;
+  updateFlowStructure: () => void;
   initWebSocket: () => void;
   sendMessage: (message: any) => void;
   debugMode: boolean;
@@ -37,6 +37,7 @@ export interface StoreState {
   setDebugStates: (states: DebugState[]) => void;
   goToNextDebugState: () => void;
   goToPreviousDebugState: () => void;
+  updateFlowStatus: () => void;
 }
 
 const useStore = create<StoreState>((set, get) => ({
@@ -57,7 +58,7 @@ const useStore = create<StoreState>((set, get) => ({
   },
 
   // Workflow State
-  workflows: [],
+  workflows: {},
   selectedWorkflow: null,
   setWorkflows: (workflows) => set({ workflows }),
   setSelectedWorkflow: (workflowId: string | null) => set({ selectedWorkflow: workflowId }),
@@ -79,7 +80,7 @@ const useStore = create<StoreState>((set, get) => ({
 
   // WebSocket Methods
   initWebSocket: () => {
-    const socket = new WebSocket('ws://localhost:8765');
+    const socket = new WebSocket('ws://localhost:8765/ws');
     const handleMessage = createMessageHandlers();
 
     socket.onopen = () => {
@@ -115,14 +116,14 @@ const useStore = create<StoreState>((set, get) => ({
   },
 
   // Actions
-  updateFlow: () => {
+  updateFlowStructure: () => {
     const { selectedWorkflow, workflows } = get();
     if (selectedWorkflow === null) {
       set({ nodes: [], edges: [] });
       return;
     }
 
-    const workflow = workflows.find(w => w.workflow_id === selectedWorkflow);
+    const workflow = workflows[selectedWorkflow];
     if (!workflow) {
       console.error('Selected workflow not found');
       return;
@@ -155,9 +156,9 @@ const useStore = create<StoreState>((set, get) => ({
   debugStates: [],
   currentDebugStateIndex: -1,
   
-  toggleDebugMode: (setTo?: boolean) => {
+  toggleDebugMode: async (setTo?: boolean) => {
     const newDebugMode = setTo !== undefined ? setTo : !get().debugMode;
-    const { debugMode, selectedWorkflow, nodes } = get();
+    const { debugMode, selectedWorkflow } = get();
     
     // Only take action if the state is actually changing
     if (newDebugMode === debugMode) return;
@@ -166,21 +167,10 @@ const useStore = create<StoreState>((set, get) => ({
     
     if (!newDebugMode) {
       set({ debugStates: [], currentDebugStateIndex: -1, debugRunId: null });
-      endDebugSession();
     }
     else if (selectedWorkflow) {
-      // Set all nodes to pending status when entering debug mode
-      const updatedNodes = nodes.map(node => ({
-        ...node,
-        data: {
-          ...node.data,
-          status: "pending"
-        }
-      }));
-      set({ nodes: updatedNodes });
       
-      const runId = startDebugSession();
-      set({ debugRunId: runId });
+      await startDebugSession();
     }
   },
   
@@ -189,9 +179,20 @@ const useStore = create<StoreState>((set, get) => ({
   },
   
   addDebugState: (state) => {
-    set(prev => ({ 
-      debugStates: [...prev.debugStates, state]
-    }));
+    set(prev => {
+      // Use step directly as the index
+      const index = state.step;
+      let newDebugStates = [...prev.debugStates];
+      
+      // Replace or add at the specific index
+      newDebugStates[index] = state;
+      
+      return { 
+        debugStates: newDebugStates
+      };
+    });
+    
+    // Let goToNextDebugState handle updating the currentDebugStateIndex
     get().goToNextDebugState();
   },
   
@@ -201,88 +202,58 @@ const useStore = create<StoreState>((set, get) => ({
     });
   },
   
+  updateFlowStatus: () => {
+    const { debugStates, nodes, debugMode, currentDebugStateIndex } = get();
+    
+    // Only proceed if we are in debug mode and have a valid state index
+    if (!debugMode || currentDebugStateIndex < 0 || !debugStates.length || currentDebugStateIndex >= debugStates.length) {
+      return;
+    }
+    
+    const currentDebugState = debugStates[currentDebugStateIndex];
+    const { node_statuses } = currentDebugState;
+    
+    const updatedNodes = nodes.map(node => {
+      // Set default status to pending
+      let status = "pending";
+      
+      if (node.id === currentDebugState.next_node_id) {
+        status = "queued";
+      }
+      
+      // Apply status from node_statuses if available
+      if (node_statuses && node_statuses[node.id]) {
+        status = node_statuses[node.id];
+      }
+      
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          status
+        }
+      };
+    });
+    
+    set({ nodes: updatedNodes });
+  },
+  
   goToNextDebugState: () => {
     set(prev => {
       const nextIndex = Math.min(prev.currentDebugStateIndex + 1, prev.debugStates.length - 1);
-      
-      // Update node statuses based on the debug state at the new index
-      if (nextIndex >= 0 && prev.debugStates.length > 0) {
-        const currentDebugState = prev.debugStates[nextIndex];
-        const { node_statuses, current_node_ids } = currentDebugState;
-        
-        const updatedNodes = prev.nodes.map(node => {
-          // Set default status to pending
-          let status = "pending";
-          
-          // Apply status from node_statuses if available
-          if (node_statuses && node_statuses[node.id]) {
-            status = node_statuses[node.id];
-          }
-          
-          // If the node is in current_node_ids, mark it as queued
-          if (current_node_ids && current_node_ids.includes(node.id)) {
-            status = "queued";
-          }
-          
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              status
-            }
-          };
-        });
-        
-        return { 
-          currentDebugStateIndex: nextIndex,
-          nodes: updatedNodes
-        };
-      }
-      
       return { currentDebugStateIndex: nextIndex };
     });
+    
+    get().updateFlowStatus();
   },
   
   goToPreviousDebugState: () => {
     set(prev => {
       const prevIndex = Math.max(prev.currentDebugStateIndex - 1, 0);
-      
-      // Update node statuses based on the debug state at the new index
-      if (prevIndex >= 0 && prev.debugStates.length > 0) {
-        const currentDebugState = prev.debugStates[prevIndex];
-        const { node_statuses, current_node_ids } = currentDebugState;
-        
-        const updatedNodes = prev.nodes.map(node => {
-          // Set default status to pending
-          let status = "pending";
-          
-          // Apply status from node_statuses if available
-          if (node_statuses && node_statuses[node.id]) {
-            status = node_statuses[node.id];
-          }
-          
-          // If the node is in current_node_ids, mark it as queued
-          if (current_node_ids && current_node_ids.includes(node.id)) {
-            status = "queued";
-          }
-          
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              status
-            }
-          };
-        });
-        
-        return { 
-          currentDebugStateIndex: prevIndex,
-          nodes: updatedNodes
-        };
-      }
-      
       return { currentDebugStateIndex: prevIndex };
     });
+    
+    get().updateFlowStatus();
   },
 }));
 

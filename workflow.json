@@ -1,25 +1,25 @@
 {
-  "workflow_id": "async_demo",
-  "workflow_name": "Async Demo",
-  "initial_state": {"messages": []},
+  "initial_state": {
+    "messages": []
+  },
   "nodes": [
     {
-      "id": "1741134227911",
-      "class": "TestNode",
+      "id": "1741969471236",
+      "class": "AgentNode",
       "config": {}
     },
     {
-      "id": "1741134227912",
-      "class": "AgentNode",
+      "id": "1742341683541",
+      "class": "TejasNode",
       "config": {}
     }
   ],
   "edges": [
     {
-      "from": "1741134227912",
-      "to": "1741134227911",
+      "from": "1741969471236",
+      "to": "1742341683541",
       "condition": "True"
     }
   ],
-  "start": "1741134227912"
+  "start": "1741969471236"
 }

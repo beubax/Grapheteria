@@ -5,8 +5,8 @@ from server.utils.scanner import SystemScanner
 
 class FileChangeHandler(FileSystemEventHandler):
     """Base class for handling file system changes with debouncing"""
-    def __init__(self, server, extension):
-        self.server = server
+    def __init__(self, manager, extension):
+        self.manager = manager
         self.last_scan = 0
         self.loop = asyncio.get_event_loop()
         self.extension = extension
@@ -22,30 +22,30 @@ class FileChangeHandler(FileSystemEventHandler):
 
 class NodeChangeHandler(FileChangeHandler):
     """Handles Python file changes for node definitions"""
-    def __init__(self, server):
-        super().__init__(server, '.py')
+    def __init__(self, manager):
+        super().__init__(manager, '.py')
 
     def trigger_scan(self):
         asyncio.run_coroutine_threadsafe(
-            self.server.scan_nodes(), 
+            self.manager.scan_nodes(), 
             self.loop
         )
 
 class WorkflowChangeHandler(FileChangeHandler):
     """Handles JSON file changes for workflow definitions"""
-    def __init__(self, server):
-        super().__init__(server, '.json')
+    def __init__(self, manager):
+        super().__init__(manager, '.json')
 
     def trigger_scan(self):
         asyncio.run_coroutine_threadsafe(
-            self.server.scan_workflow_file(self.last_modified_path),
+            self.manager.scan_workflow_file(self.last_modified_path),
             self.loop
         )
 
 class LogWatcher(FileChangeHandler):
     """Handles log file changes and updates clients"""
-    def __init__(self, server):
-        super().__init__(server, '.json')
+    def __init__(self, manager):
+        super().__init__(manager, '.json')
         
     def trigger_scan(self):
         """Process a log file change"""
@@ -56,7 +56,7 @@ class LogWatcher(FileChangeHandler):
             
         workflow_id, run_id = path_info
         asyncio.run_coroutine_threadsafe(
-            self.server.process_log_update(workflow_id, run_id, self.last_modified_path),
+            self.manager.process_log_update(workflow_id, run_id, self.last_modified_path),
             self.loop
         )
     

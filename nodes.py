@@ -1,14 +1,12 @@
-from machine import Node, WorkflowEngine, NodeStatus
+from machine import Node, WorkflowEngine, WorkflowStatus
 import asyncio
-import json
-import random
 from fastapi import FastAPI, HTTPException, Body
 from pydantic import BaseModel
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 import uvicorn
 
 class AgentNode(Node):
-    async def prepare(self, _, queue):
+    async def prepare(self, _, request_input):
         message = "Hello from agent node!"
         return message
         
@@ -34,93 +32,70 @@ class TestNode(Node):
 # Store active workflows by their ID
 active_workflows = {}
 
-# Store workflow tasks by their ID
-workflow_tasks = {}
-
 app = FastAPI()
+
+class CreateWorkflow(BaseModel):
+    workflow_path: str
 
 class WorkflowRequest(BaseModel):
     workflow_path: str
-    run_id: Optional[str] = None
+    run_id: str
     input_data: Optional[Dict[str, Any]] = None
+    resume_from: Optional[int] = None
+    fork: Optional[bool] = False
 
-class InputRequest(BaseModel):
-    workflow_id: str
-    input_data: Dict[str, Any]
-
-async def run_workflow_task(workflow_id: str, workflow: WorkflowEngine, input_data: Optional[Dict[str, Any]] = None):
-    """Run workflow as a background task"""
+@app.get("/workflows/create")
+async def create_workflow(request: CreateWorkflow):
     try:
-        result = await workflow.run(input_data=input_data)
+        workflow_path = request.workflow_path
+        workflow = WorkflowEngine(json_path=workflow_path)
         
-        # If workflow completes, mark for cleanup
-        if not result["is_active"]:
-            # Keep workflow in active_workflows for a while to allow status queries
-            # In a production system, you might want to implement cleanup after some time
-            pass
-            
-    except Exception as e:
-        print(f"Workflow {workflow_id} failed: {str(e)}")
-        # You could update some status here if needed
+        run_id = workflow.run_id
+        active_workflows[(workflow_path, run_id)] = workflow
 
-@app.post("/workflows/start")
-async def start_workflow(request: WorkflowRequest):
-    try:
-        workflow = WorkflowEngine(json_path=request.workflow_path, run_id=request.run_id)
-        
-        # Store the workflow instance for future requests
-        workflow_id = workflow.run_id
-        active_workflows[workflow_id] = workflow
-        
-        # Start workflow execution as a background task
-        task = asyncio.create_task(run_workflow_task(workflow_id, workflow, request.input_data))
-        
-        # Return immediately with initial workflow info
         return {
-            "workflow_id": workflow_id,
-            "status": "RUNNING",
-            "is_active": True,
-            "message": "Workflow started as background task"
+            "run_id": run_id,
+            "message": "Workflow successfully created",
+            "execution_state": workflow.execution_state
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to start workflow: {str(e)}")
+    
+async def step_workflow(request: WorkflowRequest, active: bool = False):
+    workflow_path, run_id, input_data, resume_from, fork = request.workflow_path, request.run_id, request.input_data, request.resume_from, request.fork
 
-@app.post("/workflows/input")
-async def provide_input(request: InputRequest):
-    workflow_id = request.workflow_id
-    
-    if workflow_id not in active_workflows:
-        raise HTTPException(status_code=404, detail=f"Workflow {workflow_id} not found")
-    
-    workflow = active_workflows[workflow_id]
-    
-    if workflow.execution_state.workflow_status.name != "WAITING_FOR_INPUT":
-        raise HTTPException(status_code=400, detail="Workflow is not waiting for input")
-    
-    try:
-        # Create new task with the input data - using the same workflow instance
-        # The workflow's internal future will be resolved with this input
-        task = asyncio.create_task(run_workflow_task(workflow_id, workflow, request.input_data))
-        
-        return {
-            "workflow_id": workflow_id,
-            "status": "RUNNING",
-            "is_active": True,
-            "message": "Input provided, workflow continuing execution"
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to process input: {str(e)}")
+    if active:
+        if (workflow_path, run_id) not in active_workflows:
+            raise HTTPException(status_code=404, detail=f"Workflow {workflow_path} not found with run_id {run_id}")
+        workflow = active_workflows[(workflow_path, run_id)]
+    else:
+        workflow = WorkflowEngine(json_path=workflow_path, run_id=run_id, resume_from=resume_from, fork=fork)
 
-# Keep the original main function for reference or direct script execution
+    task = asyncio.create_task(workflow.step(input_data=input_data))
+
+    #Immediately start the task
+    await asyncio.sleep(0)
+    while workflow.execution_state.workflow_status == WorkflowStatus.RUNNING:
+        await asyncio.sleep(0)
+
+    return {
+        "run_id": run_id,
+        "message": "Workflow stepped",
+        "execution_state": workflow.execution_state
+    }
+    
+@app.post("/workflows/step_active")
+async def step_workflow_active(request: WorkflowRequest):
+    return await step_workflow(request, active=True)
+
+@app.post("/workflows/step")
+async def step_workflow(request: WorkflowRequest):
+    return await step_workflow(request, active=False)
+
 async def main():
-    workflow = WorkflowEngine(json_path="workflow.json")
-    
-    # Run initial workflow
-    task = asyncio.create_task(workflow.run())
-    await asyncio.sleep(1)
-    task = asyncio.create_task(workflow.run(input_data={"1741134227911": "Hello"}))
-    await asyncio.sleep(1)
-
+    workflow = WorkflowEngine(workflow_id="workflow")
+    await workflow.run()
 if __name__ == "__main__":
     # Run the main function directly
+    # uvicorn.run(app, host="0.0.0.0", port=8000)
     asyncio.run(main())

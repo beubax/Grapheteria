@@ -1,53 +1,34 @@
 import json
-import asyncio
-from machine import Node
+from fastapi import WebSocket
+from typing import Set, Dict, Any
 
 class OutboundHandler:
     @staticmethod
-    async def send_to_all(clients, message):
-        if clients:
-            await asyncio.gather(
-                *[client.send(json.dumps(message)) for client in clients]
-            )
-
+    async def send_to_websocket(websocket: WebSocket, message: Dict[str, Any]):
+        """Send a message to a single WebSocket"""
+        await websocket.send_text(json.dumps(message))
+    
     @staticmethod
-    async def send_initial_state(websocket, node_registry, workflows):
-        """Send complete initial state to new client"""
-        await OutboundHandler._send_nodes(websocket, node_registry)
-        await OutboundHandler._send_workflows(websocket, workflows)
-
+    async def send_to_all(clients: Set[WebSocket], message: Dict[str, Any]):
+        """Send a message to all connected clients"""
+        for client in clients:
+            await OutboundHandler.send_to_websocket(client, message)
+    
     @staticmethod
-    async def _send_nodes(websocket, node_registry):
-        """Send registered node types to client"""
-        node_list = [{
-            "name": name,
-            "type": "Node"
-        } for name, cls in node_registry.items()]
-        
-        await websocket.send(json.dumps({
-            "type": "available_nodes",
-            "nodes": node_list
-        }))
-
-    @staticmethod
-    async def _send_workflows(websocket, workflows):
-        """Send all workflows to client"""
-        await websocket.send(json.dumps({
-            "type": "available_workflows",
-            "workflows": list(workflows.values())
-        }))
-
-    @staticmethod
-    async def broadcast_connection_status(clients, connected):
-        """Notify all clients about connection status"""
-        await OutboundHandler.send_to_all(clients, {
-            "type": "connection_status", 
-            "connected": connected
+    async def send_initial_state(websocket: WebSocket, node_registry: Dict, workflows: Dict):
+        """Send initial application state to a new client"""
+        await OutboundHandler.send_to_websocket(websocket, {
+            "type": "init",
+            "nodes": [{
+                "name": name,
+                "type": "Node"
+            } for name, cls in node_registry.items()],
+            "workflows": workflows
         })
-
+    
     @staticmethod
-    async def broadcast_nodes(clients, node_registry):
-        """Notify all clients about updated node registry"""
+    async def broadcast_nodes(clients: Set[WebSocket], node_registry: Dict):
+        """Broadcast node registry to all clients"""
         await OutboundHandler.send_to_all(clients, {
             "type": "available_nodes",
             "nodes": [{
@@ -55,24 +36,24 @@ class OutboundHandler:
                 "type": "Node"
             } for name, cls in node_registry.items()]
         })
-
+    
     @staticmethod
-    async def broadcast_workflows(clients, workflows):
-        """Send all workflows to connected clients"""
+    async def broadcast_workflows(clients: Set[WebSocket], workflows: Dict):
+        """Broadcast workflows to all clients"""
         await OutboundHandler.send_to_all(clients, {
             "type": "available_workflows",
-            "workflows": list(workflows.values())
+            "workflows": workflows
+        })
+    
+    @staticmethod
+    async def send_execution_state(client: WebSocket, log_data: Dict):
+        """Send execution state update to a specific client"""
+        await OutboundHandler.send_to_websocket(client, {
+            "type": "execution_state",
+            "log_data": log_data
         })
 
-    @staticmethod
-    async def send_execution_state(websocket, state_data):
-        """Send execution state to a client"""
-        print(state_data)
-        await websocket.send(json.dumps({
-            "type": "execution_state_update",
-            "data": state_data
-        }))
-    
+
     @staticmethod
     async def send_workflow_runs(websocket, workflow_id, runs):
         """Send workflow runs to a client"""

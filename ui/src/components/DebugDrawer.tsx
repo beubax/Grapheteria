@@ -99,8 +99,8 @@ const DebugDrawer: React.FC = () => {
             marginBottom: '15px',
             fontFamily: 'monospace'
           }}>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#a6adc8' }}>Timestamp:</label>
-            <div>{currentState.timestamp}</div>
+            <label style={{ display: 'block', marginBottom: '5px', color: '#a6adc8' }}>Step:</label>
+            <div>{currentState.step}</div>
           </div>
           
           <div className="state-box" style={{
@@ -114,7 +114,7 @@ const DebugDrawer: React.FC = () => {
           }}>
             <label style={{ display: 'block', marginBottom: '5px', color: '#a6adc8' }}>State Variables:</label>
             <pre style={{ margin: 0 }}>
-              {JSON.stringify(currentState.stateVariables, null, 2)}
+              {JSON.stringify(currentState.shared, null, 2)}
             </pre>
           </div>
           

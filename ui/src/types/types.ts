@@ -9,10 +9,10 @@ export interface Node {
   }
   
   export interface Workflow {
-    workflow_id: string;
-    workflow_name?: string;
+    initial_state: Record<string, any>;
     nodes: Node[];
     edges: Edge[];
+    start: string;
   }
   
   export interface AvailableNode {
@@ -35,8 +35,9 @@ export interface Node {
   }
 
   export interface DebugState {
-    timestamp: string;
-    stateVariables: any;
+    shared: any;
+    next_node_id: string;
+    workflow_status: string;
     node_statuses: any;
-    current_node_ids: string[];
+    step: number;
   }

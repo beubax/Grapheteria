@@ -1,55 +1,62 @@
 import useStore from '../stores/useStore';
+import axios from 'axios';
 
-// Standalone functions that don't depend on React hooks
-export const createDebugRunId = (): string => {
-  return `debug-${Date.now()}`;
-};
+// Base API URL with the correct port
+const API_BASE_URL = 'http://localhost:8765';
 
-export function startDebugSession(): string | null {
-  const { sendMessage, selectedWorkflow } = useStore.getState();
+export async function startDebugSession() {
+  const { selectedWorkflow, setDebugRunId, addDebugState } = useStore.getState();
   if (!selectedWorkflow) return null;
   
-  const runId = createDebugRunId();
-  
-  
-  sendMessage({
-    type: 'log_start_debug_session',
-    workflow_id: selectedWorkflow,
-    run_id: runId
-  });
-  
-  return runId;
+  try {
+    const response = await axios({
+      method: 'post',
+      url: `${API_BASE_URL}/workflows/create`,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      data: {
+        workflow_id: selectedWorkflow
+      }
+    });
+    
+    const data = response.data;
+    setDebugRunId(data.run_id);
+    addDebugState(data.execution_state);
+
+  } catch (error) {
+    console.error('Error starting debug session:', error);
+  }
 }
 
-export function endDebugSession(): void {
-  const { sendMessage } = useStore.getState();
-  
-  sendMessage({
-    type: 'log_end_debug_session'
-  });
-}
-
-export function stepWorkflow(): void {
-  const { sendMessage, selectedWorkflow, debugRunId, debugStates, currentDebugStateIndex, setDebugStates } = useStore.getState();
+export async function stepWorkflow(): Promise<void> {
+  const { selectedWorkflow, debugRunId, debugStates, currentDebugStateIndex, setDebugStates, addDebugState } = useStore.getState();
   
   if (!selectedWorkflow || !debugRunId) return;
 
-  // Get current timestamp from debug state
-  const currentTimestamp = debugStates.length > 0 && currentDebugStateIndex >= 0 
-    ? debugStates[currentDebugStateIndex].timestamp 
-    : null;
-  
-  // If we're stepping from a previous state (not the latest),
-  // remove all states that come after the current index
-  if (currentTimestamp && currentDebugStateIndex < debugStates.length - 1) {
-    const trimmedStates = debugStates.slice(0, currentDebugStateIndex + 1);
-    setDebugStates(trimmedStates);
+  const trimmedStates = debugStates.slice(0, currentDebugStateIndex + 1);
+  setDebugStates(trimmedStates);
+
+  try {
+    const response = await axios({
+      method: 'post',
+      url: `${API_BASE_URL}/workflows/step`,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      data: {
+        workflow_id: selectedWorkflow,
+        run_id: debugRunId,
+        resume_from: currentDebugStateIndex
+      }
+    });
+    
+    const data = response.data;
+    addDebugState(data.execution_state);
+
+  } catch (error) {
+    console.error('Error starting debug session:', error);
   }
-  
-  sendMessage({
-    type: 'step',
-    workflow_id: selectedWorkflow,
-    run_id: debugRunId,
-    current_timestamp: currentTimestamp
-  });
 }
