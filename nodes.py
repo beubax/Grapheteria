@@ -1,4 +1,4 @@
-from machine import Node
+from core.machine import Node
 
 class AgentNode(Node):
     async def prepare(self, state, request_input):

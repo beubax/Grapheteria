@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 import inspect
 import os
 from uuid import uuid4
-from storage import StorageBackend, FileSystemStorage
+from core.storage import StorageBackend, FileSystemStorage
 
 # At the top of machine.py, before the class definitions
 _NODE_REGISTRY: Dict[str, Type['Node']] = {}

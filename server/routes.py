@@ -1,11 +1,11 @@
-from machine import WorkflowEngine, WorkflowStatus
+from core.machine import WorkflowEngine, WorkflowStatus
 import asyncio
 from fastapi import APIRouter, HTTPException, Body
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 import uvicorn
 
-from storage import SQLiteStorage
+from core.storage import SQLiteStorage
 
 router = APIRouter()
 
