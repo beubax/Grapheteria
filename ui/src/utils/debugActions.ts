@@ -30,7 +30,7 @@ export async function startDebugSession() {
   }
 }
 
-export async function stepWorkflow(): Promise<void> {
+export async function stepWorkflow(inputData: any): Promise<void> {
   const { selectedWorkflow, debugRunId, debugStates, currentDebugStateIndex, setDebugStates, addDebugState } = useStore.getState();
   
   if (!selectedWorkflow || !debugRunId) return;
@@ -49,7 +49,8 @@ export async function stepWorkflow(): Promise<void> {
       data: {
         workflow_id: selectedWorkflow,
         run_id: debugRunId,
-        resume_from: currentDebugStateIndex
+        resume_from: currentDebugStateIndex,
+        input_data: inputData
       }
     });
     

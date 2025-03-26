@@ -1,24 +1,13 @@
-from machine import WorkflowEngine
+import json
 
 class InboundHandler:
     @staticmethod
     async def handle_client_message(manager, websocket, message_data):
         message_type = message_data.get('type', '')
-        
-        # Handle log-related messages
-        if message_type.startswith('log_'):
-            await InboundHandler._handle_log_message(manager, websocket, message_data)
             
         # Handle workflow editing messages
         workflow_id = message_data.get('workflow_id')
         if not workflow_id or workflow_id not in manager.workflows:
-            return
-        
-        if message_type == 'step':
-            print(f"Stepping workflow {workflow_id} with run {message_data.get('run_id')} at timestamp {message_data.get('current_timestamp')}")
-            workflow_path = manager.workflow_paths[workflow_id]
-            workflow = WorkflowEngine(json_path=workflow_path, run_id=message_data.get('run_id'), resume_timestamp=message_data.get('current_timestamp'))
-            await workflow.step()
             return
         
         workflow = manager.workflows[workflow_id]
@@ -32,25 +21,51 @@ class InboundHandler:
                 await InboundHandler._handle_edge_created(manager, workflow, workflow_id, message_data)
             case 'edge_deleted':
                 await InboundHandler._handle_edge_deleted(manager, workflow, workflow_id, message_data)
+            case 'mark_as_start_node':
+                await InboundHandler._handle_mark_as_start_node(manager, workflow, workflow_id, message_data)
+            case 'set_edge_condition':
+                await InboundHandler._handle_set_edge_condition(manager, workflow, workflow_id, message_data)
+            case 'set_initial_state':
+                await InboundHandler._handle_set_initial_state(manager, workflow, workflow_id, message_data)
+            case 'save_node_config':
+                await InboundHandler._handle_save_node_config(manager, workflow, workflow_id, message_data)
 
     @staticmethod
     async def _handle_node_created(manager, workflow, workflow_id, data):
         if any(n['id'] == data['nodeId'] for n in workflow['nodes']):
             return
-            
+
         workflow['nodes'].append({
             'id': data['nodeId'],
             'class': data['nodeType'],
             'config': {}
         })
+
+        if not workflow['start']:
+            workflow['start'] = data['nodeId']
+            
         await manager.save_workflow(workflow_id)
 
     @staticmethod
     async def _handle_node_deleted(manager, workflow, workflow_id, data):
         node_id = data['nodeId']
+        is_start_node = workflow.get('start') == node_id
+
         workflow['nodes'] = [n for n in workflow['nodes'] if n['id'] != node_id]
+        
+        # Remove any edges connected to this node
         workflow['edges'] = [e for e in workflow['edges'] 
                             if e['from'] != node_id and e['to'] != node_id]
+        
+        if is_start_node and workflow['nodes']:
+            import random
+            new_start_node = random.choice(workflow['nodes'])
+            workflow['start'] = new_start_node['id']
+
+        if not workflow['nodes']:
+            workflow['start'] = None
+
+            
         await manager.save_workflow(workflow_id)
 
     @staticmethod
@@ -65,8 +80,7 @@ class InboundHandler:
         if not existing and nodes_exist:
             workflow['edges'].append({
                 'from': from_node,
-                'to': to_node,
-                'condition': 'True'
+                'to': to_node
             })
             await manager.save_workflow(workflow_id)
 
@@ -79,47 +93,33 @@ class InboundHandler:
         await manager.save_workflow(workflow_id)
 
     @staticmethod
-    async def _handle_log_message(manager, websocket, data):
-        """Handle all log-related messages"""
-        from server.utils.scanner import SystemScanner
-        from server.handlers.outbound_handler import OutboundHandler
-        
-        match data['type']:
-            case 'log_start_debug_session':
-                print(f"Starting debug session for workflow {data.get('workflow_id')} with run {data.get('run_id')}")
-                print(f"Debug sessions: {manager.debug_sessions}")
-                # Store which run this client is debugging
-                workflow_id = data.get('workflow_id')
-                run_id = data.get('run_id')
-                
-                if not workflow_id or not run_id or workflow_id not in manager.workflows:
-                    return
-                    
-                manager.debug_sessions[websocket] = {
-                    'workflow_id': workflow_id,
-                    'run_id': run_id
-                }
-            
-            case 'log_end_debug_session':
-                print(f"Ending debug session for workflow {data.get('workflow_id')} with run {data.get('run_id')}")
-                print(f"Debug sessions: {manager.debug_sessions}")
-                if websocket in manager.debug_sessions:
-                    del manager.debug_sessions[websocket]
-            
-            case 'log_get_workflow_runs':
-                workflow_id = data.get('workflow_id')
-                if not workflow_id:
-                    return
-                    
-                runs = await SystemScanner.get_workflow_runs(workflow_id)
-                await OutboundHandler.send_workflow_runs(websocket, workflow_id, runs)
-            
-            case 'log_get_run_states':
-                workflow_id = data.get('workflow_id')
-                run_id = data.get('run_id')
-                
-                if not workflow_id or not run_id:
-                    return
-                    
-                states = await SystemScanner.get_run_states(workflow_id, run_id)
-                await OutboundHandler.send_run_states(websocket, workflow_id, run_id, states)
+    async def _handle_mark_as_start_node(manager, workflow, workflow_id, data):
+        node_id = data['nodeId']
+        workflow['start'] = node_id
+        await manager.save_workflow(workflow_id)
+
+    @staticmethod
+    async def _handle_set_edge_condition(manager, workflow, workflow_id, data):
+        from_node = data['from']
+        to_node = data['to']
+        condition = data['condition']
+        for edge in workflow['edges']:
+            if edge['from'] == from_node and edge['to'] == to_node:
+                edge['condition'] = condition
+                break
+        await manager.save_workflow(workflow_id)
+
+    @staticmethod
+    async def _handle_set_initial_state(manager, workflow, workflow_id, data):
+        workflow['initial_state'] = json.loads(data['initialState'])
+        await manager.save_workflow(workflow_id)
+
+    @staticmethod
+    async def _handle_save_node_config(manager, workflow, workflow_id, data):
+        node_id = data['nodeId']
+        config = json.loads(data['config'])
+        for node in workflow['nodes']:
+            if node['id'] == node_id:
+                node['config'] = config
+                break
+        await manager.save_workflow(workflow_id)

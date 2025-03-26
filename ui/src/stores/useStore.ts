@@ -135,7 +135,9 @@ const useStore = create<StoreState>((set, get) => ({
       position: { x: 0, y: 0 },
       data: { 
         label: node.class,
-        nodeType: node.class
+        nodeType: node.class,
+        isStartNode: node.id === workflow.start,
+        config: node.config
       }
     }));
 
@@ -144,6 +146,9 @@ const useStore = create<StoreState>((set, get) => ({
       source: edge.from.toString(),
       target: edge.to.toString(),
       type: 'custom',
+      data: {
+        condition: edge.condition
+      }
     }));
 
     const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(flowNodes, flowEdges);
@@ -181,7 +186,7 @@ const useStore = create<StoreState>((set, get) => ({
   addDebugState: (state) => {
     set(prev => {
       // Use step directly as the index
-      const index = state.step;
+      const index = state.metadata.step;
       let newDebugStates = [...prev.debugStates];
       
       // Replace or add at the specific index
@@ -217,13 +222,15 @@ const useStore = create<StoreState>((set, get) => ({
       // Set default status to pending
       let status = "pending";
       
-      if (node.id === currentDebugState.next_node_id) {
-        status = "queued";
-      }
-      
       // Apply status from node_statuses if available
       if (node_statuses && node_statuses[node.id]) {
         status = node_statuses[node.id];
+      }
+
+      if (node.id === currentDebugState.next_node_id) {
+        if (status !== "waiting_for_input" && status !== "failed") {
+          status = "queued";
+        }
       }
       
       return {

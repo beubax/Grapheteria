@@ -1,11 +1,13 @@
 export interface Node {
     id: string;
     class: string;
+    config: Record<string, any>;
   }
   
   export interface Edge {
     from: string | number;
     to: string | number;
+    condition: string;
   }
   
   export interface Workflow {
@@ -39,5 +41,7 @@ export interface Node {
     next_node_id: string;
     workflow_status: string;
     node_statuses: any;
-    step: number;
+    metadata: {
+      step: number;
+    };
   }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     Background,
     ReactFlow,
@@ -11,6 +11,9 @@ import { useGraphActions } from './utils/graphActions';
 import useStore from './stores/useStore';
 import CustomEdge from './components/CustomEdge';
 import DebugDrawer from './components/DebugDrawer';
+import { JSONDrawer } from './components/JSONDrawer';
+import { Button } from './components/ui/button';
+import { Settings } from 'lucide-react';
 
 // Node types registration
 
@@ -29,6 +32,7 @@ function App() {
     onEdgeDelete,
     onEdgeCreate,
     onNodeCreate,
+    onSetInitialState,
   } = useGraphActions();
 
   // Get state from Zustand
@@ -47,6 +51,8 @@ function App() {
     connected,
     initWebSocket,
   } = useStore();
+
+  const [jsonDrawerOpen, setJsonDrawerOpen] = useState(false);
 
   // Add this useEffect
   React.useEffect(() => {
@@ -96,7 +102,7 @@ function App() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onEdgeCreate}
-        onNodeDoubleClick={(_, node) => onNodeDelete(node.id)}
+        onNodeDoubleClick={(_, node) => onNodeDelete(node)}
         onEdgeDoubleClick={(_, edge) => onEdgeDelete(edge.source, edge.target)}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
@@ -142,7 +148,30 @@ function App() {
         )}
       </ReactFlow>
       
-      <DebugDrawer />
+      {selectedWorkflow && <DebugDrawer />}
+      {selectedWorkflow && (
+        <div className="fixed bottom-6 left-0 right-0 flex justify-center z-50">
+          <Button
+            onClick={() => setJsonDrawerOpen(true)}
+            className="rounded-md shadow-md hover:shadow-lg transition-all duration-300 bg-black hover:bg-gray-800 text-white px-6 py-2"
+            size="sm"
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Initial State
+          </Button>
+        </div>
+      )}
+      
+      {selectedWorkflow && (
+        <JSONDrawer 
+          initialConfig={workflows[selectedWorkflow].initial_state} 
+          onSave={onSetInitialState}
+          open={jsonDrawerOpen}
+          onOpenChange={setJsonDrawerOpen}
+          title="Workflow Initial State"
+          variant="workflow"
+        />
+      )}
     </div>
   );
 }

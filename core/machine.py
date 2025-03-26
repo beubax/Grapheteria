@@ -10,6 +10,8 @@ from abc import ABC, abstractmethod
 import inspect
 import os
 from uuid import uuid4
+from storage import StorageBackend, FileSystemStorage
+
 # At the top of machine.py, before the class definitions
 _NODE_REGISTRY: Dict[str, Type['Node']] = {}
 
@@ -32,31 +34,30 @@ class ExecutionState:
     """Represents the complete state of a workflow execution."""
     shared: Dict[str, Any]
     next_node_id: Optional[str]
-    history: List[Dict[str, Any]]
     workflow_status: WorkflowStatus
     node_statuses: Dict[str, NodeStatus] = field(default_factory=dict)
     awaiting_input: Optional[Dict[str, Any]] = None
     previous_node_id: Optional[str] = None
     metadata: Dict[str, Any] = field(default_factory=dict)  # Add metadata field
-    step: int = 0  # Track the step number
 
     def to_dict(self) -> dict:
         result = {
             'shared': self.shared,
             'next_node_id': self.next_node_id,
-            'history': self.history,
             'workflow_status': self.workflow_status.name,
             'node_statuses': {k: v.value for k, v in self.node_statuses.items()},
             'awaiting_input': self.awaiting_input,
             'previous_node_id': self.previous_node_id,
-            'metadata': self.metadata,
-            'step': self.step
+            'metadata': self.metadata
         }
         # Return a deep copy to ensure independence from the original state
         return copy.deepcopy(result)
 
     @classmethod
     def from_dict(cls, data: dict) -> 'ExecutionState':
+        # Create a deep copy of the input data to ensure independence
+        data = copy.deepcopy(data)
+        
         # Convert string node statuses back to enum values
         node_statuses = {}
         if 'node_statuses' in data:
@@ -65,13 +66,11 @@ class ExecutionState:
         return cls(
             shared=data['shared'],
             next_node_id=data['next_node_id'],
-            history=data['history'],
             workflow_status=WorkflowStatus[data['workflow_status']],
             node_statuses=node_statuses,
             awaiting_input=data.get('awaiting_input'),
             previous_node_id=data.get('previous_node_id'),
-            metadata=data.get('metadata', {}),
-            step=data.get('step', 0)
+            metadata=data.get('metadata', {})
         )
 
 class InputRequest:
@@ -110,11 +109,16 @@ class Node(ABC):
         _NODE_REGISTRY.clear()
 
     def get_next_node_id(self, state: ExecutionState) -> Optional[str]:
-        """Return only the first matching transition, or None if none match."""
         for transition in self.transitions.values():
-            if transition.should_transition(state):
-                return transition.to_id  # Return just the first match
-        return None  # No transitions matched
+            if transition.condition == "True":
+                return transition.to_id
+        none_transition = None
+        for transition in self.transitions.values():
+            if transition.condition == "None" and none_transition is None:
+                none_transition = transition
+            elif transition.condition != "False" and transition.condition != "None" and transition.should_transition(state):
+                return transition.to_id
+        return none_transition.to_id if none_transition else None
 
     def add_transition(self, transition: 'Transition') -> None:
         self.transitions[transition.to_id] = transition
@@ -131,29 +135,41 @@ class Node(ABC):
         return node_type(id=data['id'], config=data.get('config', {}))
 
     async def run(self, state: ExecutionState, request_input: Callable[[str, str, str, str], Any]) -> Any:
-        
         prep_result = self.prepare(state.shared, request_input)
         prepared_result = await prep_result if inspect.isawaitable(prep_result) else prep_result
         
+        try:
+            execution_result = await self._execute_with_retry(prepared_result)
+            state.node_statuses[self.id] = NodeStatus.COMPLETED
+            
+            cleanup_result = self.cleanup(state.shared, prepared_result, execution_result)
+            return await cleanup_result if inspect.isawaitable(cleanup_result) else cleanup_result
+            
+        except Exception as e:
+            state.node_statuses[self.id] = NodeStatus.FAILED
+            raise e
+            
+    async def _execute_with_retry(self, prepared_result: Any) -> Any:
+        """Execute with retry logic, can be extended for batch processing."""
         for self.cur_retry in range(self.max_retries):
             try:
-                # Handle both sync and async execution automatically
-                result = self.execute(prepared_result)
-                execution_result = await result if inspect.isawaitable(result) else result
-                
-                cleanup_result = self.cleanup(state.shared, prepared_result, execution_result)
-                final_result = await cleanup_result if inspect.isawaitable(cleanup_result) else cleanup_result
-                state.node_statuses[self.id] = NodeStatus.COMPLETED
-                return final_result
-                
+                return await self._process_item(prepared_result)
             except Exception as e:
                 if self.cur_retry == self.max_retries - 1:
-                    state.node_statuses[self.id] = NodeStatus.FAILED
-                    fallback_result = self.exec_fallback(prepared_result, e)
-                    return await fallback_result if inspect.isawaitable(fallback_result) else fallback_result
+                    return await self._handle_fallback(prepared_result, e)
                 if self.wait > 0:
                     await asyncio.sleep(self.wait)
         return None
+        
+    async def _process_item(self, item: Any) -> Any:
+        """Process a single item. Override this for custom item processing."""
+        result = self.execute(item)
+        return await result if inspect.isawaitable(result) else result
+        
+    async def _handle_fallback(self, prepared_result: Any, e: Exception) -> Any:
+        """Handle execution failure with fallback."""
+        fallback_result = self.exec_fallback(prepared_result, e)
+        return await fallback_result if inspect.isawaitable(fallback_result) else fallback_result
 
     def prepare(self, shared: Dict[str, Any], request_input: Any) -> Any:
         return None
@@ -169,7 +185,7 @@ class Node(ABC):
         raise e
 
 class Transition:
-    def __init__(self, from_id: str, to_id: str, condition: str = "True"):
+    def __init__(self, from_id: str, to_id: str, condition: str = "None"):
         self.from_id = from_id
         self.to_id = to_id
         self.condition = condition
@@ -190,7 +206,7 @@ class Transition:
         return cls(
             from_id=data['from'],
             to_id=data['to'],
-            condition=data.get('condition', 'True')
+            condition=data.get('condition', "None")
         )
 
 class WorkflowEngine:
@@ -201,7 +217,8 @@ class WorkflowEngine:
                  initial_shared_state: Optional[Dict[str, Any]] = None,
                  run_id: Optional[str] = None,
                  resume_from: Optional[int] = None,
-                 fork: bool = False):
+                 fork: bool = False,
+                 storage_backend: Optional[StorageBackend] = None):
         
         if not json_path and not workflow_id:
             raise ValueError("Must provide json_path or workflow_id")
@@ -214,6 +231,9 @@ class WorkflowEngine:
 
         if not os.path.exists(json_path):
             raise FileNotFoundError(f"No JSON file found at {json_path}")
+        
+        # Initialize storage backend if not provided
+        self.storage = storage_backend or FileSystemStorage()
         
         with open(json_path, "r") as f:
             data = json.load(f)
@@ -239,15 +259,11 @@ class WorkflowEngine:
 
         if run_id:
             # Load source state for existing run
-            source_dir = f"logs/{self.workflow_id}/{run_id}"
-            source_file = os.path.join(source_dir, "state.json")
+            source_data = self.storage.load_state(self.workflow_id, run_id)
             
-            if not os.path.exists(source_file):
-                raise FileNotFoundError(f"No state file found for run_id: {run_id}")
+            if not source_data:
+                raise FileNotFoundError(f"No state found for run_id: {run_id}")
             
-            with open(source_file, 'r') as f:
-                source_data = json.load(f)
-
             if resume_from is None:
                 resume_from = len(source_data['steps']) - 1
                 
@@ -277,22 +293,36 @@ class WorkflowEngine:
             self.execution_state = ExecutionState(
                 shared=initial_shared_state or {},
                 next_node_id=start_node_id,
-                history=[],
                 workflow_status=WorkflowStatus.IDLE,
                 metadata={
-                    'workflow_id': self.workflow_id,
-                    'run_id': self.run_id,
-                    'start_time': datetime.now().isoformat()
-                },
-                step=0
+                    'start_time': datetime.now().isoformat(),
+                    'step': 0
+                }
             )
-            self.steps = [self.execution_state.to_dict()]
+            state_dict = self.execution_state.to_dict()
+            self.steps = [state_dict]
 
-        self.log_dir = f"logs/{self.workflow_id}/{self.run_id}"
-        os.makedirs(self.log_dir, exist_ok=True)
-        self.state_file = os.path.join(self.log_dir, "state.json")
-        self._save_steps()
+        # Save initial state
+        self.storage.save_state(self.workflow_id, self.run_id, self.steps)
         self._input_futures = {}
+
+    def save_state(self) -> None:
+        """Save current execution state to the storage backend"""
+        if not self.execution_state:
+            return
+        
+        # Update metadata
+        self.execution_state.metadata.update({
+            'save_time': datetime.now().isoformat(),
+            'step': len(self.steps)
+        })
+        
+        # Append to steps list
+        state_dict = self.execution_state.to_dict()
+        self.steps.append(state_dict)
+        
+        # Save to storage backend
+        self.storage.save_state(self.workflow_id, self.run_id, self.steps)
 
     async def execute_node(self, node_id: str, input_data: Optional[Dict[str, Any]] = None) -> Optional[str]:
         node = copy.copy(self.nodes[node_id])
@@ -330,7 +360,7 @@ class WorkflowEngine:
         return next_node_id
     
     async def step(self, input_data=None) -> bool:
-        if not self.execution_state.next_node_id and not self.execution_state.awaiting_input:
+        if (not self.execution_state.next_node_id and not self.execution_state.awaiting_input) or self.execution_state.workflow_status == WorkflowStatus.FAILED:
             return False
         
         if self.execution_state.workflow_status == WorkflowStatus.WAITING_FOR_INPUT:
@@ -372,13 +402,6 @@ class WorkflowEngine:
         try:            
             # Execute the current node
             next_node_id = await self.execute_node(current_node, input_data)
-            
-            if self.execution_state.previous_node_id:
-                self.execution_state.history.append({
-                    'timestamp': datetime.now().isoformat(),
-                    'from_node': self.execution_state.previous_node_id,
-                    'to_node': current_node
-                })
             # Store current node as previous_node_id before execution
             self.execution_state.previous_node_id = current_node
             
@@ -431,77 +454,6 @@ class WorkflowEngine:
             next_node_id = prev_node.get_next_node_id(self.execution_state)
             self.execution_state.next_node_id = next_node_id
         
-    def _save_steps(self) -> None:
-        """Save all steps to a single JSON file"""
-        data = {
-            'workflow_id': self.workflow_id,
-            'run_id': self.run_id,
-            'steps': self.steps
-        }
-        
-        # Efficient file writing with atomic operation
-        temp_path = f"{self.state_file}.tmp"
-        with open(temp_path, 'w') as f:
-            json.dump(data, f)
-        os.rename(temp_path, self.state_file)  # Atomic operation
-        
-    def save_state(self) -> None:
-        """Save current execution state as a new step"""
-        if not self.execution_state:
-            return
-        
-        # Increment step number
-        self.execution_state.step = len(self.steps)
-        
-        # Update metadata
-        self.execution_state.metadata.update({
-            'save_time': datetime.now().isoformat()
-        })
-        
-        # Append to steps list
-        state_dict = self.execution_state.to_dict()
-        self.steps.append(state_dict)  # Use deepcopy to create an independent copy
-        
-        # Save all steps to file
-        self._save_steps()
-
-    def get_available_steps(self) -> List[Dict[str, Any]]:
-        """Returns summary information about available steps"""
-        step_info = []
-        
-        for i, step in enumerate(self.steps):
-            step_info.append({
-                'step': i,
-                'node_id': step.get('next_node_id'),
-                'timestamp': step.get('metadata', {}).get('save_time'),
-                'status': step.get('workflow_status')
-            })
-            
-        return step_info
-
-    def get_step_data(self, step_num: int) -> Dict[str, Any]:
-        """Get detailed data for a specific step"""
-        if step_num < 0 or step_num >= len(self.steps):
-            raise ValueError(f"Invalid step number: {step_num}. Valid range: 0-{len(self.steps)-1}")
-        
-        return self.steps[step_num]
-        
-    def get_waiting_nodes(self) -> List[Dict]:
-        """Get information about node waiting for input."""
-        if not self.execution_state.awaiting_input:
-            return []
-        
-        info = self.execution_state.awaiting_input
-        return [
-            {
-                'request_id': info['request_id'],
-                'node_id': info['node_id'],
-                'prompt': info['prompt'],
-                'options': info['options'],
-                'input_type': info['input_type']
-            }
-        ]
-
     async def run(self, input_data=None):        
         # Process one step with provided input data
         if input_data and self.execution_state.awaiting_input:            

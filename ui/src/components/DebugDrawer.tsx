@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import useStore from '../stores/useStore';
 import { stepWorkflow } from '../utils/debugActions';
+import { JSONDrawer } from './JSONDrawer';
+import { Database } from 'lucide-react';
+import { Button } from './ui/button';
 
 const DebugDrawer: React.FC = () => {
   const { 
@@ -8,20 +11,19 @@ const DebugDrawer: React.FC = () => {
     debugRunId,
     debugStates,
     currentDebugStateIndex,
-    selectedWorkflow,
     goToNextDebugState,
     goToPreviousDebugState,
   } = useStore();
   
   const [expanded, setExpanded] = useState<boolean>(false);
+  const [inputData, setInputData] = useState<Record<string, any>>({});
+  const [jsonDrawerOpen, setJsonDrawerOpen] = useState(false);
   
   // Get the current debug state to display
   const currentState = debugStates[currentDebugStateIndex] || { 
     timestamp: new Date().toISOString(),
     stateVariables: { message: "No debug state available" }
   };
-
-  console.log(debugStates);
   
   // Handle opening and closing the debug drawer
   const toggleDrawer = () => {
@@ -33,9 +35,10 @@ const DebugDrawer: React.FC = () => {
   };
 
   // Handle step button click
-  const handleStep = () => {   
-    // Send step message to server
-    stepWorkflow();
+  const handleStep = () => {  
+    // Send step message to server with inputs
+    stepWorkflow(inputData);
+    setInputData({});
   };
 
   return (
@@ -79,16 +82,10 @@ const DebugDrawer: React.FC = () => {
       
       {expanded && (
         <div className="debug-content" style={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column' }}>
-          <h2 style={{ marginTop: 0, color: '#89b4fa' }}>Debug Panel</h2>
           
           <div style={{ marginBottom: '15px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>Workflow: {selectedWorkflow || 'None'}</span>
               <span>Run ID: {debugRunId || 'None'}</span>
-            </div>
-            <div>
-              <span>States: {debugStates.length}</span>
-              <span style={{ marginLeft: '15px' }}>Current: {currentDebugStateIndex + 1}</span>
             </div>
           </div>
           
@@ -100,7 +97,7 @@ const DebugDrawer: React.FC = () => {
             fontFamily: 'monospace'
           }}>
             <label style={{ display: 'block', marginBottom: '5px', color: '#a6adc8' }}>Step:</label>
-            <div>{currentState.step}</div>
+            <div>{currentState.metadata.step}</div>
           </div>
           
           <div className="state-box" style={{
@@ -124,7 +121,8 @@ const DebugDrawer: React.FC = () => {
             marginTop: 'auto',
             backgroundColor: '#313244',
             padding: '10px',
-            borderRadius: '5px'
+            borderRadius: '5px',
+            marginBottom: '15px'
           }}>
             <button 
               onClick={goToPreviousDebugState}
@@ -177,6 +175,80 @@ const DebugDrawer: React.FC = () => {
               Next →
             </button>
           </div>
+          
+          {/* Input data section at the bottom */}
+          <div className="input-data-section" style={{
+            backgroundColor: '#2a2c3d',
+            borderRadius: '8px',
+            padding: '12px',
+            boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.1)',
+            border: '1px solid #454767'
+          }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              marginBottom: '8px'
+            }}>
+              <div style={{ 
+                color: '#cba6f7', 
+                fontWeight: 'bold',
+                fontSize: '14px'
+              }}>
+                Input Data
+              </div>
+              
+              <Button
+                onClick={() => setJsonDrawerOpen(true)}
+                className="bg-purple-600 hover:bg-purple-500 transition-all duration-300 shadow-md text-white flex items-center gap-1"
+                size="sm"
+              >
+                <Database className="h-4 w-4" />
+                <span>Configure</span>
+              </Button>
+            </div>
+            
+            {Object.keys(inputData).length > 0 ? (
+              <div style={{
+                backgroundColor: '#313244',
+                borderRadius: '5px',
+                padding: '8px',
+                maxHeight: '100px',
+                overflow: 'auto',
+                color: '#cdd6f4',
+                fontFamily: 'monospace',
+                fontSize: '12px'
+              }}>
+                <pre style={{ margin: 0 }}>
+                  {JSON.stringify(inputData, null, 2)}
+                </pre>
+              </div>
+            ) : (
+              <div style={{
+                backgroundColor: '#313244',
+                borderRadius: '5px',
+                padding: '8px',
+                color: '#a6adc8',
+                fontStyle: 'italic',
+                textAlign: 'center'
+              }}>
+                No input data configured
+              </div>
+            )}
+          </div>
+          
+          {/* JSON Drawer for debug inputs */}
+          <JSONDrawer
+            initialConfig={inputData}
+            onSave={(config) => {
+              setInputData(config);
+              setJsonDrawerOpen(false);
+            }}
+            open={jsonDrawerOpen}
+            onOpenChange={setJsonDrawerOpen}
+            title="Configure Debug Input Data"
+            variant="debug"
+          />
         </div>
       )}
     </div>
