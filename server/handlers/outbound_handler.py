@@ -10,6 +10,7 @@ class OutboundHandler:
     
     @staticmethod
     async def send_to_all(clients: Set[WebSocket], message: Dict[str, Any]):
+        print(clients)
         """Send a message to all connected clients"""
         for client in clients:
             await OutboundHandler.send_to_websocket(client, message)
@@ -19,10 +20,11 @@ class OutboundHandler:
         """Send initial application state to a new client"""
         await OutboundHandler.send_to_websocket(websocket, {
             "type": "init",
-            "nodes": [{
-                "name": name,
-                "type": "Node"
-            } for name, cls in node_registry.items()],
+            "nodes": {
+                class_info[0]: [module_name, class_info[1]]
+                for module_name, class_list in node_registry.items()
+                for class_info in class_list
+            },
             "workflows": workflows
         })
     
@@ -31,10 +33,11 @@ class OutboundHandler:
         """Broadcast node registry to all clients"""
         await OutboundHandler.send_to_all(clients, {
             "type": "available_nodes",
-            "nodes": [{
-                "name": name,
-                "type": "Node"
-            } for name, cls in node_registry.items()]
+            "nodes": {
+                class_info[0]: [module_name, class_info[1]]
+                for module_name, class_list in node_registry.items()
+                for class_info in class_list
+            }
         })
     
     @staticmethod

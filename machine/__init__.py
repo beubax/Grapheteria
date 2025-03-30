@@ -1,3 +1,4 @@
+from collections import defaultdict
 from dataclasses import dataclass, field
 import time
 from typing import Callable, Dict, Any, Optional, List, Type, ClassVar, Set
@@ -10,14 +11,15 @@ from abc import ABC, abstractmethod
 import inspect
 import os
 from uuid import uuid4
-from core.storage import StorageBackend, FileSystemStorage
+from machine.storage import StorageBackend, FileSystemStorage
+from machine.utils import path_to_id, id_to_path
 
 # At the top of machine.py, before the class definitions
 _NODE_REGISTRY: Dict[str, Type['Node']] = {}
 
 class WorkflowStatus(Enum):
     """Represents the overall status of a workflow."""
-    IDLE = auto()
+    HEALTHY = auto()
     RUNNING = auto()
     COMPLETED = auto()
     FAILED = auto()
@@ -96,12 +98,11 @@ class Node(ABC):
     def __init_subclass__(cls, **kwargs):
         """Auto-register nodes"""
         super().__init_subclass__(**kwargs)
-        print(f"Initializing subclass: {cls.__name__}")
         if not inspect.isabstract(cls):
             _NODE_REGISTRY[cls.__name__] = cls
 
     @classmethod
-    def get_registry(cls) -> Dict[str, Type['Node']]:
+    def get_registry(cls) -> Dict[str, Set[Type['Node']]]:
         return _NODE_REGISTRY
 
     @classmethod
@@ -211,7 +212,7 @@ class Transition:
 
 class WorkflowEngine:
     def __init__(self, 
-                 json_path: Optional[str] = None, 
+                 workflow_path: Optional[str] = None, 
                  workflow_id: Optional[str] = None,
                  start_node_id: Optional[str] = None,
                  initial_shared_state: Optional[Dict[str, Any]] = None,
@@ -220,22 +221,26 @@ class WorkflowEngine:
                  fork: bool = False,
                  storage_backend: Optional[StorageBackend] = None):
         
-        if not json_path and not workflow_id:
-            raise ValueError("Must provide json_path or workflow_id")
-        
-        # If workflow_id is provided but json_path is not, construct the path
-        if json_path:
-            workflow_id = os.path.splitext(os.path.basename(json_path))[0]
-        else:
-            json_path = f"{workflow_id}.json"
-
-        if not os.path.exists(json_path):
-            raise FileNotFoundError(f"No JSON file found at {json_path}")
+        if not workflow_path and not workflow_id:
+            raise ValueError("Must provide workflow_path or workflow_id")
         
         # Initialize storage backend if not provided
         self.storage = storage_backend or FileSystemStorage()
         
-        with open(json_path, "r") as f:
+        # Handle workflow path and ID conversion
+        if workflow_path:
+                # Normalize path and convert to posix format (forward slashes)
+                workflow_id = path_to_id(workflow_path)
+        else:
+            # Convert ID to path - convert dots to appropriate path separators
+            workflow_path = id_to_path(workflow_id)
+
+        if not os.path.exists(workflow_path):
+            raise FileNotFoundError(f"No JSON file found at {workflow_path}")
+        
+        self.workflow_id = workflow_id
+        
+        with open(workflow_path, "r") as f:
             data = json.load(f)
         
         nodes_dict = {node_data['id']: Node.from_dict(node_data) for node_data in data['nodes']}
@@ -255,7 +260,6 @@ class WorkflowEngine:
         # Initialize workflow properties
         self.nodes = nodes_dict
         self.start_node_id = start_node_id
-        self.workflow_id = workflow_id
 
         if run_id:
             # Load source state for existing run
@@ -276,24 +280,24 @@ class WorkflowEngine:
 
             if fork:
                 # Fork into new branch
-                self.run_id = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_fork_{uuid4().hex[:6]}"
-                self.execution_state.metadata.update({
-                    'forked_from': {'run_id': run_id, 'step': resume_from},
+                self.run_id = f"{datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:-3]}"
+                self.execution_state.metadata = {
+                    'forked_from': run_id,
                     'fork_time': datetime.now().isoformat(),
-                    'run_id': self.run_id
-                })
+                    'step': resume_from
+                }
                 self.steps = [self.execution_state.to_dict()]
             else:
                 self.run_id = run_id
                 # Continue in same run, purging newer steps
                 self.steps = source_data['steps'][:resume_from + 1]
         else:
-            self.run_id = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid4().hex[:8]}"
+            self.run_id = f"{datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:-3]}"
             # New execution
             self.execution_state = ExecutionState(
                 shared=initial_shared_state or {},
                 next_node_id=start_node_id,
-                workflow_status=WorkflowStatus.IDLE,
+                workflow_status=WorkflowStatus.HEALTHY,
                 metadata={
                     'start_time': datetime.now().isoformat(),
                     'step': 0
@@ -312,10 +316,10 @@ class WorkflowEngine:
             return
         
         # Update metadata
-        self.execution_state.metadata.update({
+        self.execution_state.metadata = {
             'save_time': datetime.now().isoformat(),
             'step': len(self.steps)
-        })
+        }
         
         # Append to steps list
         state_dict = self.execution_state.to_dict()
@@ -408,7 +412,7 @@ class WorkflowEngine:
             # Update next_node_id
             self.execution_state.next_node_id = next_node_id
 
-            self.execution_state.workflow_status = WorkflowStatus.IDLE
+            self.execution_state.workflow_status = WorkflowStatus.HEALTHY
             
             # Check if workflow is complete
             if not self.execution_state.next_node_id and not self.execution_state.awaiting_input:

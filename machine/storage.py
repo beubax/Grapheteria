@@ -18,6 +18,16 @@ class StorageBackend(ABC):
         """Load a workflow execution state."""
         pass
 
+    @abstractmethod
+    def list_runs(self, workflow_id: str) -> List[str]:
+        """List all runs for a given workflow."""
+        pass
+
+    @abstractmethod
+    def list_workflows(self) -> List[str]:
+        """List all workflows."""
+        pass
+
 
 class FileSystemStorage(StorageBackend):
     """File system implementation of storage backend."""
@@ -50,6 +60,20 @@ class FileSystemStorage(StorageBackend):
             
         with open(state_file, 'r') as f:
             return json.load(f)
+
+    def list_runs(self, workflow_id: str) -> List[str]:
+        workflow_dir = f"{self.base_dir}/{workflow_id}"
+        if not os.path.exists(workflow_dir):
+            return []
+            
+        run_ids = [d for d in os.listdir(workflow_dir) 
+                if os.path.isdir(os.path.join(workflow_dir, d))]
+        run_ids.sort(reverse=True)
+        return run_ids
+
+    def list_workflows(self) -> List[str]:
+        return [d for d in os.listdir(self.base_dir) 
+                if os.path.isdir(os.path.join(self.base_dir, d))]
 
 
 class SQLiteStorage(StorageBackend):

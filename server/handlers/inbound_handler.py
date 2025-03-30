@@ -1,4 +1,5 @@
 import json
+import uuid
 
 class InboundHandler:
     @staticmethod
@@ -29,20 +30,33 @@ class InboundHandler:
                 await InboundHandler._handle_set_initial_state(manager, workflow, workflow_id, message_data)
             case 'save_node_config':
                 await InboundHandler._handle_save_node_config(manager, workflow, workflow_id, message_data)
+            case 'save_node_code':
+                await InboundHandler._handle_save_node_code(manager, workflow, workflow_id, message_data)
 
     @staticmethod
     async def _handle_node_created(manager, workflow, workflow_id, data):
-        if any(n['id'] == data['nodeId'] for n in workflow['nodes']):
-            return
-
+        # Get node class name
+        node_class = data['class']
+        
+        # Generate a unique ID with class name + underscore + short UUID
+        def generate_class_prefixed_id():
+            return f"{node_class}_{str(uuid.uuid4())[:2]}"
+        
+        # Generate initial ID
+        node_id = generate_class_prefixed_id()
+        
+        # Keep generating new IDs until we find a unique one
+        while any(n['id'] == node_id for n in workflow['nodes']):
+            node_id = generate_class_prefixed_id()
+        
         workflow['nodes'].append({
-            'id': data['nodeId'],
-            'class': data['nodeType'],
+            'id': node_id,
+            'class': node_class,
             'config': {}
         })
 
         if not workflow['start']:
-            workflow['start'] = data['nodeId']
+            workflow['start'] = node_id
             
         await manager.save_workflow(workflow_id)
 
@@ -123,3 +137,7 @@ class InboundHandler:
                 node['config'] = config
                 break
         await manager.save_workflow(workflow_id)
+
+    @staticmethod
+    async def _handle_save_node_code(manager, workflow, workflow_id, data):
+        await manager.update_node_source(data['module'], data['class'], data['code'])

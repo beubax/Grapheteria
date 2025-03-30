@@ -2,10 +2,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from core.storage import SQLiteStorage
 from watchdog.observers import Observer
 from server.workflow_manager import WorkflowManager
-from server.handlers.file_handlers import NodeChangeHandler, WorkflowChangeHandler, LogWatcher
+from server.handlers.file_handlers import NodeChangeHandler, WorkflowChangeHandler
 from server.routes import router as api_router
 
 # Create WorkflowManager instance
@@ -21,8 +20,8 @@ async def lifespan(app: FastAPI):
     observer.start()
     
     # Initial system scan
-    await workflow_manager.scan_nodes()
-    await workflow_manager.scan_workflows()
+    workflow_manager.scan_nodes()
+    workflow_manager.scan_workflows()
 
     yield
 
@@ -52,14 +51,12 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             message = await websocket.receive_text()
+            print(f"Received message: {message}")
             await workflow_manager.handle_client_message(websocket, message)
     except WebSocketDisconnect:
         pass
     finally:
         await workflow_manager.unregister(websocket)
-        # Clean up any debug session
-        if websocket in workflow_manager.debug_sessions:
-            del workflow_manager.debug_sessions[websocket]
 
 
 

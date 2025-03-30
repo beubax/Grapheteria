@@ -1,6 +1,29 @@
 {
-  "initial_state": {},
-  "nodes": [],
-  "edges": [],
-  "start": "1739255199632"
+  "initial_state": {
+    "messages": []
+  },
+  "nodes": [
+    {
+      "id": "AgentNode_2b",
+      "class": "AgentNode",
+      "config": {}
+    },
+    {
+      "id": "AgentNode_5c",
+      "class": "AgentNode",
+      "config": {}
+    },
+    {
+      "id": "FlowNode_14",
+      "class": "FlowNode",
+      "config": {}
+    }
+  ],
+  "edges": [
+    {
+      "from": "AgentNode_2b",
+      "to": "AgentNode_5c"
+    }
+  ],
+  "start": "AgentNode_2b"
 }

@@ -1,17 +1,21 @@
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Handle, Position, useConnection } from '@xyflow/react';
 import useStore from '../stores/useStore';
-import { useState, useCallback } from 'react';
 import { useGraphActions } from '../utils/graphActions';
 import { JSONDrawer } from './JSONDrawer';
+import { CodeEditor } from './CodeEditor';
+import ReactDOM from 'react-dom';
 
 interface CustomNodeProps {
   id: string;
   data: {
-    label: string;
-    nodeType: string;
+    class: string;
     status?: "queued" | "completed" | "failed" | "pending" | "waiting_for_input";
     isStartNode?: boolean;
     config?: any;
+    requestDetails?: any;
+    code?: string;
+    module?: string;
   };
 }
 
@@ -19,8 +23,12 @@ export default function CustomNode({ id, data }: CustomNodeProps) {
   const connection = useConnection();
   const debugMode = useStore(state => state.debugMode);
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number } | null>(null);
-  const { onMarkAsStartNode, onSaveNodeConfig } = useGraphActions();
+  const { onMarkAsStartNode, onSaveNodeConfig, onSaveNodeCode } = useGraphActions();
   const [configOpen, setConfigOpen] = useState(false);
+  const [codeEditorOpen, setCodeEditorOpen] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const detailsRef = useRef<HTMLDivElement>(null);
+  const nodeRef = useRef<HTMLDivElement>(null);
  
   const isTarget = connection.inProgress && connection.fromNode.id !== id;
 
@@ -34,15 +42,43 @@ export default function CustomNode({ id, data }: CustomNodeProps) {
   };
 
   const nodeStatusClass = data.status && debugMode ? statusColors[data.status] : 'bg-white border-[#ddd]';
+  const isAwaitingInput = debugMode && data.status === 'waiting_for_input' && data.requestDetails;
+  
+  // Calculate position for the details dropdown
+  const [detailsPosition, setDetailsPosition] = useState({ top: 0, left: 0 });
+  
+  useEffect(() => {
+    if (showDetails && nodeRef.current) {
+      const rect = nodeRef.current.getBoundingClientRect();
+      setDetailsPosition({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX
+      });
+    }
+  }, [showDetails]);
+  
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!showDetails) return;
+    
+    const handleClickOutside = (event: MouseEvent) => {
+      if (detailsRef.current && !detailsRef.current.contains(event.target as Node)) {
+        setShowDetails(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDetails]);
   
   const handleContextMenu = useCallback((event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
-    
-    // Get correct position for the context menu
-    const boundingRect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    const x = event.clientX - boundingRect.left;
-    const y = event.clientY - boundingRect.top;
+    // Position at the bottom right corner with a small offset
+    const x = 80; // Position relative to the node
+    const y = 50; // Just below the node with a small gap
     
     setContextMenu({ x, y });
     
@@ -64,72 +100,177 @@ export default function CustomNode({ id, data }: CustomNodeProps) {
     onMarkAsStartNode(id);
     setContextMenu(null);
   }, [id, onMarkAsStartNode]);
+
+  const toggleDetails = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setShowDetails(prev => !prev);
+  };
+ 
+  // Render details dropdown using portal
+  const renderDetailsPortal = () => {
+    if (!showDetails || !isAwaitingInput) return null;
+    
+    return ReactDOM.createPortal(
+      <div 
+        ref={detailsRef}
+        className="fixed bg-white border-2 border-amber-200 rounded-md shadow-lg z-50 w-64 overflow-hidden"
+        style={{ 
+          top: detailsPosition.top + 'px', 
+          left: detailsPosition.left + 'px' 
+        }}
+      >
+        <div className="max-h-60 overflow-y-auto p-2">
+          <div className="font-medium text-amber-700 text-xs border-b border-amber-100 pb-1 mb-2">
+            Input Request Details
+          </div>
+          {data.requestDetails && (
+            <pre 
+              className="text-xs whitespace-pre-wrap bg-gray-50 p-2 rounded font-mono overflow-x-auto user-select-all"
+            >
+              {JSON.stringify(data.requestDetails, null, 2)}
+            </pre>
+          )}
+        </div>
+      </div>,
+      document.body
+    );
+  };
  
   return (
     <>
       <div 
-        className={`p-2.5 rounded border relative ${nodeStatusClass} ${data.isStartNode ? 'ring-2 ring-blue-500' : ''}`}
+        ref={nodeRef}
+        className={`p-3 rounded-lg border-2 relative transition-all duration-200 shadow-sm hover:shadow-md
+                    ${nodeStatusClass} 
+                    ${data.isStartNode ? 'ring-2 ring-blue-500' : ''}`}
         onContextMenu={handleContextMenu}
       >
+        {/* Full-node source handle (center position) */}
+        {!connection.inProgress && (
+          <Handle
+            id={`${id}-source`}
+            className="!w-full !h-full !bg-transparent !absolute !top-0 !left-0 !rounded-none !transform-none !border-0 !opacity-0"
+            position={Position.Bottom}
+            type="source"
+            style={{
+              zIndex: 1,
+              right: '50%',
+              left: '50%',
+              bottom: '50%',
+              top: '50%'
+            }}
+          />
+        )}
+        
+        {/* Full-node target handle (center position) */}
+        {(!connection.inProgress || isTarget) && (
+          <Handle 
+            id={`${id}-target`}
+            className="!w-full !h-full !bg-transparent !absolute !top-0 !left-0 !rounded-none !transform-none !border-0 !opacity-0"
+            position={Position.Top}
+            type="target"
+            isConnectableStart={false}
+            style={{
+              zIndex: 1,
+              right: '50%',
+              left: '50%',
+              bottom: '50%',
+              top: '50%'
+            }}
+          />
+        )}
+
+        {/* Drag handle at the bottom */}
+        <div 
+          className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 w-8 h-2 bg-gray-300 rounded-full cursor-move hover:bg-gray-400 transition-colors duration-150 flex items-center justify-center"
+          style={{ zIndex: 10 }}
+        >
+          <div className="w-4 h-0.5 bg-gray-500 rounded-full"></div>
+        </div>
+
         {debugMode && data.status && (
           <div className="absolute -top-2 -right-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-white border shadow-sm">
             {data.status}
           </div>
         )}
         {data.isStartNode && (
-          <div className="absolute -top-2 -left-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-500 text-white">
+          <div className="absolute -top-2 -left-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-500 text-white shadow-sm">
             Start
           </div>
         )}
         <div className="relative flex items-center justify-between">
           <div className="flex-1">
-            {!connection.inProgress && (
-              <Handle
-                id={`${id}-source`}
-                className="!w-full !h-full !bg-blue-500 !absolute !top-0 !left-0 !rounded-none !transform-none !border-0 !opacity-0"
-                position={Position.Right}
-                type="source"
-              />
+            <div className="font-medium">{data.class}</div>
+            
+            {isAwaitingInput && (
+              <button
+                onClick={toggleDetails}
+                className="mt-2 text-xs px-2 py-1 bg-amber-50 border border-amber-200 rounded text-amber-700 hover:bg-amber-100 transition-colors duration-200 relative z-10 pointer-events-auto"
+              >
+                {showDetails ? 'Hide' : 'View'} Input Request
+              </button>
             )}
-            {(!connection.inProgress || isTarget) && (
-              <Handle 
-                id={`${id}-target`}
-                className="!w-full !h-full !bg-blue-500 !absolute !top-0 !left-0 !rounded-none !transform-none !border-0 !opacity-0"
-                position={Position.Left}
-                type="target"
-                isConnectableStart={false}
-              />
-            )}
-            {data.label}
           </div>
         </div>
       </div>
       
+      {/* Render the details dropdown using portal */}
+      {renderDetailsPortal()}
+      
       {contextMenu && (
         <div
-          className="absolute z-50 bg-white shadow-lg rounded-md overflow-hidden w-40 text-sm"
+          className="absolute z-50 bg-white shadow-lg rounded-md overflow-hidden border border-gray-200 w-48 text-sm"
           style={{ left: contextMenu.x, top: contextMenu.y }}
           onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
         >
           <div 
-            className="px-2 py-1 hover:bg-gray-100 cursor-pointer"
+            className="px-3 py-2 hover:bg-gray-50 cursor-pointer flex items-center text-gray-700"
             onClick={handleMarkAsStartNode}
+            onMouseDown={(e) => e.stopPropagation()}
           >
+            <div className="w-5 h-5 mr-2 flex items-center justify-center">
+              <span className="text-blue-500">🚀</span>
+            </div>
             Mark as start node
           </div>
           <div 
-            className="px-2 py-1 hover:bg-gray-100 cursor-pointer"
+            className="px-3 py-2 hover:bg-gray-50 cursor-pointer flex items-center text-gray-700"
             onClick={() => {
               setConfigOpen(true);
               setContextMenu(null);
             }}
+            onMouseDown={(e) => e.stopPropagation()}
           >
+            <div className="w-5 h-5 mr-2 flex items-center justify-center">
+              <span className="text-gray-600">⚙️</span>
+            </div>
             Configure node
           </div>
+          {data.code !== undefined && (
+            <div 
+              className="px-3 py-2 hover:bg-gray-50 cursor-pointer flex items-center text-gray-700"
+              onClick={() => {
+                setCodeEditorOpen(true);
+                setContextMenu(null);
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <div className="w-5 h-5 mr-2 flex items-center justify-center">
+                <span className="text-gray-600">📝</span>
+              </div>
+              View/Edit code
+            </div>
+          )}
           <div 
-            className="px-2 py-1 hover:bg-gray-100 cursor-pointer"
+            className="px-3 py-2 hover:bg-gray-50 cursor-pointer flex items-center text-gray-700"
             onClick={() => setContextMenu(null)}
+            onMouseDown={(e) => e.stopPropagation()}
           >
+            <div className="w-5 h-5 mr-2 flex items-center justify-center">
+              <span className="text-gray-600">✖️</span>
+            </div>
             Cancel
           </div>
         </div>
@@ -142,9 +283,26 @@ export default function CustomNode({ id, data }: CustomNodeProps) {
         }}
         open={configOpen}
         onOpenChange={setConfigOpen}
-        title={`Configure ${data.label}`}
+        title={`Configure ${data.class}`}
         variant="node"
       />
+      
+      {data.code !== undefined && (
+        <CodeEditor
+          key={data.code}
+          initialCode={data.code}
+          onSave={(updatedCode) => {
+            if (data.module && updatedCode.trim() !== '') {
+              onSaveNodeCode(data.module, data.class, updatedCode);
+            }
+          }}
+          open={codeEditorOpen}
+          onOpenChange={setCodeEditorOpen}
+          title={`${data.class}`}
+          language={data.module ? data.module.split('.').pop() || 'python' : 'python'}
+          module={data.module}
+        />
+      )}
     </>
   );
 }

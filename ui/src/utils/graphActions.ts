@@ -33,8 +33,8 @@ export function useGraphActions() {
       sendWebSocketMessage('edge_created', { from: params.source, to: params.target });
     }, [sendWebSocketMessage]),
 
-    onNodeCreate: useCallback((nodeType: string, nodeId: string) => {
-      sendWebSocketMessage('node_created', { nodeId, nodeType });
+    onNodeCreate: useCallback((nodeClass: string) => {
+      sendWebSocketMessage('node_created', { class:nodeClass });
     }, [sendWebSocketMessage]),
     
     onMarkAsStartNode: useCallback((nodeId: string) => {
@@ -52,5 +52,9 @@ export function useGraphActions() {
     onSaveNodeConfig: useCallback((nodeId: string, config: Record<string, any>) => {
       sendWebSocketMessage('save_node_config', { nodeId: nodeId, config: JSON.stringify(config) });
     }, [sendWebSocketMessage]),
-  };
+
+    onSaveNodeCode: useCallback((module: string, class_name: string, code: string) => {
+      sendWebSocketMessage('save_node_code', { module: module, class: class_name, code: code });
+    }, [sendWebSocketMessage])
+}
 }

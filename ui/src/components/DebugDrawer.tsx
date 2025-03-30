@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import useStore from '../stores/useStore';
 import { stepWorkflow } from '../utils/debugActions';
 import { JSONDrawer } from './JSONDrawer';
@@ -18,11 +18,15 @@ const DebugDrawer: React.FC = () => {
   const [expanded, setExpanded] = useState<boolean>(false);
   const [inputData, setInputData] = useState<Record<string, any>>({});
   const [jsonDrawerOpen, setJsonDrawerOpen] = useState(false);
+  const [drawerWidth, setDrawerWidth] = useState(350);
+  const [isResizing, setIsResizing] = useState(false);
+  const resizeRef = useRef<HTMLDivElement>(null);
   
   // Get the current debug state to display
   const currentState = debugStates[currentDebugStateIndex] || { 
     timestamp: new Date().toISOString(),
-    stateVariables: { message: "No debug state available" }
+    stateVariables: { message: "No debug state available" },
+    metadata: { step: "No debug state available" }
   };
   
   // Handle opening and closing the debug drawer
@@ -41,102 +45,91 @@ const DebugDrawer: React.FC = () => {
     setInputData({});
   };
 
+  // Setup resizing handlers
+  const startResizing = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
+  useEffect(() => {
+    const handleResize = (e: MouseEvent) => {
+      if (!isResizing) return;
+      
+      // Calculate the new width - distance from right edge of window to mouse position
+      const newWidth = window.innerWidth - e.clientX;
+      
+      // Limit minimum and maximum width
+      if (newWidth >= 250 && newWidth <= window.innerWidth * 0.8) {
+        setDrawerWidth(newWidth);
+      }
+    };
+
+    const stopResizing = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleResize);
+      document.addEventListener('mouseup', stopResizing);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleResize);
+      document.removeEventListener('mouseup', stopResizing);
+    };
+  }, [isResizing]);
+
   return (
-    <div className="debug-drawer" style={{
-      position: 'fixed',
-      right: expanded ? 0 : '-350px',
-      top: 0,
-      height: '100vh',
-      width: '350px',
-      backgroundColor: '#1e1e2e',
-      color: '#cdd6f4',
-      transition: 'right 0.3s ease',
-      display: 'flex',
-      flexDirection: 'column',
-      zIndex: 1000,
-      boxShadow: '-2px 0 10px rgba(0, 0, 0, 0.2)'
-    }}>
+    <div className={`fixed top-0 h-screen bg-[#1e1e2e] text-[#cdd6f4] flex flex-col z-50 shadow-[-2px_0_10px_rgba(0,0,0,0.2)]`}
+         style={{
+           right: expanded ? 0 : `-${drawerWidth}px`,
+           width: `${drawerWidth}px`,
+           transition: isResizing ? 'none' : 'right 0.3s ease',
+         }}>
+      {/* Resize handle */}
+      {expanded && (
+        <div 
+          ref={resizeRef}
+          className={`absolute left-0 h-full w-1 cursor-ew-resize hover:bg-purple-500 hover:opacity-100 transition-opacity opacity-0 ${isResizing ? 'bg-[#cba6f7]' : ''}`}
+          onMouseDown={startResizing}
+        />
+      )}
+
       <div 
-        className="debug-tab" 
+        className="absolute -left-10 top-1/2 -translate-y-1/2 w-10 h-30 bg-[#1e1e2e] rounded-l-lg flex items-center justify-center cursor-pointer shadow-[-2px_0_5px_rgba(0,0,0,0.2)]"
         onClick={toggleDrawer}
-        style={{
-          position: 'absolute',
-          left: '-40px',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          width: '40px',
-          height: '120px',
-          backgroundColor: '#1e1e2e',
-          borderRadius: '8px 0 0 8px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          boxShadow: '-2px 0 5px rgba(0, 0, 0, 0.2)'
-        }}
       >
-        <span style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+        <span className="[writing-mode:vertical-rl] [text-orientation:mixed]">
           {expanded ? 'HIDE DEBUG' : 'DEBUG'}
         </span>
       </div>
       
       {expanded && (
-        <div className="debug-content" style={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div className="p-5 h-full flex flex-col">
           
-          <div style={{ marginBottom: '15px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="mb-4">
+            <div className="flex justify-between items-center">
               <span>Run ID: {debugRunId || 'None'}</span>
             </div>
           </div>
           
-          <div className="timestamp-box" style={{
-            backgroundColor: '#313244',
-            padding: '10px',
-            borderRadius: '5px',
-            marginBottom: '15px',
-            fontFamily: 'monospace'
-          }}>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#a6adc8' }}>Step:</label>
+          <div className="bg-[#313244] p-2.5 rounded mb-4 font-mono">
+            <label className="block mb-1 text-[#a6adc8]">Step:</label>
             <div>{currentState.metadata.step}</div>
           </div>
           
-          <div className="state-box" style={{
-            backgroundColor: '#313244',
-            padding: '10px',
-            borderRadius: '5px',
-            marginBottom: '15px',
-            flex: 1,
-            overflow: 'auto',
-            fontFamily: 'monospace'
-          }}>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#a6adc8' }}>State Variables:</label>
-            <pre style={{ margin: 0 }}>
+          <div className="bg-[#313244] p-2.5 rounded mb-4 flex-1 overflow-y-auto overflow-x-hidden font-mono">
+            <label className="block mb-1 text-[#a6adc8]">State Variables:</label>
+            <pre className="m-0 whitespace-pre-wrap break-all">
               {JSON.stringify(currentState.shared, null, 2)}
             </pre>
           </div>
           
-          <div className="debug-controls" style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            marginTop: 'auto',
-            backgroundColor: '#313244',
-            padding: '10px',
-            borderRadius: '5px',
-            marginBottom: '15px'
-          }}>
+          <div className="flex justify-between mt-auto bg-[#313244] p-2.5 rounded mb-4"> 
             <button 
               onClick={goToPreviousDebugState}
               disabled={currentDebugStateIndex <= 0}
-              style={{
-                backgroundColor: '#45475a',
-                color: '#cdd6f4',
-                border: 'none',
-                padding: '8px 15px',
-                borderRadius: '5px',
-                cursor: currentDebugStateIndex <= 0 ? 'not-allowed' : 'pointer',
-                fontWeight: 'bold',
-                opacity: currentDebugStateIndex <= 0 ? 0.5 : 1
-              }}
+              className={`bg-[#45475a] text-[#cdd6f4] border-none px-4 py-2 rounded font-bold ${currentDebugStateIndex <= 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer opacity-100'}`}
             >
               ← Prev
             </button>
@@ -144,16 +137,7 @@ const DebugDrawer: React.FC = () => {
             <button 
               onClick={handleStep}
               disabled={!debugRunId}
-              style={{
-                backgroundColor: '#f38ba8',
-                color: '#1e1e2e',
-                border: 'none',
-                padding: '8px 15px',
-                borderRadius: '5px',
-                cursor: !debugRunId ? 'not-allowed' : 'pointer',
-                fontWeight: 'bold',
-                opacity: !debugRunId ? 0.5 : 1
-              }}
+              className={`bg-[#f38ba8] text-[#1e1e2e] border-none px-4 py-2 rounded font-bold ${!debugRunId ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer opacity-100'}`}
             >
               Step
             </button>
@@ -161,40 +145,16 @@ const DebugDrawer: React.FC = () => {
             <button 
               onClick={goToNextDebugState}
               disabled={currentDebugStateIndex >= debugStates.length - 1}
-              style={{
-                backgroundColor: '#a6e3a1',
-                color: '#1e1e2e',
-                border: 'none',
-                padding: '8px 15px',
-                borderRadius: '5px',
-                cursor: currentDebugStateIndex >= debugStates.length - 1 ? 'not-allowed' : 'pointer',
-                fontWeight: 'bold',
-                opacity: currentDebugStateIndex >= debugStates.length - 1 ? 0.5 : 1
-              }}
+              className={`bg-[#a6e3a1] text-[#1e1e2e] border-none px-4 py-2 rounded font-bold ${currentDebugStateIndex >= debugStates.length - 1 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer opacity-100'}`}
             >
               Next →
             </button>
           </div>
           
           {/* Input data section at the bottom */}
-          <div className="input-data-section" style={{
-            backgroundColor: '#2a2c3d',
-            borderRadius: '8px',
-            padding: '12px',
-            boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.1)',
-            border: '1px solid #454767'
-          }}>
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              marginBottom: '8px'
-            }}>
-              <div style={{ 
-                color: '#cba6f7', 
-                fontWeight: 'bold',
-                fontSize: '14px'
-              }}>
+          <div className="bg-[#2a2c3d] rounded-lg p-3 shadow-md border border-[#454767]">
+            <div className="flex justify-between items-center mb-2">
+              <div className="text-[#cba6f7] font-bold text-sm">
                 Input Data
               </div>
               
@@ -209,29 +169,13 @@ const DebugDrawer: React.FC = () => {
             </div>
             
             {Object.keys(inputData).length > 0 ? (
-              <div style={{
-                backgroundColor: '#313244',
-                borderRadius: '5px',
-                padding: '8px',
-                maxHeight: '100px',
-                overflow: 'auto',
-                color: '#cdd6f4',
-                fontFamily: 'monospace',
-                fontSize: '12px'
-              }}>
-                <pre style={{ margin: 0 }}>
+              <div className="bg-[#313244] rounded p-2 max-h-[100px] overflow-auto text-[#cdd6f4] font-mono text-xs">
+                <pre className="m-0">
                   {JSON.stringify(inputData, null, 2)}
                 </pre>
               </div>
             ) : (
-              <div style={{
-                backgroundColor: '#313244',
-                borderRadius: '5px',
-                padding: '8px',
-                color: '#a6adc8',
-                fontStyle: 'italic',
-                textAlign: 'center'
-              }}>
+              <div className="bg-[#313244] rounded p-2 text-[#a6adc8] italic text-center">
                 No input data configured
               </div>
             )}

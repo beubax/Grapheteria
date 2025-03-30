@@ -11,7 +11,7 @@ export interface StoreState {
   edges: Edge[];
   workflows: Record<string, Workflow>;
   selectedWorkflow: string | null;
-  availableNodes: AvailableNode[];
+  availableNodes: AvailableNode;
   contextMenu: ContextMenu | null;
   connected: boolean;
   ws: WebSocket | null;
@@ -21,7 +21,7 @@ export interface StoreState {
   onEdgesChange: (changes: EdgeChange[]) => void;
   setWorkflows: (workflows: Record<string, Workflow>) => void;
   setSelectedWorkflow: (workflowId: string | null) => void;
-  setAvailableNodes: (nodes: AvailableNode[]) => void;
+  setAvailableNodes: (nodes: AvailableNode) => void;
   setContextMenu: (menu: ContextMenu | null) => void;
   setConnected: (status: boolean) => void;
   updateFlowStructure: () => void;
@@ -64,7 +64,7 @@ const useStore = create<StoreState>((set, get) => ({
   setSelectedWorkflow: (workflowId: string | null) => set({ selectedWorkflow: workflowId }),
 
   // Available Nodes State
-  availableNodes: [],
+  availableNodes: {},
   setAvailableNodes: (nodes) => set({ availableNodes: nodes }),
 
   // Context Menu State
@@ -80,6 +80,19 @@ const useStore = create<StoreState>((set, get) => ({
 
   // WebSocket Methods
   initWebSocket: () => {
+    const { ws } = get();
+    
+    // Check if a WebSocket connection already exists and is open/connecting
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+      console.log('WebSocket connection already exists');
+      return;
+    }
+    
+    // Close any existing socket before creating a new one
+    if (ws) {
+      ws.close();
+    }
+    
     const socket = new WebSocket('ws://localhost:8765/ws');
     const handleMessage = createMessageHandlers();
 
@@ -117,7 +130,7 @@ const useStore = create<StoreState>((set, get) => ({
 
   // Actions
   updateFlowStructure: () => {
-    const { selectedWorkflow, workflows } = get();
+    const { selectedWorkflow, workflows, availableNodes } = get();
     if (selectedWorkflow === null) {
       set({ nodes: [], edges: [] });
       return;
@@ -134,10 +147,11 @@ const useStore = create<StoreState>((set, get) => ({
       type: 'customNode',
       position: { x: 0, y: 0 },
       data: { 
-        label: node.class,
-        nodeType: node.class,
+        class: node.class,
         isStartNode: node.id === workflow.start,
-        config: node.config
+        config: node.config,
+        code: availableNodes[node.class] ? availableNodes[node.class][1] : null,
+        module: availableNodes[node.class] ? availableNodes[node.class][0] : null,
       }
     }));
 
@@ -171,7 +185,16 @@ const useStore = create<StoreState>((set, get) => ({
     set({ debugMode: newDebugMode });
     
     if (!newDebugMode) {
-      set({ debugStates: [], currentDebugStateIndex: -1, debugRunId: null });
+      const nodes = get().nodes;
+      const updatedNodes = nodes.map(node => ({
+        ...node,
+        data: {
+          ...node.data,
+        status: 'pending',
+        requestDetails: null
+        }
+      }));
+      set({ debugStates: [], nodes: updatedNodes, currentDebugStateIndex: -1, debugRunId: null });
     }
     else if (selectedWorkflow) {
       
@@ -221,6 +244,7 @@ const useStore = create<StoreState>((set, get) => ({
     const updatedNodes = nodes.map(node => {
       // Set default status to pending
       let status = "pending";
+      let requestDetails = null;
       
       // Apply status from node_statuses if available
       if (node_statuses && node_statuses[node.id]) {
@@ -232,12 +256,17 @@ const useStore = create<StoreState>((set, get) => ({
           status = "queued";
         }
       }
+
+      if (currentDebugState.awaiting_input && node.id === currentDebugState.awaiting_input.node_id) {
+        requestDetails = currentDebugState.awaiting_input;
+      }
       
       return {
         ...node,
         data: {
           ...node.data,
-          status
+          status,
+          requestDetails
         }
       };
     });

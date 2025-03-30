@@ -1,11 +1,9 @@
-from core.machine import WorkflowEngine, WorkflowStatus
+from machine import WorkflowEngine, WorkflowStatus
 import asyncio
 from fastapi import APIRouter, HTTPException, Body
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
-import uvicorn
-
-from core.storage import SQLiteStorage
+from machine.storage import FileSystemStorage
 
 router = APIRouter()
 
@@ -26,7 +24,6 @@ async def create_workflow(request: CreateWorkflow):
         workflow = WorkflowEngine(workflow_id=workflow_id)
         
         run_id = workflow.run_id
-        print(workflow.execution_state)
         return {
             "run_id": run_id,
             "message": "Workflow successfully created",
@@ -57,3 +54,15 @@ async def step_workflow(request: WorkflowRequest):
         "message": "Workflow stepped",
         "execution_state": workflow.execution_state
     }
+
+@router.get("/logs")
+async def get_logs():
+    return FileSystemStorage().list_workflows()
+
+@router.get("/logs/{workflow_id}")
+async def get_workflow_logs(workflow_id: str):
+    return FileSystemStorage().list_runs(workflow_id)
+
+@router.get("/logs/{workflow_id}/{run_id}")
+async def get_run_logs(workflow_id: str, run_id: str):
+    return FileSystemStorage().load_state(workflow_id, run_id)

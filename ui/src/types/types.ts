@@ -18,8 +18,7 @@ export interface Node {
   }
   
   export interface AvailableNode {
-    name: string;
-    type: string;
+    [className: string]: [string, string]; // [module, code]
   }
   
   export interface ContextMenu {
@@ -32,7 +31,7 @@ export interface Node {
     workflow_id?: string;
     workflows?: Workflow[];
     workflow?: Workflow;
-    nodes?: AvailableNode[];
+    nodes?: AvailableNode;
     [key: string]: any;
   }
 
@@ -41,6 +40,8 @@ export interface Node {
     next_node_id: string;
     workflow_status: string;
     node_statuses: any;
+    previous_node_id: string;
+    awaiting_input: any;
     metadata: {
       step: number;
     };
