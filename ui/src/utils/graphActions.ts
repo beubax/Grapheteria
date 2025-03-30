@@ -53,8 +53,15 @@ export function useGraphActions() {
       sendWebSocketMessage('save_node_config', { nodeId: nodeId, config: JSON.stringify(config) });
     }, [sendWebSocketMessage]),
 
+    onUpdateNodeCode: useCallback((module: string, class_name: string, code: string) => {
+      sendWebSocketMessage('update_node_code', { module: module, class: class_name, code: code });
+    }, [sendWebSocketMessage]),
     onSaveNodeCode: useCallback((module: string, class_name: string, code: string) => {
       sendWebSocketMessage('save_node_code', { module: module, class: class_name, code: code });
-    }, [sendWebSocketMessage])
-}
+    }, [sendWebSocketMessage]),
+    
+    onCreateWorkflow: useCallback((workflowName: string) => {
+      sendWebSocketMessage('create_workflow', { name: workflowName });
+    }, [sendWebSocketMessage]),
+  }
 }

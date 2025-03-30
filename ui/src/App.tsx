@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { Button } from './components/ui/button';
 import { AlertCircle } from 'lucide-react';
 import useStore from './stores/useStore';
+import { useGraphActions } from './utils/graphActions';
 import FlowView from './pages/FlowView';
 import LogsPage from './pages/LogsPage';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './components/ui/dialog';
+import { Input } from './components/ui/input';
+import { Label } from './components/ui/label';
 
 // Create a layout component with the navigation bar
 const AppLayout = () => {
@@ -16,14 +20,47 @@ const AppLayout = () => {
     updateFlowStructure,
   } = useStore();
 
+  const { onCreateWorkflow } = useGraphActions();
+  const [newWorkflowDialogOpen, setNewWorkflowDialogOpen] = useState(false);
+  const [newWorkflowName, setNewWorkflowName] = useState('');
+  const [nameError, setNameError] = useState('');
+
   const navigate = useNavigate();
   const location = useLocation();
   const isLogsPage = location.pathname.startsWith('/logs');
 
   const handleWorkflowSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const workflowId = event.target.value || null;
-    setSelectedWorkflow(workflowId);
+    const workflowId = event.target.value;
+    
+    if (workflowId === 'new_workflow') {
+      // Open the new workflow dialog
+      setNewWorkflowDialogOpen(true);
+      return;
+    }
+    
+    setSelectedWorkflow(workflowId || null);
     updateFlowStructure();
+  };
+
+  const handleCreateWorkflow = () => {
+    // Validate workflow name
+    if (!newWorkflowName.trim()) {
+      setNameError('Workflow name cannot be empty');
+      return;
+    }
+    
+    if (newWorkflowName.includes(' ')) {
+      setNameError('Workflow name cannot contain spaces');
+      return;
+    }
+    
+    // Create the workflow
+    onCreateWorkflow(newWorkflowName);
+    
+    // Reset and close dialog
+    setNewWorkflowName('');
+    setNameError('');
+    setNewWorkflowDialogOpen(false);
   };
 
   return (
@@ -51,6 +88,7 @@ const AppLayout = () => {
                       {workflowId}
                     </option>
                   ))}
+                  <option value="new_workflow" className="text-blue-600 font-medium">+ New Workflow</option>
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
                   <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -83,6 +121,53 @@ const AppLayout = () => {
           {/* Empty div to maintain spacing */}
         </div>
       </nav>
+      
+      {/* New Workflow Dialog */}
+      <Dialog open={newWorkflowDialogOpen} onOpenChange={setNewWorkflowDialogOpen}>
+        <DialogContent className="bg-white">
+          <DialogHeader>
+            <DialogTitle>Create New Workflow</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="workflow-name">Workflow Name</Label>
+            <Input
+              id="workflow-name"
+              value={newWorkflowName}
+              onChange={(e) => {
+                setNewWorkflowName(e.target.value);
+                setNameError('');
+              }}
+              placeholder="my_new_workflow"
+              className="mt-1"
+            />
+            {nameError && (
+              <p className="text-sm text-red-500 mt-1">{nameError}</p>
+            )}
+            <p className="text-sm text-gray-500 mt-1">
+              Workflow name must not contain spaces.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setNewWorkflowDialogOpen(false);
+                setNewWorkflowName('');
+                setNameError('');
+              }}
+              className="hover:bg-gray-100 cursor-pointer"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCreateWorkflow}
+              className="bg-blue-500 hover:bg-blue-600 text-white cursor-pointer"
+            >
+              Create
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       
       {/* Main content */}
       <Outlet />

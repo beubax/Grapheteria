@@ -23,7 +23,7 @@ export default function CustomNode({ id, data }: CustomNodeProps) {
   const connection = useConnection();
   const debugMode = useStore(state => state.debugMode);
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number } | null>(null);
-  const { onMarkAsStartNode, onSaveNodeConfig, onSaveNodeCode } = useGraphActions();
+  const { onMarkAsStartNode, onSaveNodeConfig, onUpdateNodeCode } = useGraphActions();
   const [configOpen, setConfigOpen] = useState(false);
   const [codeEditorOpen, setCodeEditorOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -293,7 +293,7 @@ export default function CustomNode({ id, data }: CustomNodeProps) {
           initialCode={data.code}
           onSave={(updatedCode) => {
             if (data.module && updatedCode.trim() !== '') {
-              onSaveNodeCode(data.module, data.class, updatedCode);
+              onUpdateNodeCode(data.module, data.class, updatedCode);
             }
           }}
           open={codeEditorOpen}

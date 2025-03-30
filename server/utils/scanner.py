@@ -2,8 +2,8 @@ from collections import defaultdict
 import inspect
 import os
 import json
-import importlib.util
-from machine import Node   
+import importlib.util 
+from machine import Node 
 from machine.utils import path_to_id
 
 class SystemScanner:
@@ -28,7 +28,7 @@ class SystemScanner:
 
     @staticmethod
     def scan_nodes(manager):
-        """Reload all Python modules to detect node classes"""
+        """Reload all Python modules to detect node classes""" 
         
         skip_dirs = {'venv', '__pycache__', 'ui', 'server', 'logs', 'machine', '.git'}
         
@@ -37,7 +37,6 @@ class SystemScanner:
             # This is done in-place and affects which directories os.walk visits
             if root == '.':
                 dirs[:] = [d for d in dirs if d not in skip_dirs]
-                
             for file in files:
                 if file.endswith('.py'):
                     module_path = path_to_id(os.path.join(root, file))
@@ -60,6 +59,7 @@ class SystemScanner:
             SystemScanner._load_module(module_name)
             SystemScanner.populate_node_registry(manager, Node.get_registry())
 
+        print(manager.node_registry)
         await manager.broadcast_nodes()
 
     @staticmethod

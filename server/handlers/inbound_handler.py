@@ -30,6 +30,8 @@ class InboundHandler:
                 await InboundHandler._handle_set_initial_state(manager, workflow, workflow_id, message_data)
             case 'save_node_config':
                 await InboundHandler._handle_save_node_config(manager, workflow, workflow_id, message_data)
+            case 'update_node_code':
+                await InboundHandler._handle_update_node_code(manager, workflow, workflow_id, message_data)
             case 'save_node_code':
                 await InboundHandler._handle_save_node_code(manager, workflow, workflow_id, message_data)
 
@@ -139,5 +141,9 @@ class InboundHandler:
         await manager.save_workflow(workflow_id)
 
     @staticmethod
-    async def _handle_save_node_code(manager, workflow, workflow_id, data):
+    async def _handle_update_node_code(manager, workflow, workflow_id, data):
         await manager.update_node_source(data['module'], data['class'], data['code'])
+
+    @staticmethod
+    async def _handle_save_node_code(manager, workflow, workflow_id, data):
+        await manager.save_node_source(data['module'], data['class'], data['code'])

@@ -14,6 +14,7 @@ import DebugDrawer from '../components/DebugDrawer';
 import { JSONDrawer } from '../components/JSONDrawer';
 import { Button } from '../components/ui/button';
 import { Settings } from 'lucide-react';
+import { CodeEditor } from '../components/CodeEditor';
 
 // Node types registration
 const nodeTypes = {
@@ -43,9 +44,12 @@ const FlowView = () => {
     onEdgeCreate,
     onNodeCreate,
     onSetInitialState,
+    onSaveNodeCode,
   } = useGraphActions();
 
   const [jsonDrawerOpen, setJsonDrawerOpen] = useState(false);
+  const [customNodeEditorOpen, setCustomNodeEditorOpen] = useState(false);
+  const [customNodeClassName, setCustomNodeClassName] = useState('');
 
   const onContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!selectedWorkflow) return;
@@ -113,6 +117,26 @@ const FlowView = () => {
                   {className}
                 </div>
               ))}
+              <div
+                style={{ 
+                  borderTop: '1px solid #eee', 
+                  margin: '4px 0' 
+                }}
+              />
+              <div
+                onClick={() => {
+                  setCustomNodeClassName('');
+                  setCustomNodeEditorOpen(true);
+                  setContextMenu(null);
+                }}
+                style={{
+                  padding: '8px 16px',
+                  cursor: 'pointer',
+                }}
+                className="hover:bg-gray-100 text-blue-600 font-medium"
+              >
+                + Create Custom Node
+              </div>
             </div>
           )}
         </ReactFlow>
@@ -142,6 +166,68 @@ const FlowView = () => {
           variant="workflow"
         />
       )}
+      
+      <CodeEditor
+        initialCode={`class CustomNode(Node):
+    def __init__(self, config=None):
+        self.config = config or {}
+    
+    async def execute(self, inputs=None):
+        # TODO: Implement your custom node logic here
+        return {"output": "Hello from custom node!"}
+`}
+        onSave={(code) => {
+          if (customNodeClassName.trim() === '') {
+            alert('Please enter a valid class name');
+            return;
+          }
+          
+          // Save the code first
+          const modulePath = 'nodes.custom';
+          onSaveNodeCode(modulePath, customNodeClassName, code);
+          
+          // Create a loading indicator or notification here if desired
+          
+          // Check if the node becomes available
+          const checkInterval = 500; // Check every 500ms
+          const maxWaitTime = 3000; // Wait for max 3 seconds
+          let elapsedTime = 0;
+          
+          const waitForNodeAvailability = () => {
+            // Get the latest availableNodes from the store
+            const currentAvailableNodes = useStore.getState().availableNodes;
+            
+            if (currentAvailableNodes[customNodeClassName]) {
+              // Node is available, create it
+              onNodeCreate(customNodeClassName);
+              setCustomNodeEditorOpen(false);
+              return;
+            }
+            
+            if (elapsedTime >= maxWaitTime) {
+              // Timeout reached, show error
+              alert(`Custom node "${customNodeClassName}" couldn't be registered. Please check your code for errors.`);
+              setCustomNodeEditorOpen(false);
+              return;
+            }
+            
+            // Continue waiting
+            elapsedTime += checkInterval;
+            setTimeout(waitForNodeAvailability, checkInterval);
+          };
+          
+          // Start the wait process
+          setTimeout(waitForNodeAvailability, checkInterval);
+        }}
+        open={customNodeEditorOpen}
+        onOpenChange={setCustomNodeEditorOpen}
+        title="Create Custom Node"
+        language="python"
+        module="nodes.custom"
+        showClassNameInput={true}
+        onClassNameChange={setCustomNodeClassName}
+        className={customNodeClassName}
+      />
     </>
   );
 };

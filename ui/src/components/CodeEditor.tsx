@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -16,7 +16,10 @@ interface CodeEditorProps {
   onOpenChange: (open: boolean) => void;
   title: string;
   language?: string;
-  module?: string;  // Added module prop
+  module?: string;
+  showClassNameInput?: boolean;
+  onClassNameChange?: (className: string) => void;
+  className?: string;
 }
 
 export function CodeEditor({
@@ -26,9 +29,17 @@ export function CodeEditor({
   onOpenChange,
   title,
   language = 'python',
-  module
+  module,
+  showClassNameInput = false,
+  onClassNameChange,
+  className = ''
 }: CodeEditorProps) {
   const [code, setCode] = useState(initialCode);
+  const [nodeClassName, setNodeClassName] = useState(className);
+
+  useEffect(() => {
+    setNodeClassName(className);
+  }, [className]);
 
   const handleSave = () => {
     onSave(code);
@@ -51,7 +62,27 @@ export function CodeEditor({
       >
         <DialogHeader>
           <div className="flex flex-col">
-            <DialogTitle>{title}</DialogTitle>
+            {showClassNameInput ? (
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Class Name
+                </label>
+                <input
+                  type="text"
+                  value={nodeClassName}
+                  onChange={(e) => {
+                    setNodeClassName(e.target.value);
+                    if (onClassNameChange) {
+                      onClassNameChange(e.target.value);
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="YourCustomNodeName"
+                />
+              </div>
+            ) : (
+              <DialogTitle>{title}</DialogTitle>
+            )}
             {module && (
               <div className="text-sm text-gray-600 mt-1">
                 Located in <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">{module}</code>
@@ -59,6 +90,7 @@ export function CodeEditor({
             )}
           </div>
         </DialogHeader>
+        
         <div 
           className="flex-1 min-h-[50vh] bg-white mt-2"
           onClick={stopPropagation}

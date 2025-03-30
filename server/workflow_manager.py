@@ -110,6 +110,94 @@ class WorkflowManager:
             print(f"Error updating source for {module}.{node_class_name}: {e}")
             return False
 
+    async def save_node_source(self, module: str, node_class_name: str, new_class_source: str) -> bool:
+        """Add a new node class to a module. If the module doesn't exist, it will be created."""
+        source_file = id_to_path(module, json=False)
+        
+        try:
+            import libcst as cst
+            
+            # Parse the new class code to ensure it's valid Python
+            try:
+                cst.parse_module(new_class_source)
+            except Exception as e:
+                print(f"Invalid Python code provided: {e}")
+                return False
+            
+            # Create module directory if it doesn't exist
+            os.makedirs(os.path.dirname(source_file), exist_ok=True)
+            
+            # If the file doesn't exist, create it with the new class
+            if not os.path.exists(source_file):
+                with open(source_file, 'w') as f:
+                    f.write(new_class_source)
+                
+                # Make sure the module is in the registry
+                if module not in self.node_registry:
+                    self.node_registry[module] = {}
+                
+                # Scan the newly created file
+                await self.scan_node_file(source_file, False)
+                return True
+            
+            # If file exists, read it and append the new class
+            with open(source_file, 'r') as f:
+                file_content = f.read()
+            
+            # Check if the class already exists in the file
+            module_tree = cst.parse_module(file_content)
+            
+            class ClassFinder(cst.CSTVisitor):
+                def __init__(self, target_class_name):
+                    self.target_class_name = target_class_name
+                    self.found = False
+                    
+                def visit_ClassDef(self, node):
+                    if node.name.value == self.target_class_name:
+                        self.found = True
+            
+            # Check if class already exists
+            finder = ClassFinder(node_class_name)
+            module_tree.visit(finder)
+            
+            if finder.found:
+                print(f"Class {node_class_name} already exists in {module}")
+                return False
+            
+            # Extract the class from the new_class_source
+            new_class_module = cst.parse_module(new_class_source)
+            new_class = None
+            
+            for statement in new_class_module.body:
+                if isinstance(statement, cst.ClassDef) and statement.name.value == node_class_name:
+                    new_class = statement
+                    break
+            
+            if not new_class:
+                print(f"Could not find class {node_class_name} in the provided source")
+                return False
+            
+            # Add the class to the end of the file
+            modified_module = module_tree.with_changes(
+                body=module_tree.body + tuple([
+                    cst.EmptyLine(indent=True),
+                    cst.EmptyLine(indent=True),
+                    new_class
+                ])
+            )
+            
+            # Write the modified code back to the file
+            with open(source_file, 'w') as f:
+                f.write(modified_module.code)
+            
+            # Scan the updated file
+            await self.scan_node_file(source_file, False)
+            
+            return True
+        except Exception as e:
+            print(f"Error adding source for {module}.{node_class_name}: {e}")
+            return False
+
     
 
         
