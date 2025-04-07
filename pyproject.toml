@@ -1,0 +1,114 @@
+[build-system]
+requires = ["hatchling", "hatch-nodejs-version"]
+build-backend = "hatchling.build"
+
+[project]
+name = "grapheteria"
+version = "0.4.0"
+description = "A workflow engine with file system monitoring capabilities"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Your Name", email = "your.email@example.com"},
+]
+keywords = ["workflow", "automation", "file-monitoring"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.1.0",
+    "isort>=5.12.0",
+    "mypy>=1.0.0",
+    "ruff>=0.0.254",
+]
+
+[project.urls]
+Homepage = "https://github.com/beubax/grapheteria"
+Documentation = "https://github.com/beubax/grapheteria#readme"
+Issues = "https://github.com/beubax/grapheteria/issues"
+Changelog = "https://github.com/beubax/grapheteria/blob/main/CHANGELOG.md"
+
+[project.scripts]
+grapheteria-app = "grapheteria.server.main:run_app"
+
+[tool.hatch.build]
+artifacts = [
+    "grapheteria/server/static/ui",
+]
+
+[tool.hatch.build.hooks.custom]
+path = "grapheteria/build_hooks.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["grapheteria"]
+include = ["grapheteria/server/static/ui"]
+exclude = [
+    "grapheteria/ui/**",
+    "grapheteria/**/node_modules",
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.js.map",
+    "**/package.json",
+    "**/package-lock.json",
+    "**/tsconfig.json",
+]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "grapheteria",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md",
+    "pyproject.toml",
+]
+exclude = [
+    "*.pyc",
+    "__pycache__",
+    "*.so",
+    "*.dylib",
+    ".git/",
+    ".github/",
+    "venv/",
+    "*.egg-info/",
+    "grapheteria/**/node_modules",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py38"]
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+[tool.ruff]
+line-length = 88
+target-version = "py38"
+select = ["E", "F", "B", "I"]
+ignore = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+asyncio_mode = "auto"
