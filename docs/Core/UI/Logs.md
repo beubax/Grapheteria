@@ -1,10 +1,17 @@
+---
+layout: default
+title: "Logs Page"
+parent: "UI"
+nav_order: 3
+---
+
 # Logs
 
 ## Overview
 
 The logs tab is your time machine for workflows. It lets you peek into the past, present, and alternate timelines of every workflow you've created. Here you can track every step, decision, and path your workflows have taken throughout their journey.
 
-![Overview of the Logs tab interface](placeholder-logs-overview.png)
+![Overview of the Logs tab interface]()
 
 Currently, logs are stored on your local filesystem (we're working on fancy database options soon, we promise!).
 
@@ -18,7 +25,7 @@ Finding the workflow you're looking for is a breeze. Simply:
 
 Each workflow displays its run history - a collection of timestamps that serve as both run IDs and breadcrumbs showing when each execution occurred.
 
-![Workflow selection interface](placeholder-workflow-selection.png)
+![Workflow selection interface]()
 
 ## Exploring Run Details
 
@@ -34,7 +41,7 @@ Clicked on a run and ready to dive deeper? Each run reveals its secrets:
 
 Think of it as a workflow's diary - recording every thought, action, and decision it made during its execution.
 
-![Run details view](placeholder-run-details.png)
+![Run details view]()
 
 ## Tracking Workflow Evolution
 
@@ -45,8 +52,7 @@ Sometimes workflows branch into new variations - like alternate timelines in a s
 
 This feature is particularly handy when you're experimenting with different workflow paths or debugging complex processes.
 
-![Workflow fork tracking](placeholder-workflow-fork.png)
+![Workflow fork tracking]()
 
 Ready to become a workflow time traveler? The logs tab awaits your exploration!
 
-<img src="bruh.png" width="450" height="800" />

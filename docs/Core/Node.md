@@ -1,5 +1,10 @@
+---
+layout: default
+title: "Node"
+parent: "Core"
+nav_order: 1
+---
 
-```markdown
 # Working with Nodes in Grapheteria
 
 ## Overview
@@ -244,4 +249,4 @@ processor = MyCustomNode(
 
 
 With these building blocks, you can create nodes that graph-itefully handle any workflow task your application needs!
-```
+

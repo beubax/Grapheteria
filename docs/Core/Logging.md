@@ -1,3 +1,10 @@
+---
+layout: default
+title: "Logging"
+parent: "Core"
+nav_order: 5
+---
+
 # Workflow Engine: Persistence and Time Travel
 
 ## Overview

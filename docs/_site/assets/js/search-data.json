@@ -1,0 +1,436 @@
+{"0": {
+    "doc": "Debug Mode",
+    "title": "Debug Mode",
+    "content": " ",
+    "url": "/Core/UI/Debug.html",
+    
+    "relUrl": "/Core/UI/Debug.html"
+  },"1": {
+    "doc": "Debug Mode",
+    "title": "Overview",
+    "content": "Debug Mode is Grapheteria’s most powerful feature, making workflow development dramatically easier. When mistakes happen (and they will!), Debug Mode helps you identify and fix issues with minimal frustration through its live state visualization and time-travel capabilities. ",
+    "url": "/Core/UI/Debug.html#overview",
+    
+    "relUrl": "/Core/UI/Debug.html#overview"
+  },"2": {
+    "doc": "Debug Mode",
+    "title": "Visual Elements",
+    "content": "State Visualization . Debug Mode reveals the shared state that nodes read from and write to, giving you visibility into your workflow’s data at each step of execution. Node Status Indicators . The canvas displays each node’s current status: . | Queued: Next in line for execution | Pending: Currently being processed | Completed: Successfully executed | Failed: Encountered an error | . ",
+    "url": "/Core/UI/Debug.html#visual-elements",
+    
+    "relUrl": "/Core/UI/Debug.html#visual-elements"
+  },"3": {
+    "doc": "Debug Mode",
+    "title": "Time Travel Controls",
+    "content": "Debug Mode’s control panel gives you precise control over workflow execution: . | Step: Execute a single step in the workflow | Run: Progress to the next halt stage (completion or waiting node) | Prev: Travel back to a previous state | Next: Move forward to a future state (if available) | . Time Travel Superpowers . Found a bug? No need to restart! Simply: . | Go back in time with Prev | Fix the problematic code | Resume with Step or Run | . Your workflow picks up exactly where you left off. When stepping forward, future states are overwritten with the new execution path, keeping your debug session consistent. ",
+    "url": "/Core/UI/Debug.html#time-travel-controls",
+    
+    "relUrl": "/Core/UI/Debug.html#time-travel-controls"
+  },"4": {
+    "doc": "Debug Mode",
+    "title": "Node Operations During Debugging",
+    "content": "Deletion Rules . To maintain logical consistency during time travel: . | Nodes that have completed, failed, or are waiting for input cannot be removed | To delete a problematic node, travel back to before it executed, then remove it | . Addition Freedom . Feel free to add new nodes or edges at any point in the debugging process—even after a workflow has completed. Then step forward to see how they affect execution! . ",
+    "url": "/Core/UI/Debug.html#node-operations-during-debugging",
+    
+    "relUrl": "/Core/UI/Debug.html#node-operations-during-debugging"
+  },"5": {
+    "doc": "Debug Mode",
+    "title": "Error Handling",
+    "content": "Debug Mode displays error messages and exceptions directly in the UI, making it easy to identify what went wrong and where. Common errors include invalid inputs, missing connections, or logic problems in your code. With time travel, you can step back, fix the issue, and continue without restarting. ",
+    "url": "/Core/UI/Debug.html#error-handling",
+    
+    "relUrl": "/Core/UI/Debug.html#error-handling"
+  },"6": {
+    "doc": "Debug Mode",
+    "title": "Known Issues",
+    "content": "Sometimes you might encounter persistent errors (like a corrupted state save) where even error messages get stuck in a loop. In these cases, it’s best to start a fresh debug session after fixing the underlying issue. For solutions to common problems, check the Troubleshooting Guide. ",
+    "url": "/Core/UI/Debug.html#known-issues",
+    
+    "relUrl": "/Core/UI/Debug.html#known-issues"
+  },"7": {
+    "doc": "Edge",
+    "title": "Edge Class Documentation",
+    "content": " ",
+    "url": "/Core/Edge.html#edge-class-documentation",
+    
+    "relUrl": "/Core/Edge.html#edge-class-documentation"
+  },"8": {
+    "doc": "Edge",
+    "title": "Overview",
+    "content": "Edges are the connections between nodes in your workflow graph. They determine how your workflow transitions from one node to another, acting as pathways for execution flow. Without edges, your nodes would be isolated islands of functionality with no way to reach each other. Each edge has access to the workflow’s shared communication state, allowing for dynamic routing decisions based on your data. # Creating an edge between two nodes start_node &gt; process_node &gt; end_node . ",
+    "url": "/Core/Edge.html#overview",
+    
+    "relUrl": "/Core/Edge.html#overview"
+  },"9": {
+    "doc": "Edge",
+    "title": "Conditions",
+    "content": "Edges can have conditions that determine whether they should be traversed. These conditions are Python expressions (as strings) that evaluate to True or False based on the current workflow’s shared state. # Edge with a condition validate_node - \"shared['score'] &gt; 80\" &gt; success_node validate_node - \"shared['score'] &lt;= 80\" &gt; retry_node . The default edge (with an empty string condition \"\") serves as a fallback path when no other conditions match. Conditions make your workflow dynamic, enabling complex branching logic. ",
+    "url": "/Core/Edge.html#conditions",
+    
+    "relUrl": "/Core/Edge.html#conditions"
+  },"10": {
+    "doc": "Edge",
+    "title": "Order of Edge Condition Evaluation",
+    "content": "When a node finishes execution, the system evaluates its outgoing edges in this order: . | True condition: If any edge has the literal condition \"True\", it’s automatically selected regardless of other edges. # This edge will always be taken special_node - \"True\" &gt; priority_node . | Evaluated conditions: The system evaluates each edge’s condition against the shared state and selects the first one that returns True. # First matching condition wins decision_node - \"shared['temp'] &gt; 30\" &gt; hot_handler decision_node - \"shared['temp'] &gt; 20\" &gt; warm_handler . | Default edge: If no conditions match, the system uses the default edge (empty condition) as a fallback. decision_node &gt; default_handler # Default edge (empty condition) . | . # Complex condition example analysis_node - \"shared['status'] == 'urgent' and shared['priority'] &gt; 5\" &gt; urgent_handler analysis_node &gt; standard_handler . Remember, edge conditions are the decision points in your workflow - they determine which path your data will travel! . ##JSON Definition . While Python code is great for programmatically building workflows, you can also define edges in JSON. This is especially handy when working with the UI editor (Grapheteria’s center of attraction!), which syncs with and can modify your JSON schema in real-time. { \"edges\": [ { \"from\": \"validate_node\", \"to\": \"success_node\", \"condition\": \"shared['score'] &gt; 80\" }, { \"from\": \"validate_node\", \"to\": \"retry_node\", \"condition\": \"shared['score'] &lt;= 80\" }, { \"from\": \"process_node\", \"to\": \"end_node\" } ] } . Important: Note that in JSON, the “from” and “to” fields are string IDs that reference nodes by their identifier, not the actual node objects as in code. This is a key difference between the two approaches. The last edge has no condition specified - it’s our default edge! The JSON representation makes it easy to visualize your entire workflow structure in one place. ",
+    "url": "/Core/Edge.html#order-of-edge-condition-evaluation",
+    
+    "relUrl": "/Core/Edge.html#order-of-edge-condition-evaluation"
+  },"11": {
+    "doc": "Edge",
+    "title": "Behind the Scenes",
+    "content": "Each edge in your workflow is essentially a one-way street connecting two nodes, with some traffic rules (conditions) that determine when traffic can flow. When you define an edge, you’re creating an instance of the Edge class with three key properties: . | from_id: The ID of the source node | to_id: The ID of the destination node | condition: A string containing a Python expression (optional) | . # What actually happens under the hood edge = Edge(from_id=\"start_node\", to_id=\"process_node\", condition=\"\") . Now you’re ready to connect your nodes any way you like - with code or JSON! Whether you’re building a simple linear process or a complex decision tree, edges are your trusty pathways through the workflow jungle. ",
+    "url": "/Core/Edge.html#behind-the-scenes",
+    
+    "relUrl": "/Core/Edge.html#behind-the-scenes"
+  },"12": {
+    "doc": "Edge",
+    "title": "Edge",
+    "content": " ",
+    "url": "/Core/Edge.html",
+    
+    "relUrl": "/Core/Edge.html"
+  },"13": {
+    "doc": "Logging",
+    "title": "Workflow Engine: Persistence and Time Travel",
+    "content": " ",
+    "url": "/Core/Logging.html#workflow-engine-persistence-and-time-travel",
+    
+    "relUrl": "/Core/Logging.html#workflow-engine-persistence-and-time-travel"
+  },"14": {
+    "doc": "Logging",
+    "title": "Overview",
+    "content": "You’ve already met the building blocks of our workflow engine - nodes, edges, shared variables, and the engine itself. But there’s more to this story! Our workflow engine doesn’t just execute steps and forget them. It’s like a time traveler with a detailed journal - recording every step, allowing you to pause journeys, resume them later, or even create alternate timelines. Let’s see how this magic works. ",
+    "url": "/Core/Logging.html#overview",
+    
+    "relUrl": "/Core/Logging.html#overview"
+  },"15": {
+    "doc": "Logging",
+    "title": "Run IDs: Your Workflow’s Passport",
+    "content": "When a workflow starts its journey, it gets a unique passport - a run ID: . engine = WorkflowEngine( nodes=[start_node, process_node, end_node], start=start_node ) # A unique run_id like '20230615_143022_789' is auto-generated print(f\"Remember this ID to resume later: {engine.run_id}\") . This ID is your ticket back to this exact workflow state. Store it somewhere safe if you want to return to this journey later! . ",
+    "url": "/Core/Logging.html#run-ids-your-workflows-passport",
+    
+    "relUrl": "/Core/Logging.html#run-ids-your-workflows-passport"
+  },"16": {
+    "doc": "Logging",
+    "title": "Resuming Workflows: Pick Up Where You Left Off",
+    "content": "Life happens. Servers restart. But your workflow can continue right where it paused: . # Resume the workflow from the most recent step resumed_engine = WorkflowEngine( workflow_id=\"my_awesome_workflow\", run_id=\"20230615_143022_789\" ) # Or resume from a specific step resumed_engine = WorkflowEngine( workflow_id=\"my_awesome_workflow\", run_id=\"20230615_143022_789\", resume_from=3 # Resume from step 3 ) . The engine automatically loads the state and prepares to continue execution - whether it was waiting for input or ready to process the next node. ",
+    "url": "/Core/Logging.html#resuming-workflows-pick-up-where-you-left-off",
+    
+    "relUrl": "/Core/Logging.html#resuming-workflows-pick-up-where-you-left-off"
+  },"17": {
+    "doc": "Logging",
+    "title": "Forking Workflows: Creating Alternate Timelines",
+    "content": "Want to experiment with different paths without losing your original journey? Fork it! . # Create a new branch from step 3 of a previous run forked_engine = WorkflowEngine( workflow_id=\"my_awesome_workflow\", run_id=\"20230615_143022_789\", resume_from=3, fork=True # This creates a new run_id and preserves the original ) . This creates a parallel universe - your original workflow remains intact while you explore a different path from the same starting point. ",
+    "url": "/Core/Logging.html#forking-workflows-creating-alternate-timelines",
+    
+    "relUrl": "/Core/Logging.html#forking-workflows-creating-alternate-timelines"
+  },"18": {
+    "doc": "Logging",
+    "title": "State Validation: Keeping Your Timeline Consistent",
+    "content": "Time travel can be messy. To prevent paradoxes, the engine validates that your current workflow definition is compatible with the saved state: . try: # This will fail if 'critical_node' from step 5 is missing resumed_engine = WorkflowEngine( workflow_id=\"my_awesome_workflow\", run_id=\"20230615_143022_789\", resume_from=5 ) except ValueError as e: print(f\"Can't resume: {e}\") # \"Cannot resume: Node 'critical_node' is missing...\" . You can add new nodes to the future, but you can’t erase the past - nodes that were already processed or waiting must exist in your current workflow. ",
+    "url": "/Core/Logging.html#state-validation-keeping-your-timeline-consistent",
+    
+    "relUrl": "/Core/Logging.html#state-validation-keeping-your-timeline-consistent"
+  },"19": {
+    "doc": "Logging",
+    "title": "Storage Configuration: Beyond Local Files",
+    "content": "By default, your workflow’s history is stored in the local filesystem - perfect for development: . # Default storage uses local filesystem engine = WorkflowEngine(nodes=[...]) # For production, configure a different storage backend from grapheteria.utils import PostgresStorage engine = WorkflowEngine( nodes=[...], storage_backend=PostgresStorage(connection_string=\"postgresql://...\") ) . For more robust production environments, check out our Storage Configuration guide for options like database storage, cloud storage, and more. Now you’re ready to build workflows that can pause, resume, and even branch into different timelines. Happy time traveling! . ",
+    "url": "/Core/Logging.html#storage-configuration-beyond-local-files",
+    
+    "relUrl": "/Core/Logging.html#storage-configuration-beyond-local-files"
+  },"20": {
+    "doc": "Logging",
+    "title": "Logging",
+    "content": " ",
+    "url": "/Core/Logging.html",
+    
+    "relUrl": "/Core/Logging.html"
+  },"21": {
+    "doc": "Logs Page",
+    "title": "Logs",
+    "content": " ",
+    "url": "/Core/UI/Logs.html#logs",
+    
+    "relUrl": "/Core/UI/Logs.html#logs"
+  },"22": {
+    "doc": "Logs Page",
+    "title": "Overview",
+    "content": "The logs tab is your time machine for workflows. It lets you peek into the past, present, and alternate timelines of every workflow you’ve created. Here you can track every step, decision, and path your workflows have taken throughout their journey. Currently, logs are stored on your local filesystem (we’re working on fancy database options soon, we promise!). ",
+    "url": "/Core/UI/Logs.html#overview",
+    
+    "relUrl": "/Core/UI/Logs.html#overview"
+  },"23": {
+    "doc": "Logs Page",
+    "title": "Selecting Workflows",
+    "content": "Finding the workflow you’re looking for is a breeze. Simply: . | Navigate to the logs tab | Browse the list of available workflows | Click on any workflow that catches your eye | . Each workflow displays its run history - a collection of timestamps that serve as both run IDs and breadcrumbs showing when each execution occurred. ",
+    "url": "/Core/UI/Logs.html#selecting-workflows",
+    
+    "relUrl": "/Core/UI/Logs.html#selecting-workflows"
+  },"24": {
+    "doc": "Logs Page",
+    "title": "Exploring Run Details",
+    "content": "Clicked on a run and ready to dive deeper? Each run reveals its secrets: . | Workflow ID | Run ID | Detailed execution steps | Previous node ID | Next node ID | Awaiting nodes | …and much more fascinating data! | . Think of it as a workflow’s diary - recording every thought, action, and decision it made during its execution. ",
+    "url": "/Core/UI/Logs.html#exploring-run-details",
+    
+    "relUrl": "/Core/UI/Logs.html#exploring-run-details"
+  },"25": {
+    "doc": "Logs Page",
+    "title": "Tracking Workflow Evolution",
+    "content": "Sometimes workflows branch into new variations - like alternate timelines in a sci-fi movie. When a workflow was forked from a previous run, you’ll see: . | A clickable link to the parent run at the top | Detailed metadata showing exactly where and how the fork happened | . This feature is particularly handy when you’re experimenting with different workflow paths or debugging complex processes. Ready to become a workflow time traveler? The logs tab awaits your exploration! . ",
+    "url": "/Core/UI/Logs.html#tracking-workflow-evolution",
+    
+    "relUrl": "/Core/UI/Logs.html#tracking-workflow-evolution"
+  },"26": {
+    "doc": "Logs Page",
+    "title": "Logs Page",
+    "content": " ",
+    "url": "/Core/UI/Logs.html",
+    
+    "relUrl": "/Core/UI/Logs.html"
+  },"27": {
+    "doc": "Node",
+    "title": "Working with Nodes in Grapheteria",
+    "content": " ",
+    "url": "/Core/Node.html#working-with-nodes-in-grapheteria",
+    
+    "relUrl": "/Core/Node.html#working-with-nodes-in-grapheteria"
+  },"28": {
+    "doc": "Node",
+    "title": "Overview",
+    "content": "The Node class is the smallest unit of execution in Grapheteria’s workflow system - think of it as the atom in your workflow molecule. All task-performing classes must extend this class to join the workflow party. Nodes handle individual pieces of work, process data, make decisions, or interact with external systems. from grapheteria import Node class MyCustomNode(Node): async def execute(self, prepared_result): # Your execution logic goes here return \"Hello, Grapheteria!\" . ",
+    "url": "/Core/Node.html#overview",
+    
+    "relUrl": "/Core/Node.html#overview"
+  },"29": {
+    "doc": "Node",
+    "title": "The Triple-Phase Execution Model",
+    "content": "Grapheteria nodes follow a clear three-phase execution model inspired by PocketFlow, bringing order to the potentially chaotic world of workflow execution. This separation creates clear boundaries for different responsibilities and improves maintainability. 1. Prepare . The prepare phase sets the stage for execution. It receives two parameters: . | shared: The shared state dictionary for cross-node communication | request_input: A function that can request input during execution | . def prepare(self, shared, request_input): # Extract what you need from shared state name = shared.get(\"user_name\", \"friend\") initial_data = shared.get(\"data\", {}) # Return exactly what execute needs - nothing more, nothing less return {\"name\": name, \"greeting\": \"Hello\", \"data\": initial_data} . 2. Execute . The execute phase is where the magic happens. While it used to be required, you can now customize any of the three phases as needed. It receives one parameter: . | prepared_result: The output from the prepare phase | . def execute(self, prepared_result): # The main work happens here, using only what prepare provided processed_data = do_something_with(prepared_result[\"data\"]) return { \"message\": f\"{prepared_result['greeting']}, {prepared_result['name']}!\", \"processed_data\": processed_data } . Notice how execute doesn’t receive the shared state directly. This is intentional! It: . | Prevents accidental corruption of shared state during critical operations | Enables future parallel execution of multiple nodes (see Parallelism docs) | Forces clean separation of concerns between phases | . Execution comes with built-in resilience: . | max_retries: Number of attempts before giving up (default: 1) | wait: Time to wait between retries in seconds | exec_fallback: Method called when all retries fail | . class ReliableNode(Node): def execute(self, prepared_result): # Potentially flaky operation return call_external_api() def exec_fallback(self, prepared_result, exception): # Handle the failure gracefully return {\"status\": \"failed\", \"reason\": str(exception)} # Create instance with retry parameters reliable_api = ReliableNode(config={\"api_key\": \"xyz123\"}, max_retries=3, wait=2) . Here’s an example using async/await with an LLM API: . class LLMNode(Node): async def execute(self, prepared_result): prompt = prepared_result[\"prompt\"] system_message = prepared_result[\"system_message\"] # Simply await an external API call response = await self.call_llm_api(system_message, prompt) return { \"response\": response.text, \"tokens_used\": response.total_tokens } . 3. Cleanup . The cleanup phase handles post-execution tasks. It receives all three pieces of context: . | shared: The shared state dictionary | prepared_result: The original output from prepare | execution_result: The output from execute | . def cleanup(self, shared, prepared_result, execution_result): # Update shared state with our results shared[\"greeting_message\"] = execution_result[\"message\"] shared[\"processed_data\"] = execution_result[\"processed_data\"] # Optionally return something if another node connects directly return execution_result . ",
+    "url": "/Core/Node.html#the-triple-phase-execution-model",
+    
+    "relUrl": "/Core/Node.html#the-triple-phase-execution-model"
+  },"30": {
+    "doc": "Node",
+    "title": "Custom Node IDs",
+    "content": "Always define a custom ID for each node rather than relying on auto-generated IDs: . # Good: Descriptive, unique ID node = MyCustomNode(id=\"validate_user_input_step\") # Bad: Relying on auto-generated ID node = MyCustomNode() # Gets something like \"MyCustomNode_a1b2c3d4\" . Custom IDs are crucial for: . | Logging and debugging - imagine searching logs for “validate_user_input_step” vs “MyCustomNode_a1b2c3d4” | Resuming workflows after interruption - when restarting a workflow, the system needs to know exactly which node to resume from | Providing data to halted nodes requesting human input - when a node is waiting for input, you need a clear ID to send that input to the right place | . Without meaningful IDs, your workflow becomes a mysterious black box. With them, it transforms into a transparent, manageable, and resumable process. ",
+    "url": "/Core/Node.html#custom-node-ids",
+    
+    "relUrl": "/Core/Node.html#custom-node-ids"
+  },"31": {
+    "doc": "Node",
+    "title": "Node Configuration",
+    "content": "Nodes can be configured through a config dictionary passed during initialization. This enhances reusability - the same node class can be used for multiple purposes just by changing its configuration. # Create two different LLM agents from the same class customer_service = LLMNode(id = \"customer_service\", config={ \"system_prompt\": \"You are a helpful customer service representative.\", \"temperature\": 0.3, \"max_tokens\": 500 }) creative_writer = LLMNode(id=\"creative_writer\", config={ \"system_prompt\": \"You are a creative storyteller with a flair for drama.\", \"temperature\": 0.9, \"max_tokens\": 2000 }) . Access config values inside your node methods: . def prepare(self, shared, request_input): system_prompt = self.config.get(\"system_prompt\", \"Default system prompt\") temperature = self.config.get(\"temperature\", 0.7) return { \"system_message\": system_prompt, \"prompt\": shared.get(\"user_message\", \"\"), \"temperature\": temperature } . ",
+    "url": "/Core/Node.html#node-configuration",
+    
+    "relUrl": "/Core/Node.html#node-configuration"
+  },"32": {
+    "doc": "Node",
+    "title": "Using request_input",
+    "content": "The request_input function allows nodes to request external input during execution - perfect for human-in-the-loop scenarios. The function can be called without any parameters, though additional information helps guide the user: . async def prepare(self, shared, request_input): # Simple confirmation prompt - with helpful parameters user_choice = await request_input( prompt=\"Do you approve this transaction?\", options=[\"Approve\", \"Reject\"], input_type=\"select\" ) # If rejection, ask for reason in the same prepare phase if user_choice == \"Reject\": reason = await request_input( prompt=\"Please provide reason for rejection:\", input_type=\"text\", request_id=\"rejection_reason\" # Different from default node ID ) return {\"status\": \"rejected\", \"reason\": reason} # Store the choice for execute phase return {\"user_approved\": True} . The request_id parameter differentiates between multiple input requests within the same node. Without it, the same input would be reused for all calls (defaulting to the node’s ID). ",
+    "url": "/Core/Node.html#using-request_input",
+    
+    "relUrl": "/Core/Node.html#using-request_input"
+  },"33": {
+    "doc": "Node",
+    "title": "Running Nodes Standalone",
+    "content": "For testing and debugging, you can run nodes independently without setting up an entire workflow: . import asyncio async def test_node(): # Create initial shared state shared_state = {\"user_name\": \"Grapheteria Fan\", \"data\": {\"key\": \"value\"}} # Create and run the node node = ProcessingNode(config={\"processing_level\": \"detailed\"}) result = await node.run_standalone(shared_state) print(f\"Updated shared state: {result}\") print(f\"Processed data: {result.get('processed_data')}\") # Run it asyncio.run(test_node()) . Note that request_input functionality won’t work in standalone mode - it’s strictly for testing node logic without human interaction. ",
+    "url": "/Core/Node.html#running-nodes-standalone",
+    
+    "relUrl": "/Core/Node.html#running-nodes-standalone"
+  },"34": {
+    "doc": "Node",
+    "title": "Initializing Nodes in JSON and Code",
+    "content": "Grapheteria offers flexibility by letting you define workflows in both Python code and JSON. While your Node class implementation must be in Python, you can instantiate and connect nodes using either approach. In Code (Python) . # Create a processing node with a custom ID and configuration processor = MyCustomNode( id=\"data_processor_1\", config={\"max_items\": 100, \"verbose\": True} ) . In JSON . { \"nodes\": [ { \"id\": \"data_processor_1\", \"class\": \"MyCustomNode\", \"config\": { \"max_items\": 100, \"verbose\": true } } ] } . Why JSON? JSON workflows sync in real-time with the UI, letting programmers design and modify workflows visually with an intuitive debugging experience, while automatically generating the underlying configuration. It also makes workflows portable, versionable, and easier to inspect. With these building blocks, you can create nodes that graph-itefully handle any workflow task your application needs! . ",
+    "url": "/Core/Node.html#initializing-nodes-in-json-and-code",
+    
+    "relUrl": "/Core/Node.html#initializing-nodes-in-json-and-code"
+  },"35": {
+    "doc": "Node",
+    "title": "Node",
+    "content": " ",
+    "url": "/Core/Node.html",
+    
+    "relUrl": "/Core/Node.html"
+  },"36": {
+    "doc": "Overview",
+    "title": "The UI: Visual Workflow Management",
+    "content": " ",
+    "url": "/Core/UI/Overview.html#the-ui-visual-workflow-management",
+    
+    "relUrl": "/Core/UI/Overview.html#the-ui-visual-workflow-management"
+  },"37": {
+    "doc": "Overview",
+    "title": "Discovering Your Components",
+    "content": "When launched, the server automatically scans your working directory for: . | Any nodes you’ve created (classes extending the Node class) | Existing workflows (stored as JSON files) | . Everything is instantly available in your browser - no manual importing needed! . ",
+    "url": "/Core/UI/Overview.html#discovering-your-components",
+    
+    "relUrl": "/Core/UI/Overview.html#discovering-your-components"
+  },"38": {
+    "doc": "Overview",
+    "title": "Canvas: Your Workflow Playground",
+    "content": "After selecting or creating a workflow, you’ll see your canvas - the blank slate for your state machine. Need to add nodes? Just right-click anywhere on the canvas to see all available nodes. Each node you add automatically updates your workflow’s JSON schema. ",
+    "url": "/Core/UI/Overview.html#canvas-your-workflow-playground",
+    
+    "relUrl": "/Core/UI/Overview.html#canvas-your-workflow-playground"
+  },"39": {
+    "doc": "Overview",
+    "title": "Building Your State Machine",
+    "content": "Adding and Configuring Nodes . Add as many nodes as your workflow needs. Right-click on any node to: . | Set it as the start node | Modify its configuration | View its source code | And more! | . Creating Connections . Connect your nodes by dragging from the center of one node to another. An edge appears, linking them together - and yes, your JSON file updates in real-time! . Removing Components . To delete a node or edge: . | Double-click on a node’s handle (the same handle lets you drag nodes around) | Double-click anywhere on an edge to remove it | . Edge Configuration . Edges aren’t just connections - click the button on any edge to add transition conditions. ",
+    "url": "/Core/UI/Overview.html#building-your-state-machine",
+    
+    "relUrl": "/Core/UI/Overview.html#building-your-state-machine"
+  },"40": {
+    "doc": "Overview",
+    "title": "Setting Initial State",
+    "content": "Look for the button at the bottom of your canvas to set your workflow’s initial state - crucial for proper execution! . ",
+    "url": "/Core/UI/Overview.html#setting-initial-state",
+    
+    "relUrl": "/Core/UI/Overview.html#setting-initial-state"
+  },"41": {
+    "doc": "Overview",
+    "title": "Real-Time Synchronization",
+    "content": "Keep an eye on the connection icon in the top left. Green means you’re connected and changes are syncing to your JSON file. The UI only shows what’s actually in your schema. If something doesn’t appear as expected, check the connection status - your progress is always safe. ",
+    "url": "/Core/UI/Overview.html#real-time-synchronization",
+    
+    "relUrl": "/Core/UI/Overview.html#real-time-synchronization"
+  },"42": {
+    "doc": "Overview",
+    "title": "Ready to Run",
+    "content": "Once your workflow looks good, head to the debug/run tab on the middle right of the screen. There you can test your state machine and see it in action! . Learn more about debugging and running workflows . ",
+    "url": "/Core/UI/Overview.html#ready-to-run",
+    
+    "relUrl": "/Core/UI/Overview.html#ready-to-run"
+  },"43": {
+    "doc": "Overview",
+    "title": "Troubleshooting",
+    "content": "Having issues? Check out our troubleshooting guide for common problems and solutions. Troubleshooting Guide . ",
+    "url": "/Core/UI/Overview.html#troubleshooting",
+    
+    "relUrl": "/Core/UI/Overview.html#troubleshooting"
+  },"44": {
+    "doc": "Overview",
+    "title": "Overview",
+    "content": " ",
+    "url": "/Core/UI/Overview.html",
+    
+    "relUrl": "/Core/UI/Overview.html"
+  },"45": {
+    "doc": "Communication",
+    "title": "Using the Shared Dictionary",
+    "content": " ",
+    "url": "/Core/Shared.html#using-the-shared-dictionary",
+    
+    "relUrl": "/Core/Shared.html#using-the-shared-dictionary"
+  },"46": {
+    "doc": "Communication",
+    "title": "Overview",
+    "content": "The shared dictionary is your workflow’s memory bank - the primary way nodes talk to each other. Think of it as a communal whiteboard where any node can read existing information or write new data. It’s simply a Python dictionary accessible to all nodes in your workflow. def prepare(self, shared, request_input): # Read something from shared state previous_result = shared.get('previous_calculation', 0) # Use that data in calculations return previous_result * 2 def cleanup(self, shared, prepared_result, execution_result): # Write back to shared state for other nodes shared['my_calculation'] = execution_result return execution_result . ",
+    "url": "/Core/Shared.html#overview",
+    
+    "relUrl": "/Core/Shared.html#overview"
+  },"47": {
+    "doc": "Communication",
+    "title": "Setting Initial State",
+    "content": "By default, the shared dictionary starts empty ({}), but you can pre-load it with initial values that will evolve during workflow execution: . # When creating a workflow from code workflow = WorkflowEngine( nodes=[node1, node2, node3], start_node=node1, initial_shared_state={ \"chat_history\": [], \"processing_results\": [], \"retry_count\": 0, \"last_execution_time\": None } ) . Remember that the shared dictionary is meant for dynamic values that change as your workflow runs. For fixed inputs, use node configuration parameters instead. Setting the same initial state in JSON which can be used with …. yeah yeah the UI, you get it. { \"nodes\": [...], \"edges\": [...], \"initial_state\": { \"user_profile\": { \"name\": \"Alice\", \"preferences\": [\"quick\", \"automated\"] } } } . ",
+    "url": "/Core/Shared.html#setting-initial-state",
+    
+    "relUrl": "/Core/Shared.html#setting-initial-state"
+  },"48": {
+    "doc": "Communication",
+    "title": "Serialization Constraints",
+    "content": "Since workflow states are saved to disk, variables in your shared dictionary must be JSON-serializable by default. This includes: . | Simple types: strings, numbers, booleans, None | Containers: lists, dictionaries | Nested combinations of the above | . # ✅ This works fine shared[\"results\"] = [1, 2, 3] shared[\"config\"] = {\"max_retries\": 3, \"enabled\": True} # ❌ This will cause errors during state saving shared[\"queue\"] = queue.Queue() # Not JSON serializable shared[\"model\"] = sklearn.linear_model.LinearRegression() # Not serializable . Need to store complex Python objects? You’ll need to extend the storage backend to use pickle or another serialization method. See our Extending Storage guide for the full details. ",
+    "url": "/Core/Shared.html#serialization-constraints",
+    
+    "relUrl": "/Core/Shared.html#serialization-constraints"
+  },"49": {
+    "doc": "Communication",
+    "title": "Communication",
+    "content": " ",
+    "url": "/Core/Shared.html",
+    
+    "relUrl": "/Core/Shared.html"
+  },"50": {
+    "doc": "Workflow Engine",
+    "title": "Grapheteria Workflow Engine Documentation",
+    "content": " ",
+    "url": "/Core/Workflow.html#grapheteria-workflow-engine-documentation",
+    
+    "relUrl": "/Core/Workflow.html#grapheteria-workflow-engine-documentation"
+  },"51": {
+    "doc": "Workflow Engine",
+    "title": "Bringing It All Together: The WorkflowEngine",
+    "content": "Now that we’ve defined our nodes, edges, and shared variables, it’s time to fire up the engine! The WorkflowEngine class is where all the magic happens - it’s the conductor that orchestrates your workflow from start to finish. from grapheteria import WorkflowEngine, Node1, Node2, Node3 # Create nodes and connect them start_node = Node1(id=\"start\") middle_node = Node2(id=\"process\") end_node = Node3(id=\"finish\") start_node &gt; middle_node &gt; end_node # Initialize the engine with our nodes engine = WorkflowEngine( nodes=[start_node, middle_node, end_node], start=start_node, initial_shared_state={\"counter\": 0} ) . ",
+    "url": "/Core/Workflow.html#bringing-it-all-together-the-workflowengine",
+    
+    "relUrl": "/Core/Workflow.html#bringing-it-all-together-the-workflowengine"
+  },"52": {
+    "doc": "Workflow Engine",
+    "title": "JSON or Code? Choose Your Adventure",
+    "content": "The workflow engine is flexible - you can define workflows either through code (as shown above) or via JSON files. Code-Based Workflows . With code-based workflows, you directly pass your node objects as a list: . # Create your node instances node1 = TextProcessorNode(id=\"process_text\") node2 = DatabaseNode(id=\"save_results\") node3 = NotificationNode(id=\"notify_user\") # The workflow_id is optional - a random one will be generated if not provided engine = WorkflowEngine( nodes=[node1, node2, node3], workflow_id=\"my_awesome_workflow\" ) . JSON-Based Workflows . You might have a JSON file with the following format - . # workflows/data_pipeline.json { \"nodes\": [...], \"edges\": [...], \"initial_state\": {...} } . For JSON workflows, you need to import all node classes first, then provide the path or ID: . # IMPORTANT: Import all node classes used in your JSON workflow from my_nodes import TextProcessorNode, DatabaseNode, NotificationNode from more_nodes import ValidationNode, TransformationNode # The imports register the nodes with Grapheteria's registry # Now you can load the workflow without initializing any nodes yourself # Using workflow_path engine = WorkflowEngine(workflow_path=\"workflows/data_pipeline.json\") # Or using workflow_id (will look for workflows/data_pipeline.json) engine = WorkflowEngine(workflow_id=\"workflows.data_pipeline\") . This works because Grapheteria automatically registers node classes when they’re imported. The engine then instantiates the right classes based on the JSON definition. The conversion is simple: dots in IDs become slashes in paths, making workflows.data_pipeline equal to workflows/data_pipeline.json. ",
+    "url": "/Core/Workflow.html#json-or-code-choose-your-adventure",
+    
+    "relUrl": "/Core/Workflow.html#json-or-code-choose-your-adventure"
+  },"53": {
+    "doc": "Workflow Engine",
+    "title": "Ready, Set, Start!",
+    "content": "Every workflow needs a starting point. If you don’t explicitly set one, the engine will default to the first node in your list. # Explicitly setting the start node (recommended) engine = WorkflowEngine( nodes=[node1, node2, node3], start=node2 # We're starting with node2, not node1 ) # Without setting start - will use the first node in the list engine = WorkflowEngine(nodes=[node1, node2, node3]) # Will start with node1 . ",
+    "url": "/Core/Workflow.html#ready-set-start",
+    
+    "relUrl": "/Core/Workflow.html#ready-set-start"
+  },"54": {
+    "doc": "Workflow Engine",
+    "title": "Time Travel with Run IDs",
+    "content": "Each time you create a workflow engine, a unique run ID is generated. This ID is your time machine ticket - save it, and you can resume your workflow later! . # Start a new workflow engine = WorkflowEngine(nodes=[node1, node2, node3]) print(f\"Save this ID to resume later: {engine.run_id}\") # Run a few steps... continuing, tracking_data = await engine.run() # Later, resume from where you left off resumed_engine = WorkflowEngine( workflow_id=\"my_workflow\", run_id=\"20240615_123045_789\" ) . ",
+    "url": "/Core/Workflow.html#time-travel-with-run-ids",
+    
+    "relUrl": "/Core/Workflow.html#time-travel-with-run-ids"
+  },"55": {
+    "doc": "Workflow Engine",
+    "title": "Monitoring Workflow State",
+    "content": "The heart of the engine is the execution_state, which gives you real-time information about what’s happening in your workflow: . # Check the current status of your workflow workflow_status = engine.execution_state.workflow_status print(f\"Current status: {workflow_status}\") # RUNNING, COMPLETED, WAITING_FOR_INPUT, etc. # See what node is up next next_node = engine.execution_state.next_node_id print(f\"Next node to execute: {next_node}\") # Inspect the shared variables shared_data = engine.execution_state.shared print(f\"Current counter value: {shared_data['counter']}\") . The engine also maintains a complete history in tracking_data (we’ll cover this in more detail later), which captures the entire journey of your workflow for logging and analysis. ",
+    "url": "/Core/Workflow.html#monitoring-workflow-state",
+    
+    "relUrl": "/Core/Workflow.html#monitoring-workflow-state"
+  },"56": {
+    "doc": "Workflow Engine",
+    "title": "“Human in the Loop”: Responding to Input Requests",
+    "content": "When your workflow needs human input, it’ll pause and wait. You can easily check if input is needed: . # Check if the workflow is waiting for user input if engine.execution_state.workflow_status == WorkflowStatus.WAITING_FOR_INPUT: input_request = engine.execution_state.awaiting_input node_id = input_request['node_id'] prompt = input_request['prompt'] print(f\"Workflow is asking: {prompt}\") # Provide the requested input and continue user_response = input(\"&gt; \") continuing, _ = await engine.step({node_id: user_response}) . The input you provide is keyed by the node ID that requested it - this way, the engine knows exactly where to route your response. ",
+    "url": "/Core/Workflow.html#human-in-the-loop-responding-to-input-requests",
+    
+    "relUrl": "/Core/Workflow.html#human-in-the-loop-responding-to-input-requests"
+  },"57": {
+    "doc": "Workflow Engine",
+    "title": "Running Your Workflow: Baby Steps or Full Speed",
+    "content": "The engine gives you two ways to run your workflow: . Take One Step at a Time . Perfect for debugging or when you need granular control: . # Execute just one node and stop continuing, _ = await engine.step() # If user input was requested, provide it in the next step if engine.execution_state.awaiting_input: node_id = engine.execution_state.awaiting_input['node_id'] continuing, _ = await engine.step({node_id: \"user response\"}) . Full Speed Ahead . When you’re ready to let it rip: . # Run the entire workflow until completion or until input is required continuing, _ = await engine.run() # If continuing is True and input is awaited, provide input to continue if continuing and engine.execution_state.awaiting_input: node_id = engine.execution_state.awaiting_input['node_id'] continuing, _ = await engine.run({node_id: \"user response\"}) . And there you have it! From defining individual nodes to orchestrating complex workflows, Grapheteria gives you the power to create state machines that are both powerful and maintainable. Happy flow-charting! . ",
+    "url": "/Core/Workflow.html#running-your-workflow-baby-steps-or-full-speed",
+    
+    "relUrl": "/Core/Workflow.html#running-your-workflow-baby-steps-or-full-speed"
+  },"58": {
+    "doc": "Workflow Engine",
+    "title": "Workflow Engine",
+    "content": " ",
+    "url": "/Core/Workflow.html",
+    
+    "relUrl": "/Core/Workflow.html"
+  },"59": {
+    "doc": "UI",
+    "title": "UI",
+    "content": "Welcome to the visual side of Grapheteria! The UI connects to your codebase through websockets, making your workflow design interactive and intuitive. To get started, run this command in your terminal: . grapheteria . This simple command launches both the server and UI. Now you can visually manage all your nodes, create connections, configure them, and debug your workflows with ease! . ",
+    "url": "/Core/UI/",
+    
+    "relUrl": "/Core/UI/"
+  },"60": {
+    "doc": "Core",
+    "title": "Core",
+    "content": " ",
+    "url": "/Core/",
+    
+    "relUrl": "/Core/"
+  },"61": {
+    "doc": "Home",
+    "title": "Home",
+    "content": "This is a bare-minimum template to create a Jekyll site that uses the Just the Docs theme. You can easily set the created site to be published on GitHub Pages – the README file explains how to do that, along with other details. If Jekyll is installed on your computer, you can also build and preview the created site locally. This lets you test changes before committing them, and avoids waiting for GitHub Pages.1 And you will be able to deploy your local build to a different platform than GitHub Pages. More specifically, the created site: . | uses a gem-based approach, i.e. uses a Gemfile and loads the just-the-docs gem | uses the GitHub Pages / Actions workflow to build and publish the site on GitHub Pages | . Other than that, you’re free to customize sites that you create with this template, however you like. You can easily change the versions of just-the-docs and Jekyll it uses, as well as adding further plugins. Browse our documentation to learn more about how to use this theme. To get started with creating a site, simply: . | click “use this template” to create a GitHub repository | go to Settings &gt; Pages &gt; Build and deployment &gt; Source, and select GitHub Actions | . If you want to maintain your docs in the docs directory of an existing project repo, see Hosting your docs from an existing project repo in the template README. | It can take up to 10 minutes for changes to your site to publish after you push the changes to GitHub. &#8617; . | . ",
+    "url": "/",
+    
+    "relUrl": "/"
+  }
+}

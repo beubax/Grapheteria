@@ -1,0 +1,65 @@
+{
+  "nodes": [
+    {
+      "id": "user_input",
+      "class": "UserInputNode",
+      "config": {}
+    },
+    {
+      "id": "router",
+      "class": "RouterNode",
+      "config": {}
+    },
+    {
+      "id": "internet_search",
+      "class": "InternetSearchNode",
+      "config": {}
+    },
+    {
+      "id": "llm_response",
+      "class": "LLMResponseNode",
+      "config": {}
+    },
+    {
+      "id": "continue_conversation",
+      "class": "ContinueConversationNode",
+      "config": {}
+    }
+  ],
+  "edges": [
+    {
+      "from": "user_input",
+      "to": "router",
+      "condition": ""
+    },
+    {
+      "from": "router",
+      "to": "internet_search",
+      "condition": "shared['needs_search']"
+    },
+    {
+      "from": "router",
+      "to": "llm_response",
+      "condition": "not shared['needs_search']"
+    },
+    {
+      "from": "internet_search",
+      "to": "llm_response",
+      "condition": ""
+    },
+    {
+      "from": "llm_response",
+      "to": "continue_conversation",
+      "condition": ""
+    },
+    {
+      "from": "continue_conversation",
+      "to": "user_input",
+      "condition": "shared['continue_conversation']"
+    }
+  ],
+  "start": "user_input",
+  "initial_state": {
+    "messages": []
+  }
+}

@@ -1,5 +1,10 @@
+---
+layout: default
+title: "Debug Mode"
+parent: "UI"
+nav_order: 2
+---
 
-```markdown
 # Debug Mode
 
 ## Overview
@@ -71,4 +76,3 @@ Sometimes you might encounter persistent errors (like a corrupted state save) wh
 For solutions to common problems, check the [Troubleshooting Guide](../Troubleshooting.md).
 
 ![Known Issues - placeholder image]()
-```

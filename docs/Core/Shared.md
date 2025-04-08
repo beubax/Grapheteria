@@ -1,3 +1,10 @@
+---
+layout: default
+title: "Communication"
+parent: "Core"
+nav_order: 3
+---
+
 # Using the Shared Dictionary
 
 ## Overview

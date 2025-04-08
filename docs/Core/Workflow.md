@@ -1,3 +1,10 @@
+---
+layout: default
+title: "Workflow Engine"
+parent: "Core"
+nav_order: 4
+---
+
 # Grapheteria Workflow Engine Documentation
 
 ## Bringing It All Together: The WorkflowEngine

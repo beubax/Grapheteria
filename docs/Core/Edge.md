@@ -1,3 +1,10 @@
+---
+layout: default
+title: "Edge"
+parent: "Core"
+nav_order: 2
+---
+
 # Edge Class Documentation
 
 ## Overview

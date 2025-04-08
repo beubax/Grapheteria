@@ -50,7 +50,7 @@ class SystemScanner:
                 sys.path.insert(0, cwd)
             
             
-            skip_dirs = {'venv', '__pycache__', 'grapheteria', 'logs', '.git'}
+            skip_dirs = {'venv', '__pycache__', 'grapheteria', 'logs', '.git', 'tests'}
 
             for root, dirs, files in os.walk('.'):
                 # Remove directories to skip from dirs list to prevent recursion into them
@@ -72,7 +72,7 @@ class SystemScanner:
         temp.clear()
         # Skip processing if file is in a directory we want to ignore
         first_dir = file_path.split(os.sep)[1] if os.sep in file_path and file_path.startswith('./') else ''
-        if first_dir in ('venv', '__pycache__', 'grapheteria', 'logs', '.git'):
+        if first_dir in ('venv', '__pycache__', 'grapheteria', 'logs', '.git', 'tests'):
             return
         
         module_name = path_to_id(file_path)
@@ -100,7 +100,7 @@ class SystemScanner:
         """Scan directory for workflow JSON files"""
         found_workflows = {}
         
-        skip_dirs = {'venv', '__pycache__', 'grapheteria', 'logs', '.git'}
+        skip_dirs = {'venv', '__pycache__', 'grapheteria', 'logs', '.git', 'tests'}
         
         for root, dirs, files in os.walk('.'):
             # Remove directories to skip from dirs list to prevent recursion into them
