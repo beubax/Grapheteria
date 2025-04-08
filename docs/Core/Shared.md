@@ -38,6 +38,21 @@ workflow = WorkflowEngine(
 
 Remember that the shared dictionary is meant for dynamic values that change as your workflow runs. For fixed inputs, use node configuration parameters instead.
 
+Setting the same initial state in JSON which can be used with .... yeah yeah the UI, you get it.
+
+```json
+{
+  "nodes": [...],
+  "edges": [...],
+  "initial_state": {
+    "user_profile": {
+      "name": "Alice",
+      "preferences": ["quick", "automated"]
+    }
+  }
+}
+```
+
 ## Serialization Constraints
 
 Since workflow states are saved to disk, variables in your shared dictionary must be JSON-serializable by default. This includes:

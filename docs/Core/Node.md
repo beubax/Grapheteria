@@ -106,19 +106,38 @@ def cleanup(self, shared, prepared_result, execution_result):
     return execution_result
 ```
 
+## Custom Node IDs
+
+Always define a custom ID for each node rather than relying on auto-generated IDs:
+
+```python
+# Good: Descriptive, unique ID
+node = MyCustomNode(id="validate_user_input_step")
+
+# Bad: Relying on auto-generated ID
+node = MyCustomNode()  # Gets something like "MyCustomNode_a1b2c3d4"
+```
+
+Custom IDs are crucial for:
+1. Logging and debugging - imagine searching logs for "validate_user_input_step" vs "MyCustomNode_a1b2c3d4"
+2. Resuming workflows after interruption - when restarting a workflow, the system needs to know exactly which node to resume from
+3. Providing data to halted nodes requesting human input - when a node is waiting for input, you need a clear ID to send that input to the right place
+
+Without meaningful IDs, your workflow becomes a mysterious black box. With them, it transforms into a transparent, manageable, and resumable process.
+
 ## Node Configuration
 
 Nodes can be configured through a config dictionary passed during initialization. This enhances reusability - the same node class can be used for multiple purposes just by changing its configuration.
 
 ```python
 # Create two different LLM agents from the same class
-customer_service = LLMNode(config={
+customer_service = LLMNode(id = "customer_service", config={
     "system_prompt": "You are a helpful customer service representative.",
     "temperature": 0.3,
     "max_tokens": 500
 })
 
-creative_writer = LLMNode(config={
+creative_writer = LLMNode(id="creative_writer", config={
     "system_prompt": "You are a creative storyteller with a flair for drama.",
     "temperature": 0.9,
     "max_tokens": 2000
@@ -189,6 +208,40 @@ asyncio.run(test_node())
 ```
 
 Note that `request_input` functionality won't work in standalone mode - it's strictly for testing node logic without human interaction.
+
+## Initializing Nodes in JSON and Code
+
+Grapheteria offers flexibility by letting you define workflows in both Python code and JSON. While your Node class implementation must be in Python, you can instantiate and connect nodes using either approach.
+
+### In Code (Python)
+
+```python
+# Create a processing node with a custom ID and configuration
+processor = MyCustomNode(
+    id="data_processor_1", 
+    config={"max_items": 100, "verbose": True}
+)
+```
+
+### In JSON
+
+```json
+{
+  "nodes": [
+    {
+      "id": "data_processor_1",
+      "class": "MyCustomNode",
+      "config": {
+        "max_items": 100,
+        "verbose": true
+      }
+    }
+  ]
+}
+```
+
+> **Why JSON?** JSON workflows sync in real-time with the UI, letting programmers design and modify workflows visually with an intuitive debugging experience, while automatically generating the underlying configuration. It also makes workflows portable, versionable, and easier to inspect. 
+
 
 With these building blocks, you can create nodes that graph-itefully handle any workflow task your application needs!
 ```

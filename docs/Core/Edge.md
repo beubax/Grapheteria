@@ -50,3 +50,44 @@ analysis_node > standard_handler
 ```
 
 Remember, edge conditions are the decision points in your workflow - they determine which path your data will travel!
+
+##JSON Definition
+
+While Python code is great for programmatically building workflows, you can also define edges in JSON. This is especially handy when working with the UI editor (Grapheteria's center of attraction!), which syncs with and can modify your JSON schema in real-time.
+
+```json
+{
+  "edges": [
+    {
+      "from": "validate_node",
+      "to": "success_node",
+      "condition": "shared['score'] > 80"
+    },
+    {
+      "from": "validate_node",
+      "to": "retry_node",
+      "condition": "shared['score'] <= 80"
+    },
+    {
+      "from": "process_node",
+      "to": "end_node"
+    }
+  ]
+}
+```
+
+Important: Note that in JSON, the "from" and "to" fields are string IDs that reference nodes by their identifier, not the actual node objects as in code. This is a key difference between the two approaches. The last edge has no condition specified - it's our default edge! The JSON representation makes it easy to visualize your entire workflow structure in one place.
+
+## Behind the Scenes
+
+Each edge in your workflow is essentially a one-way street connecting two nodes, with some traffic rules (conditions) that determine when traffic can flow. When you define an edge, you're creating an instance of the Edge class with three key properties:
+- from_id: The ID of the source node
+- to_id: The ID of the destination node
+- condition: A string containing a Python expression (optional)
+
+```python
+# What actually happens under the hood
+edge = Edge(from_id="start_node", to_id="process_node", condition="")
+```
+
+Now you're ready to connect your nodes any way you like - with code or JSON! Whether you're building a simple linear process or a complex decision tree, edges are your trusty pathways through the workflow jungle.

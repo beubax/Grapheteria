@@ -28,9 +28,14 @@ The workflow engine is flexible - you can define workflows either through code (
 
 ### Code-Based Workflows
 
-When passing a list of nodes:
+With code-based workflows, you directly pass your node objects as a list:
 
 ```python
+# Create your node instances
+node1 = TextProcessorNode(id="process_text")
+node2 = DatabaseNode(id="save_results")
+node3 = NotificationNode(id="notify_user")
+
 # The workflow_id is optional - a random one will be generated if not provided
 engine = WorkflowEngine(
     nodes=[node1, node2, node3],
@@ -40,17 +45,36 @@ engine = WorkflowEngine(
 
 ### JSON-Based Workflows
 
-For JSON workflows, provide either the path or ID:
+You might have a JSON file with the following format - 
+
+```json
+# workflows/data_pipeline.json
+{
+  "nodes": [...],
+  "edges": [...],
+  "initial_state": {...}
+}
+```
+
+For JSON workflows, you need to import all node classes first, then provide the path or ID:
 
 ```python
+# IMPORTANT: Import all node classes used in your JSON workflow
+from my_nodes import TextProcessorNode, DatabaseNode, NotificationNode
+from more_nodes import ValidationNode, TransformationNode
+
+# The imports register the nodes with Grapheteria's registry
+# Now you can load the workflow without initializing any nodes yourself
+
 # Using workflow_path
 engine = WorkflowEngine(workflow_path="workflows/data_pipeline.json")
 
-# Using workflow_id (will look for workflows/data_pipeline.json)
+# Or using workflow_id (will look for workflows/data_pipeline.json)
 engine = WorkflowEngine(workflow_id="workflows.data_pipeline")
 ```
 
-The conversion is simple: dots in IDs become slashes in paths, making `workflows.data_pipeline` equal to `workflows/data_pipeline.json`.
+This works because Grapheteria automatically registers node classes when they're imported. The engine then instantiates the right classes based on the JSON definition.
+The conversion is simple: dots in IDs become slashes in paths, making workflows.data_pipeline equal to workflows/data_pipeline.json.
 
 ## Ready, Set, Start!
 

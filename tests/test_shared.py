@@ -105,7 +105,7 @@ class TestSharedDictionary:
         
         workflow = WorkflowEngine(
             nodes=[write_node, read_node],
-            start_node=write_node
+            start=write_node
         )
         
         # Run the workflow
@@ -125,7 +125,7 @@ class TestSharedDictionary:
         # Create workflow with initial shared state
         workflow = WorkflowEngine(
             nodes=[read_node],
-            start_node=read_node,
+            start=read_node,
             initial_shared_state={"test_key": "initial_value", "items": [1, 2, 3]}
         )
         
@@ -152,7 +152,7 @@ class TestSharedDictionary:
         
         workflow = WorkflowEngine(
             nodes=[write_node, modify_node, read_node],
-            start_node=write_node
+            start=write_node
         )
         
         # Run the workflow
@@ -184,7 +184,7 @@ class TestSharedDictionary:
         
         workflow = WorkflowEngine(
             nodes=[append1, append2, append3],
-            start_node=append1,
+            start=append1,
             initial_shared_state={"items": ["initial_item"]}
         )
         
@@ -204,7 +204,7 @@ class TestSharedDictionary:
         
         workflow = WorkflowEngine(
             nodes=[read_node],
-            start_node=read_node
+            start=read_node
             # No initial state provided
         )
         
@@ -226,7 +226,7 @@ class TestSharedDictionary:
         # Create a workflow with file system storage
         workflow = WorkflowEngine(
             nodes=[write_node],
-            start_node=write_node
+            start=write_node
         )
         
         # Run the workflow
@@ -255,7 +255,7 @@ class TestSharedDictionary:
         
         workflow = WorkflowEngine(
             nodes=[non_serializable_node],
-            start_node=non_serializable_node
+            start=non_serializable_node
         )
         
         # The workflow should raise an exception due to non-serializable data
@@ -288,7 +288,7 @@ class TestSharedDictionary:
         
         workflow = WorkflowEngine(
             nodes=[complex_node],
-            start_node=complex_node
+            start=complex_node
         )
         
         # Run the workflow - this should succeed as the data is JSON serializable
