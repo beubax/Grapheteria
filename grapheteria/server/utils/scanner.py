@@ -14,6 +14,7 @@ temp = defaultdict(list)
 class SystemScanner:
     @staticmethod
     def _load_module(module_path, reload=True):
+        print(f"Loading module: {module_path}")
         """Load/reload a Python module from file system"""
         try:
             module = importlib.import_module(module_path)
@@ -29,6 +30,7 @@ class SystemScanner:
             """Modified auto-register that properly captures nodes based on module"""
             super(Node, cls).__init_subclass__(**kwargs)
             if not inspect.isabstract(cls):
+                print(f"Registering node: {cls.__name__}")
                 _NODE_REGISTRY[cls.__name__] = cls
                 code = inspect.getsource(cls)
                 temp[cls.__module__].append([cls.__name__, code])
@@ -88,6 +90,7 @@ class SystemScanner:
                 if cwd not in sys.path and '' not in sys.path:
                     sys.path.insert(0, cwd)
                 SystemScanner._load_module(module_name)
+                print(temp)
                 manager.node_registry[module_name] = temp.get(module_name, [])
             finally:
                 # Restore original path

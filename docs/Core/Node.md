@@ -5,32 +5,33 @@ parent: "Core"
 nav_order: 1
 ---
 
-# Working with Nodes in Grapheteria
+# Working with Nodes
 
 ## Overview
 
-The Node class is the smallest unit of execution in Grapheteria's workflow system - think of it as the atom in your workflow molecule. All task-performing classes must extend this class to join the workflow party. Nodes handle individual pieces of work, process data, make decisions, or interact with external systems.
+The Node class is the smallest unit of execution in Grapheteria's workflow system - think of it as the atom in your workflow molecule. All task-performing classes must extend this class to join the party. Nodes handle individual pieces of work, process data, make decisions, or interact with external systems.
 
 ```python
 from grapheteria import Node
 
 class MyCustomNode(Node):
-    async def execute(self, prepared_result):
+    def execute(self, prepared_result):
         # Your execution logic goes here
         return "Hello, Grapheteria!"
 ```
 
-## The Triple-Phase Execution Model
+## The Triple-Phase Model
 
-Grapheteria nodes follow a clear three-phase execution model inspired by PocketFlow, bringing order to the potentially chaotic world of workflow execution. This separation creates clear boundaries for different responsibilities and improves maintainability.
+Grapheteria nodes follow a clear three-phase execution model inspired by <a href="https://github.com/The-Pocket/PocketFlow" target="_blank">PocketFlow</a>, bringing order to the potentially chaotic world of workflow execution. This separation creates clear boundaries for different responsibilities and improves maintainability.
 
 ### 1. Prepare
 
-The prepare phase sets the stage for execution. It receives two parameters:
+The prepare function sets the stage for execution. It receives two parameters:
 - `shared`: The shared state dictionary for cross-node communication
-- `request_input`: A function that can request input during execution
+- `request_input`: A function that can request for human input
 
 ```python
+# Use this function to read from shared, a db or pre-process data
 def prepare(self, shared, request_input):
     # Extract what you need from shared state
     name = shared.get("user_name", "friend")
@@ -41,12 +42,12 @@ def prepare(self, shared, request_input):
 
 ### 2. Execute
 
-The execute phase is where the magic happens. While it used to be required, you can now customize any of the three phases as needed. It receives one parameter:
+The execute function is where the magic happens. It receives only one parameter:
 - `prepared_result`: The output from the prepare phase
 
 ```python
+# The main work happens here, using only what prepare provided. Call an API or perform computation.
 def execute(self, prepared_result):
-    # The main work happens here, using only what prepare provided
     processed_data = do_something_with(prepared_result["data"])
     return {
         "message": f"{prepared_result['greeting']}, {prepared_result['name']}!",
@@ -56,7 +57,7 @@ def execute(self, prepared_result):
 
 Notice how `execute` doesn't receive the shared state directly. This is intentional! It:
 1. Prevents accidental corruption of shared state during critical operations
-2. Enables future parallel execution of multiple nodes ([see Parallelism docs](parallelism.md))
+2. Enables future parallel execution of multiple nodes ([see Parallelism docs](../Advanced/Advanced_Nodes))
 3. Forces clean separation of concerns between phases
 
 Execution comes with built-in resilience:
@@ -66,49 +67,32 @@ Execution comes with built-in resilience:
 
 ```python
 class ReliableNode(Node):
-    def execute(self, prepared_result):
+    async def execute(self, prepared_result):
         # Potentially flaky operation
-        return call_external_api()
+        await call_external_api()
+        return 
         
     def exec_fallback(self, prepared_result, exception):
         # Handle the failure gracefully
         return {"status": "failed", "reason": str(exception)}
 
 # Create instance with retry parameters
-reliable_api = ReliableNode(config={"api_key": "xyz123"}, max_retries=3, wait=2)
-```
-
-Here's an example using async/await with an LLM API:
-
-```python
-class LLMNode(Node):
-    async def execute(self, prepared_result):
-        prompt = prepared_result["prompt"]
-        system_message = prepared_result["system_message"]
-        
-        # Simply await an external API call
-        response = await self.call_llm_api(system_message, prompt)
-        
-        return {
-            "response": response.text,
-            "tokens_used": response.total_tokens
-        }
+reliable_node = ReliableNode(id="reliable", max_retries=3, wait=2)
 ```
 
 ### 3. Cleanup
 
-The cleanup phase handles post-execution tasks. It receives all three pieces of context:
+The cleanup function handles post-execution tasks. It receives all three pieces of context:
 - `shared`: The shared state dictionary
 - `prepared_result`: The original output from prepare
 - `execution_result`: The output from execute
 
 ```python
+# Update shared state with our results or write results to a db
 def cleanup(self, shared, prepared_result, execution_result):
-    # Update shared state with our results
     shared["greeting_message"] = execution_result["message"]
     shared["processed_data"] = execution_result["processed_data"]
-    # Optionally return something if another node connects directly
-    return execution_result
+    # write_to_db()
 ```
 
 ## Custom Node IDs
@@ -188,7 +172,7 @@ async def prepare(self, shared, request_input):
     return {"user_approved": True}
 ```
 
-The `request_id` parameter differentiates between multiple input requests within the same node. Without it, the same input would be reused for all calls (defaulting to the node's ID).
+The `request_id` parameter differentiates between multiple input requests within the same node. Without it, the same input would be reused for all calls (defaulting to the node's ID). For a more informative lesson on `request_input()` please check out the [Human-in-the-Loop](../Advanced/Human_in_the_loop) docs.
 
 ## Running Nodes Standalone
 
@@ -236,17 +220,15 @@ processor = MyCustomNode(
     {
       "id": "data_processor_1",
       "class": "MyCustomNode",
-      "config": {
-        "max_items": 100,
-        "verbose": true
-      }
+      "config": {"max_items": 100, "verbose": true}
     }
   ]
 }
 ```
 
-> **Why JSON?** JSON workflows sync in real-time with the UI, letting programmers design and modify workflows visually with an intuitive debugging experience, while automatically generating the underlying configuration. It also makes workflows portable, versionable, and easier to inspect. 
+> **Why JSON?** JSON workflows sync in real-time with the UI, letting devs design and modify workflows visually with an intuitive debugging experience.
+{: .note}
 
 
-With these building blocks, you can create nodes that graph-itefully handle any workflow task your application needs!
+With these building blocks, you can create nodes that gracefully handle any workflow task your application needs!
 

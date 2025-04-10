@@ -5,7 +5,7 @@ parent: "Core"
 nav_order: 3
 ---
 
-# Using the Shared Dictionary
+# Shared: The Communication Protocol
 
 ## Overview
 
@@ -31,16 +31,12 @@ By default, the shared dictionary starts empty (`{}`), but you can pre-load it w
 
 ```python
 # When creating a workflow from code
-workflow = WorkflowEngine(
-    nodes=[node1, node2, node3],
-    start_node=node1,
-    initial_shared_state={
+initial_shared_state={
         "chat_history": [],
         "processing_results": [],
         "retry_count": 0,
         "last_execution_time": None
     }
-)
 ```
 
 Remember that the shared dictionary is meant for dynamic values that change as your workflow runs. For fixed inputs, use node configuration parameters instead.
@@ -49,15 +45,13 @@ Setting the same initial state in JSON which can be used with .... yeah yeah the
 
 ```json
 {
-  "nodes": [...],
-  "edges": [...],
+  "nodes": ["..."],
+  "edges": ["..."],
   "initial_state": {
     "user_profile": {
       "name": "Alice",
       "preferences": ["quick", "automated"]
-    }
-  }
-}
+    } } }
 ```
 
 ## Serialization Constraints
@@ -78,4 +72,4 @@ shared["queue"] = queue.Queue()  # Not JSON serializable
 shared["model"] = sklearn.linear_model.LinearRegression()  # Not serializable
 ```
 
-Need to store complex Python objects? You'll need to extend the storage backend to use pickle or another serialization method. See our [Extending Storage](extending-storage.md) guide for the full details.
+Need to store complex Python objects? You'll need to extend the storage backend to use pickle or another serialization method. See our [Extending Storage](../Advanced/Extending_Logging) guide for the full details.

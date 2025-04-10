@@ -6,60 +6,56 @@
       "config": {}
     },
     {
-      "id": "router",
-      "class": "RouterNode",
+      "id": "agent",
+      "class": "AgentNode",
       "config": {}
     },
     {
-      "id": "internet_search",
-      "class": "InternetSearchNode",
+      "id": "search",
+      "class": "SearchNode",
       "config": {}
     },
     {
-      "id": "llm_response",
-      "class": "LLMResponseNode",
+      "id": "guardrails",
+      "class": "GuardrailsNode",
       "config": {}
     },
     {
-      "id": "continue_conversation",
-      "class": "ContinueConversationNode",
+      "id": "response",
+      "class": "ResponseNode",
       "config": {}
     }
   ],
   "edges": [
     {
       "from": "user_input",
-      "to": "router",
-      "condition": ""
+      "to": "agent"
     },
     {
-      "from": "router",
-      "to": "internet_search",
+      "from": "agent",
+      "to": "search",
       "condition": "shared['needs_search']"
     },
     {
-      "from": "router",
-      "to": "llm_response",
+      "from": "agent", 
+      "to": "guardrails",
       "condition": "not shared['needs_search']"
     },
     {
-      "from": "internet_search",
-      "to": "llm_response",
-      "condition": ""
+      "from": "search",
+      "to": "guardrails"
     },
     {
-      "from": "llm_response",
-      "to": "continue_conversation",
-      "condition": ""
+      "from": "guardrails",
+      "to": "response"
     },
     {
-      "from": "continue_conversation",
-      "to": "user_input",
-      "condition": "shared['continue_conversation']"
+      "from": "response",
+      "to": "user_input"
     }
   ],
   "start": "user_input",
   "initial_state": {
-    "messages": []
+    "conversation_history": []
   }
 }

@@ -5,11 +5,11 @@ parent: "Core"
 nav_order: 2
 ---
 
-# Edge Class Documentation
+# Connect your Nodes
 
 ## Overview
 
-Edges are the connections between nodes in your workflow graph. They determine how your workflow transitions from one node to another, acting as pathways for execution flow. Without edges, your nodes would be isolated islands of functionality with no way to reach each other. Each edge has access to the workflow's shared communication state, allowing for dynamic routing decisions based on your data.
+Edges are the connections between nodes in your workflow graph. They determine how your workflow transitions from one node to another. Without edges, your nodes would be isolated islands of functionality with no way to reach each other. Each edge has access to the workflow's shared [communication](./Shared) state, allowing for dynamic routing decisions based on your data.
 
 ```python
 # Creating an edge between two nodes
@@ -18,7 +18,7 @@ start_node > process_node > end_node
 
 ## Conditions
 
-Edges can have conditions that determine whether they should be traversed. These conditions are Python expressions (as strings) that evaluate to `True` or `False` based on the current workflow's shared state.
+Each edge in your workflow is a one-way street connecting two nodes with some conditions that determine when traffic can flow. These conditions are Python expressions (as strings) that evaluate to `True` or `False` based on the current workflow's shared state.
 
 ```python
 # Edge with a condition
@@ -58,7 +58,7 @@ analysis_node > standard_handler
 
 Remember, edge conditions are the decision points in your workflow - they determine which path your data will travel!
 
-##JSON Definition
+## JSON Definition
 
 While Python code is great for programmatically building workflows, you can also define edges in JSON. This is especially handy when working with the UI editor (Grapheteria's center of attraction!), which syncs with and can modify your JSON schema in real-time.
 
@@ -83,18 +83,9 @@ While Python code is great for programmatically building workflows, you can also
 }
 ```
 
-Important: Note that in JSON, the "from" and "to" fields are string IDs that reference nodes by their identifier, not the actual node objects as in code. This is a key difference between the two approaches. The last edge has no condition specified - it's our default edge! The JSON representation makes it easy to visualize your entire workflow structure in one place.
+> Note that in JSON, the "from" and "to" fields are string IDs that reference nodes by their identifier, not the actual node objects as in code. This is a key difference between the two approaches. 
+{: .important}
 
-## Behind the Scenes
-
-Each edge in your workflow is essentially a one-way street connecting two nodes, with some traffic rules (conditions) that determine when traffic can flow. When you define an edge, you're creating an instance of the Edge class with three key properties:
-- from_id: The ID of the source node
-- to_id: The ID of the destination node
-- condition: A string containing a Python expression (optional)
-
-```python
-# What actually happens under the hood
-edge = Edge(from_id="start_node", to_id="process_node", condition="")
-```
+The last edge has no condition specified - it's our default edge! The JSON representation makes it easy to visualize your entire workflow structure in one place.
 
 Now you're ready to connect your nodes any way you like - with code or JSON! Whether you're building a simple linear process or a complex decision tree, edges are your trusty pathways through the workflow jungle.

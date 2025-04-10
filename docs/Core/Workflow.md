@@ -5,27 +5,30 @@ parent: "Core"
 nav_order: 4
 ---
 
-# Grapheteria Workflow Engine Documentation
+# Workflow Orchestration
 
-## Bringing It All Together: The WorkflowEngine
+## Bringing It All Together: The Workflow Engine
 
 Now that we've defined our nodes, edges, and shared variables, it's time to fire up the engine! The `WorkflowEngine` class is where all the magic happens - it's the conductor that orchestrates your workflow from start to finish.
 
 ```python
-from grapheteria import WorkflowEngine, Node1, Node2, Node3
+from grapheteria import WorkflowEngine
+from nodes import Node1, Node2, Node3
 
-# Create nodes and connect them
+# Create nodes
 start_node = Node1(id="start")
 middle_node = Node2(id="process")
 end_node = Node3(id="finish")
 
-start_node > middle_node > end_node
+start_node > middle_node > end_node #Connect them
+
+shared_initial = {"counter": 0} #Initialize the shared variable
 
 # Initialize the engine with our nodes
 engine = WorkflowEngine(
     nodes=[start_node, middle_node, end_node],
     start=start_node,
-    initial_shared_state={"counter": 0}
+    initial_shared_state=shared_initial
 )
 ```
 
@@ -52,18 +55,18 @@ engine = WorkflowEngine(
 
 ### JSON-Based Workflows
 
-You might have a JSON file with the following format - 
-
+You might have a JSON file with the following format -
 ```json
-# workflows/data_pipeline.json
 {
-  "nodes": [...],
-  "edges": [...],
-  "initial_state": {...}
+  "nodes": ["..."],
+  "edges": ["..."],
+  "initial_state": {"..."},
+  "start": "..."
 }
 ```
 
-For JSON workflows, you need to import all node classes first, then provide the path or ID:
+For JSON-based workflows, you need to import all node classes first, then provide the path or ID 
+{: .important}
 
 ```python
 # IMPORTANT: Import all node classes used in your JSON workflow
@@ -79,13 +82,14 @@ engine = WorkflowEngine(workflow_path="workflows/data_pipeline.json")
 # Or using workflow_id (will look for workflows/data_pipeline.json)
 engine = WorkflowEngine(workflow_id="workflows.data_pipeline")
 ```
-
 This works because Grapheteria automatically registers node classes when they're imported. The engine then instantiates the right classes based on the JSON definition.
-The conversion is simple: dots in IDs become slashes in paths, making workflows.data_pipeline equal to workflows/data_pipeline.json.
 
-## Ready, Set, Start!
+The conversion between path and id is simple: dots in IDs become slashes in paths, making **workflows.data_pipeline** equal to **workflows/data_pipeline.json**.
+{: .note}
 
-Every workflow needs a starting point. If you don't explicitly set one, the engine will default to the first node in your list.
+## Defining Your Workflow's Entry Point
+
+Every workflow needs a starting point. If you don't explicitly set one (not recommended), the engine will default to the first node in your list .
 
 ```python
 # Explicitly setting the start node (recommended)
@@ -98,24 +102,29 @@ engine = WorkflowEngine(
 engine = WorkflowEngine(nodes=[node1, node2, node3])  # Will start with node1
 ```
 
-## Time Travel with Run IDs
+## Ready, Set, Start!: Baby Steps or Full Speed
 
-Each time you create a workflow engine, a unique run ID is generated. This ID is your time machine ticket - save it, and you can resume your workflow later!
+The engine gives you two ways to run your workflow:
+
+### Take One Step at a Time
+
+Perfect for debugging or when you need granular control:
 
 ```python
-# Start a new workflow
-engine = WorkflowEngine(nodes=[node1, node2, node3])
-print(f"Save this ID to resume later: {engine.run_id}")
-
-# Run a few steps...
-continuing, tracking_data = await engine.run()
-
-# Later, resume from where you left off
-resumed_engine = WorkflowEngine(
-    workflow_id="my_workflow",
-    run_id="20240615_123045_789"
-)
+# Execute just one node and stop
+continuing, _ = await engine.step()
 ```
+
+### Full Speed Ahead
+
+When you're ready to let it rip:
+
+```python
+# Run the entire workflow until completion or until input is required
+continuing, _ = await engine.run()
+```
+> For providing inputs when a node awaits `request_input()`, both the `step()` and `run()` functions take in a optional parameter called `input_data`. Check out [Human-in-the-Loop](../Advanced/Human_in_the_loop) for a more detailed explanation.
+{: .note}
 
 ## Monitoring Workflow State
 
@@ -133,15 +142,7 @@ print(f"Next node to execute: {next_node}")
 # Inspect the shared variables
 shared_data = engine.execution_state.shared
 print(f"Current counter value: {shared_data['counter']}")
-```
 
-The engine also maintains a complete history in `tracking_data` (we'll cover this in more detail later), which captures the entire journey of your workflow for logging and analysis.
-
-## "Human in the Loop": Responding to Input Requests
-
-When your workflow needs human input, it'll pause and wait. You can easily check if input is needed:
-
-```python
 # Check if the workflow is waiting for user input
 if engine.execution_state.workflow_status == WorkflowStatus.WAITING_FOR_INPUT:
     input_request = engine.execution_state.awaiting_input
@@ -155,38 +156,6 @@ if engine.execution_state.workflow_status == WorkflowStatus.WAITING_FOR_INPUT:
     continuing, _ = await engine.step({node_id: user_response})
 ```
 
-The input you provide is keyed by the node ID that requested it - this way, the engine knows exactly where to route your response.
+The engine also maintains a complete history in `tracking_data` (we cover this in more detail in the next section), which captures the entire journey of your workflow for analysis and resumability.
 
-## Running Your Workflow: Baby Steps or Full Speed
-
-The engine gives you two ways to run your workflow:
-
-### Take One Step at a Time
-
-Perfect for debugging or when you need granular control:
-
-```python
-# Execute just one node and stop
-continuing, _ = await engine.step()
-
-# If user input was requested, provide it in the next step
-if engine.execution_state.awaiting_input:
-    node_id = engine.execution_state.awaiting_input['node_id']
-    continuing, _ = await engine.step({node_id: "user response"})
-```
-
-### Full Speed Ahead
-
-When you're ready to let it rip:
-
-```python
-# Run the entire workflow until completion or until input is required
-continuing, _ = await engine.run()
-
-# If continuing is True and input is awaited, provide input to continue
-if continuing and engine.execution_state.awaiting_input:
-    node_id = engine.execution_state.awaiting_input['node_id']
-    continuing, _ = await engine.run({node_id: "user response"})
-```
-
-And there you have it! From defining individual nodes to orchestrating complex workflows, Grapheteria gives you the power to create state machines that are both powerful and maintainable. Happy flow-charting!
+Enjoy running your workflows! With Grapheteria's powerful engine, you can orchestrate complex state machines with confidence and control.

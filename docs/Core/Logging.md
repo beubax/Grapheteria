@@ -5,7 +5,7 @@ parent: "Core"
 nav_order: 5
 ---
 
-# Workflow Engine: Persistence and Time Travel
+# Persistence and Time Travel
 
 ## Overview
 
@@ -25,6 +25,9 @@ print(f"Remember this ID to resume later: {engine.run_id}")
 ```
 
 This ID is your ticket back to this exact workflow state. Store it somewhere safe if you want to return to this journey later!
+
+> By default, logs are stored in the `logs` directory of your current working directory. You can examine these logs anytime to find historical run_ids. For a more user-friendly experience, all logs are also accessible through the UI where they're formatted and easier to navigate.
+{: .note}
 
 ## Resuming Workflows: Pick Up Where You Left Off
 
@@ -90,13 +93,13 @@ By default, your workflow's history is stored in the local filesystem - perfect 
 engine = WorkflowEngine(nodes=[...])
 
 # For production, configure a different storage backend
-from grapheteria.utils import PostgresStorage
+from storage_backend import PostgresStorage
 engine = WorkflowEngine(
     nodes=[...],
     storage_backend=PostgresStorage(connection_string="postgresql://...")
 )
 ```
 
-For more robust production environments, check out [our Storage Configuration guide](./storage-configuration.md) for options like database storage, cloud storage, and more.
+For more robust production environments, check out [our Storage Configuration guide](../Advanced/Extending_Logging) for options like database storage, cloud storage, and more.
 
 Now you're ready to build workflows that can pause, resume, and even branch into different timelines. Happy time traveling!

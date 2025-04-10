@@ -1,8 +1,15 @@
+---
+layout: default
+title: "Deploying Workflows"
+parent: "Advanced"
+nav_order: 4
+---
+
 # Deploying Workflows with FastAPI
 
 ## Overview
 
-Ready to share your workflows with the world? FastAPI makes it easy to deploy your Grapheteria workflows as a flexible API. Whether you're building an internal tool or a public service, these routes will help you manage workflow creation, execution, and monitoring.
+Ready to share your workflows with the world? Here we show examples with FastAPI (although any library works) to make it easy to deploy your Grapheteria workflows as a flexible API. Whether you're building an internal tool or a public service, these routes will help you manage workflow creation, execution, and monitoring.
 
 First, let's create a simple workflow definition file that we can use in our API:
 
@@ -24,9 +31,9 @@ class EndNode(Node):
 
 def create_sample_workflow():
     # Create nodes
-    start = StartNode()
-    process = ProcessNode(config={"process_type": "sample"})
-    end = EndNode()
+    start = StartNode(id="start_node_1")
+    process = ProcessNode(id="process_node_1", config={"process_type": "sample"})
+    end = EndNode(id="end_node_1")
     
     # Connect nodes
     start > process > end
@@ -69,7 +76,8 @@ Here's the JSON equivalent of this workflow that could be stored as a file:
   "start": "start_node_1"
 }
 ```
-*Note: This JSON could be created and exported using the Grapheteria UI.*
+This JSON could be created and exported using the Grapheteria UI
+{: .note}
 
 Now, let's set up our FastAPI app:
 
@@ -78,7 +86,8 @@ from fastapi import FastAPI, HTTPException, Body
 from grapheteria import WorkflowEngine, WorkflowStatus
 from typing import Dict, Any, Optional
 import asyncio
-from workflow_definitions import create_sample_workflow
+#Import required for both code-based or JSON-based
+from workflow_definitions import create_sample_workflow 
 
 # Create FastAPI app
 app = FastAPI(title="Grapheteria Workflows API")
@@ -114,7 +123,7 @@ async def create_workflow(workflow_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to create workflow: {str(e)}")
 ```
 
-This endpoint creates a workflow instance and returns a run_id you'll need for subsequent operations. Think of it as getting your boarding pass before a flight!
+This endpoint creates a workflow instance and returns a run_id you'll need for subsequent operations.
 
 ## Stepping Through a Workflow
 
@@ -265,4 +274,4 @@ if __name__ == "__main__":
 
 Now your workflows are ready for the big time! Access them via HTTP requests from any application or try them out using FastAPI's automatic Swagger UI at `http://localhost:8000/docs`.
 
-For more details on deploying your FastAPI application to production, check out the [FastAPI deployment documentation](https://fastapi.tiangolo.com/deployment/).
+For more details on deploying your FastAPI application to production, check out the <a href="https://fastapi.tiangolo.com/deployment/" target="_blank">FastAPI deployment documentation</a>

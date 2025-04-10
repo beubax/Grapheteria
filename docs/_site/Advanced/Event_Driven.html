@@ -1,0 +1,420 @@
+<!DOCTYPE html> <html lang="en-US"> <head> <meta charset="UTF-8"> <meta http-equiv="X-UA-Compatible" content="IE=Edge"> <link rel="stylesheet" href="/assets/css/just-the-docs-default.css"> <link rel="stylesheet" href="/assets/css/just-the-docs-head-nav.css" id="jtd-head-nav-stylesheet"> <style id="jtd-nav-activation"> .site-nav > ul.nav-list:first-child > li > a, .site-nav > ul.nav-list:first-child > li > ul > li:not(:nth-child(5)) > a, .site-nav > ul.nav-list:first-child > li > ul > li > ul > li a { background-image: none; } .site-nav > ul.nav-list:not(:first-child) a, .site-nav li.external a { background-image: none; } .site-nav > ul.nav-list:first-child > li:nth-child(3) > ul > li:nth-child(5) > a { font-weight: 600; text-decoration: none; }.site-nav > ul.nav-list:first-child > li:nth-child(3) > button svg, .site-nav > ul.nav-list:first-child > li:nth-child(3) > ul > li:nth-child(5) > button svg { transform: rotate(-90deg); }.site-nav > ul.nav-list:first-child > li.nav-list-item:nth-child(3) > ul.nav-list, .site-nav > ul.nav-list:first-child > li.nav-list-item:nth-child(3) > ul.nav-list > li.nav-list-item:nth-child(5) > ul.nav-list { display: block; } </style> <script src="/assets/js/vendor/lunr.min.js"></script> <script src="/assets/js/just-the-docs.js"></script> <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Event-Driven Workflows | Grapheteria</title> <meta name="generator" content="Jekyll v4.4.1" /> <meta property="og:title" content="Event-Driven Workflows" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Cooking up agentic workflows!" /> <meta property="og:description" content="Cooking up agentic workflows!" /> <link rel="canonical" href="http://localhost:4000/Advanced/Event_Driven.html" /> <meta property="og:url" content="http://localhost:4000/Advanced/Event_Driven.html" /> <meta property="og:site_name" content="Grapheteria" /> <meta property="og:type" content="website" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Event-Driven Workflows" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"WebPage","description":"Cooking up agentic workflows!","headline":"Event-Driven Workflows","url":"http://localhost:4000/Advanced/Event_Driven.html"}</script> <!-- End Jekyll SEO tag --> </head> <body> <a class="skip-to-main" href="#main-content">Skip to main content</a> <svg xmlns="http://www.w3.org/2000/svg" class="d-none"> <symbol id="svg-link" viewBox="0 0 24 24"> <title>Link</title> <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link"> <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path> </svg> </symbol> <symbol id="svg-menu" viewBox="0 0 24 24"> <title>Menu</title> <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"> <line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line> </svg> </symbol> <symbol id="svg-arrow-right" viewBox="0 0 24 24"> <title>Expand</title> <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"> <polyline points="9 18 15 12 9 6"></polyline> </svg> </symbol> <!-- Feather. MIT License: https://github.com/feathericons/feather/blob/master/LICENSE --> <symbol id="svg-external-link" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-external-link"> <title id="svg-external-link-title">(external link)</title> <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line> </symbol> <symbol id="svg-doc" viewBox="0 0 24 24"> <title>Document</title> <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file"> <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline> </svg> </symbol> <symbol id="svg-search" viewBox="0 0 24 24"> <title>Search</title> <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"> <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line> </svg> </symbol> <!-- Bootstrap Icons. MIT License: https://github.com/twbs/icons/blob/main/LICENSE.md --> <symbol id="svg-copy" viewBox="0 0 16 16"> <title>Copy</title> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clipboard" viewBox="0 0 16 16"> <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/> <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/> </svg> </symbol> <symbol id="svg-copied" viewBox="0 0 16 16"> <title>Copied</title> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clipboard-check-fill" viewBox="0 0 16 16"> <path d="M6.5 0A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3Zm3 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3Z"/> <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1A2.5 2.5 0 0 1 9.5 5h-3A2.5 2.5 0 0 1 4 2.5v-1Zm6.854 7.354-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 0 1 .708-.708L7.5 10.793l2.646-2.647a.5.5 0 0 1 .708.708Z"/> </svg> </symbol> </svg> <div class="side-bar"> <div class="site-header" role="banner"> <a href="/" class="site-title lh-tight"> Grapheteria </a> <button id="menu-button" class="site-button btn-reset" aria-label="Toggle menu" aria-pressed="false"> <svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use xlink:href="#svg-menu"></use></svg> </button> </div> <nav aria-label="Main" id="site-nav" class="site-nav"> <ul class="nav-list"><li class="nav-list-item"><a href="/" class="nav-list-link">Home</a></li><li class="nav-list-item"><button class="nav-list-expander btn-reset" aria-label="toggle items in Core category" aria-pressed="false"> <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#svg-arrow-right"></use></svg> </button><a href="/Core/" class="nav-list-link">Core</a><ul class="nav-list"><li class="nav-list-item"><a href="/Core/Node.html" class="nav-list-link">Node</a></li><li class="nav-list-item"><a href="/Core/Edge.html" class="nav-list-link">Edge</a></li><li class="nav-list-item"><a href="/Core/Shared.html" class="nav-list-link">Communication</a></li><li class="nav-list-item"><a href="/Core/Workflow.html" class="nav-list-link">Workflow Engine</a></li><li class="nav-list-item"><a href="/Core/Logging.html" class="nav-list-link">Logging</a></li><li class="nav-list-item"><button class="nav-list-expander btn-reset" aria-label="toggle items in UI category" aria-pressed="false"> <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#svg-arrow-right"></use></svg> </button><a href="/Core/UI/" class="nav-list-link">UI</a><ul class="nav-list"><li class="nav-list-item"><a href="/Core/UI/Overview.html" class="nav-list-link">Overview</a></li><li class="nav-list-item"><a href="/Core/UI/Debug.html" class="nav-list-link">Debug Mode</a></li><li class="nav-list-item"><a href="/Core/UI/Logs.html" class="nav-list-link">Logs Page</a></li><li class="nav-list-item"><a href="/Core/UI/Troubleshooting.html" class="nav-list-link">Troubleshooting</a></li></ul></li></ul></li><li class="nav-list-item"><button class="nav-list-expander btn-reset" aria-label="toggle items in Advanced category" aria-pressed="false"> <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#svg-arrow-right"></use></svg> </button><a href="/Advanced/" class="nav-list-link">Advanced</a><ul class="nav-list"><li class="nav-list-item"><a href="/Advanced/Advanced_Nodes.html" class="nav-list-link">Advanced Nodes</a></li><li class="nav-list-item"><a href="/Advanced/Extending_Logging.html" class="nav-list-link">Extending Logging System</a></li><li class="nav-list-item"><a href="/Advanced/Human_in_the_loop.html" class="nav-list-link">Human-in-the-Loop</a></li><li class="nav-list-item"><a href="/Advanced/Deployment.html" class="nav-list-link">Deploying Workflows</a></li><li class="nav-list-item"><a href="/Advanced/Event_Driven.html" class="nav-list-link">Event-Driven Workflows</a></li></ul></li><li class="nav-list-item"><button class="nav-list-expander btn-reset" aria-label="toggle items in Concepts category" aria-pressed="false"> <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#svg-arrow-right"></use></svg> </button><a href="/Concepts/" class="nav-list-link">Concepts</a><ul class="nav-list"><li class="nav-list-item"><a href="/Concepts/state_machines.html" class="nav-list-link">State Machines</a></li></ul></li></ul> </nav> <footer class="site-footer"> This site uses <a href="https://github.com/just-the-docs/just-the-docs">Just the Docs</a>, a documentation theme for Jekyll. </footer> </div> <div class="main" id="top"> <div id="main-header" class="main-header"> <div class="search" role="search"> <div class="search-input-wrap"> <input type="text" id="search-input" class="search-input" tabindex="0" placeholder="Search Grapheteria" aria-label="Search Grapheteria" autocomplete="off"> <label for="search-input" class="search-label"><svg viewBox="0 0 24 24" class="search-icon"><use xlink:href="#svg-search"></use></svg></label> </div> <div id="search-results" class="search-results"></div> </div> <nav aria-label="Auxiliary" class="aux-nav"> <ul class="aux-nav-list"> <li class="aux-nav-list-item"> <a href="https://github.com/grapheteria/grapheteria" class="site-button" target="_blank" rel="noopener noreferrer" > View GitHub </a> </li> </ul> </nav> </div> <div class="main-content-wrap"> <nav aria-label="Breadcrumb" class="breadcrumb-nav"> <ol class="breadcrumb-nav-list"> <li class="breadcrumb-nav-list-item"><a href="/Advanced/">Advanced</a></li> <li class="breadcrumb-nav-list-item"><span>Event-Driven Workflows</span></li> </ol> </nav> <div id="main-content" class="main-content"> <main> <h1 id="making-your-workflow-event-driven">Making Your Workflow Event-Driven</h1> <h2 id="overview">Overview</h2> <p>Sometimes you want your workflows to kick into action when something happens in the outside world. Maybe an order comes in, a temperature sensor hits a threshold, or your cat posts a new Instagram photo. Here’s how to make your workflows respond to events, not just commands.</p> <h2 id="creating-an-event-dispatcher">Creating an Event Dispatcher</h2> <p>First, let’s build a robust event dispatcher that can trigger workflows when events occur and persist trigger configurations:</p> <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># event_dispatcher.py
+</span><span class="kn">import</span> <span class="n">asyncio</span>
+<span class="kn">import</span> <span class="n">json</span>
+<span class="kn">import</span> <span class="n">os</span>
+<span class="kn">from</span> <span class="n">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="n">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="n">grapheteria</span> <span class="kn">import</span> <span class="n">WorkflowEngine</span>
+
+<span class="k">class</span> <span class="nc">EventDispatcher</span><span class="p">:</span>
+    <span class="sh">"""</span><span class="s">Manages event subscriptions and dispatches events to workflows.</span><span class="sh">"""</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">storage_path</span><span class="o">=</span><span class="sh">"</span><span class="s">events</span><span class="sh">"</span><span class="p">):</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">storage_path</span> <span class="o">=</span> <span class="n">storage_path</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">subscriptions</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># event_type -&gt; list of workflow IDs
+</span>        <span class="n">self</span><span class="p">.</span><span class="n">active_workflows</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># (workflow_id, run_id) -&gt; WorkflowEngine
+</span>        
+        <span class="c1"># Create storage directory if it doesn't exist
+</span>        <span class="n">os</span><span class="p">.</span><span class="nf">makedirs</span><span class="p">(</span><span class="n">storage_path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        
+        <span class="c1"># Load existing subscriptions
+</span>        <span class="n">self</span><span class="p">.</span><span class="nf">load_triggers</span><span class="p">()</span>
+    
+    <span class="k">def</span> <span class="nf">subscribe</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">event_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sh">"""</span><span class="s">Subscribe a workflow to an event type with optional configuration.</span><span class="sh">"""</span>
+        <span class="k">if</span> <span class="n">event_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">self</span><span class="p">.</span><span class="n">subscriptions</span><span class="p">:</span>
+            <span class="n">self</span><span class="p">.</span><span class="n">subscriptions</span><span class="p">[</span><span class="n">event_type</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            
+        <span class="c1"># Create subscription record
+</span>        <span class="n">subscription</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="sh">"</span><span class="s">workflow_id</span><span class="sh">"</span><span class="p">:</span> <span class="n">workflow_id</span><span class="p">,</span>
+            <span class="sh">"</span><span class="s">config</span><span class="sh">"</span><span class="p">:</span> <span class="n">config</span> <span class="ow">or</span> <span class="p">{},</span>
+            <span class="sh">"</span><span class="s">created_at</span><span class="sh">"</span><span class="p">:</span> <span class="n">datetime</span><span class="p">.</span><span class="nf">now</span><span class="p">().</span><span class="nf">isoformat</span><span class="p">()</span>
+        <span class="p">}</span>
+        
+        <span class="n">self</span><span class="p">.</span><span class="n">subscriptions</span><span class="p">[</span><span class="n">event_type</span><span class="p">].</span><span class="nf">append</span><span class="p">(</span><span class="n">subscription</span><span class="p">)</span>
+        
+        <span class="c1"># Persist to storage
+</span>        <span class="n">self</span><span class="p">.</span><span class="nf">save_triggers</span><span class="p">()</span>
+        
+        <span class="k">return</span> <span class="n">subscription</span>
+        
+    <span class="k">def</span> <span class="nf">unsubscribe</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">event_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sh">"""</span><span class="s">Unsubscribe a workflow from an event type.</span><span class="sh">"""</span>
+        <span class="k">if</span> <span class="n">event_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">self</span><span class="p">.</span><span class="n">subscriptions</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+            
+        <span class="n">original_length</span> <span class="o">=</span> <span class="nf">len</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">subscriptions</span><span class="p">[</span><span class="n">event_type</span><span class="p">])</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">subscriptions</span><span class="p">[</span><span class="n">event_type</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">sub</span> <span class="k">for</span> <span class="n">sub</span> <span class="ow">in</span> <span class="n">self</span><span class="p">.</span><span class="n">subscriptions</span><span class="p">[</span><span class="n">event_type</span><span class="p">]</span> 
+            <span class="k">if</span> <span class="n">sub</span><span class="p">[</span><span class="sh">"</span><span class="s">workflow_id</span><span class="sh">"</span><span class="p">]</span> <span class="o">!=</span> <span class="n">workflow_id</span>
+        <span class="p">]</span>
+        
+        <span class="c1"># If the list is empty, remove the event type
+</span>        <span class="k">if</span> <span class="ow">not</span> <span class="n">self</span><span class="p">.</span><span class="n">subscriptions</span><span class="p">[</span><span class="n">event_type</span><span class="p">]:</span>
+            <span class="k">del</span> <span class="n">self</span><span class="p">.</span><span class="n">subscriptions</span><span class="p">[</span><span class="n">event_type</span><span class="p">]</span>
+            
+        <span class="c1"># Persist changes
+</span>        <span class="n">self</span><span class="p">.</span><span class="nf">save_triggers</span><span class="p">()</span>
+        
+        <span class="c1"># Return true if something was removed
+</span>        <span class="k">return</span> <span class="nf">len</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">subscriptions</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="n">event_type</span><span class="p">,</span> <span class="p">[]))</span> <span class="o">&lt;</span> <span class="n">original_length</span>
+    
+    <span class="k">def</span> <span class="nf">get_subscriptions</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">event_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="bp">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]:</span>
+        <span class="sh">"""</span><span class="s">Get all subscriptions or subscriptions for a specific event type.</span><span class="sh">"""</span>
+        <span class="k">if</span> <span class="n">event_type</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">event_type</span><span class="p">:</span> <span class="n">self</span><span class="p">.</span><span class="n">subscriptions</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="n">event_type</span><span class="p">,</span> <span class="p">[])}</span>
+        <span class="k">return</span> <span class="n">self</span><span class="p">.</span><span class="n">subscriptions</span>
+    
+    <span class="k">def</span> <span class="nf">save_triggers</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="sh">"""</span><span class="s">Save trigger configurations to filesystem.</span><span class="sh">"""</span>
+        <span class="n">triggers_file</span> <span class="o">=</span> <span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">storage_path</span><span class="p">,</span> <span class="sh">"</span><span class="s">triggers.json</span><span class="sh">"</span><span class="p">)</span>
+        
+        <span class="c1"># Use atomic write operation
+</span>        <span class="n">temp_file</span> <span class="o">=</span> <span class="sa">f</span><span class="sh">"</span><span class="si">{</span><span class="n">triggers_file</span><span class="si">}</span><span class="s">.tmp</span><span class="sh">"</span>
+        <span class="k">with</span> <span class="nf">open</span><span class="p">(</span><span class="n">temp_file</span><span class="p">,</span> <span class="sh">'</span><span class="s">w</span><span class="sh">'</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">json</span><span class="p">.</span><span class="nf">dump</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">subscriptions</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        
+        <span class="c1"># Atomic rename
+</span>        <span class="n">os</span><span class="p">.</span><span class="nf">rename</span><span class="p">(</span><span class="n">temp_file</span><span class="p">,</span> <span class="n">triggers_file</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">load_triggers</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="sh">"""</span><span class="s">Load trigger configurations from filesystem.</span><span class="sh">"""</span>
+        <span class="n">triggers_file</span> <span class="o">=</span> <span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">storage_path</span><span class="p">,</span> <span class="sh">"</span><span class="s">triggers.json</span><span class="sh">"</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="nf">exists</span><span class="p">(</span><span class="n">triggers_file</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nf">open</span><span class="p">(</span><span class="n">triggers_file</span><span class="p">,</span> <span class="sh">'</span><span class="s">r</span><span class="sh">'</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">self</span><span class="p">.</span><span class="n">subscriptions</span> <span class="o">=</span> <span class="n">json</span><span class="p">.</span><span class="nf">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">json</span><span class="p">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
+                <span class="c1"># Handle corrupted file
+</span>                <span class="n">self</span><span class="p">.</span><span class="n">subscriptions</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">self</span><span class="p">.</span><span class="n">subscriptions</span> <span class="o">=</span> <span class="p">{}</span>
+    
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">event_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="bp">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+        <span class="sh">"""</span><span class="s">Dispatch an event to all subscribed workflows.</span><span class="sh">"""</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="k">if</span> <span class="n">event_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">self</span><span class="p">.</span><span class="n">subscriptions</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">results</span>
+            
+        <span class="k">for</span> <span class="n">subscription</span> <span class="ow">in</span> <span class="n">self</span><span class="p">.</span><span class="n">subscriptions</span><span class="p">[</span><span class="n">event_type</span><span class="p">]:</span>
+            <span class="n">workflow_id</span> <span class="o">=</span> <span class="n">subscription</span><span class="p">[</span><span class="sh">"</span><span class="s">workflow_id</span><span class="sh">"</span><span class="p">]</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="n">subscription</span><span class="p">[</span><span class="sh">"</span><span class="s">config</span><span class="sh">"</span><span class="p">]</span>
+            
+            <span class="c1"># Create workflow instance
+</span>            <span class="n">workflow</span> <span class="o">=</span> <span class="nc">WorkflowEngine</span><span class="p">(</span><span class="n">workflow_id</span><span class="o">=</span><span class="n">workflow_id</span><span class="p">)</span>
+            <span class="n">run_id</span> <span class="o">=</span> <span class="n">workflow</span><span class="p">.</span><span class="n">run_id</span>
+            
+            <span class="c1"># Store in active workflows
+</span>            <span class="n">self</span><span class="p">.</span><span class="n">active_workflows</span><span class="p">[(</span><span class="n">workflow_id</span><span class="p">,</span> <span class="n">run_id</span><span class="p">)]</span> <span class="o">=</span> <span class="n">workflow</span>
+            
+            <span class="c1"># Add event data to shared state
+</span>            <span class="n">workflow</span><span class="p">.</span><span class="n">execution_state</span><span class="p">.</span><span class="n">shared</span><span class="p">.</span><span class="nf">update</span><span class="p">({</span>
+                <span class="sh">"</span><span class="s">event_type</span><span class="sh">"</span><span class="p">:</span> <span class="n">event_type</span><span class="p">,</span>
+                <span class="sh">"</span><span class="s">event_payload</span><span class="sh">"</span><span class="p">:</span> <span class="n">payload</span><span class="p">,</span>
+                <span class="sh">"</span><span class="s">event_config</span><span class="sh">"</span><span class="p">:</span> <span class="n">config</span><span class="p">,</span>
+                <span class="sh">"</span><span class="s">event_time</span><span class="sh">"</span><span class="p">:</span> <span class="n">datetime</span><span class="p">.</span><span class="nf">now</span><span class="p">().</span><span class="nf">isoformat</span><span class="p">()</span>
+            <span class="p">})</span>
+            
+            <span class="c1"># Run the workflow
+</span>            <span class="n">continuing</span><span class="p">,</span> <span class="n">tracking_data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">workflow</span><span class="p">.</span><span class="nf">run</span><span class="p">()</span>
+            
+            <span class="n">results</span><span class="p">.</span><span class="nf">append</span><span class="p">({</span>
+                <span class="sh">"</span><span class="s">workflow_id</span><span class="sh">"</span><span class="p">:</span> <span class="n">workflow_id</span><span class="p">,</span>
+                <span class="sh">"</span><span class="s">run_id</span><span class="sh">"</span><span class="p">:</span> <span class="n">run_id</span><span class="p">,</span>
+                <span class="sh">"</span><span class="s">status</span><span class="sh">"</span><span class="p">:</span> <span class="n">workflow</span><span class="p">.</span><span class="n">execution_state</span><span class="p">.</span><span class="n">workflow_status</span><span class="p">.</span><span class="n">name</span>
+            <span class="p">})</span>
+            
+        <span class="k">return</span> <span class="n">results</span>
+</code></pre></div></div> <h2 id="adding-event-routes-to-fastapi">Adding Event Routes to FastAPI</h2> <p>Now, let’s extend your FastAPI application to handle event subscriptions and triggers:</p> <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># routes.py
+</span><span class="kn">from</span> <span class="n">fastapi</span> <span class="kn">import</span> <span class="n">APIRouter</span><span class="p">,</span> <span class="n">HTTPException</span><span class="p">,</span> <span class="n">Body</span>
+<span class="kn">from</span> <span class="n">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="n">pydantic</span> <span class="kn">import</span> <span class="n">BaseModel</span>
+<span class="kn">from</span> <span class="n">event_dispatcher</span> <span class="kn">import</span> <span class="n">EventDispatcher</span>
+
+<span class="n">router</span> <span class="o">=</span> <span class="nc">APIRouter</span><span class="p">()</span>
+<span class="n">event_dispatcher</span> <span class="o">=</span> <span class="nc">EventDispatcher</span><span class="p">()</span>
+
+<span class="c1"># Event subscription model
+</span><span class="k">class</span> <span class="nc">EventSubscription</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">workflow_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">None</span>
+
+<span class="nd">@router.post</span><span class="p">(</span><span class="sh">"</span><span class="s">/events/subscribe/{event_type}</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">subscribe_to_event</span><span class="p">(</span><span class="n">event_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">subscription</span><span class="p">:</span> <span class="n">EventSubscription</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">Subscribe a workflow to an event type.</span><span class="sh">"""</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">event_dispatcher</span><span class="p">.</span><span class="nf">subscribe</span><span class="p">(</span>
+        <span class="n">event_type</span><span class="p">,</span> 
+        <span class="n">subscription</span><span class="p">.</span><span class="n">workflow_id</span><span class="p">,</span> 
+        <span class="n">subscription</span><span class="p">.</span><span class="n">config</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="sh">"</span><span class="s">message</span><span class="sh">"</span><span class="p">:</span> <span class="sa">f</span><span class="sh">"</span><span class="s">Workflow </span><span class="si">{</span><span class="n">subscription</span><span class="p">.</span><span class="n">workflow_id</span><span class="si">}</span><span class="s"> subscribed to event </span><span class="si">{</span><span class="n">event_type</span><span class="si">}</span><span class="sh">"</span><span class="p">,</span>
+        <span class="sh">"</span><span class="s">subscription</span><span class="sh">"</span><span class="p">:</span> <span class="n">result</span>
+    <span class="p">}</span>
+
+<span class="nd">@router.delete</span><span class="p">(</span><span class="sh">"</span><span class="s">/events/unsubscribe/{event_type}</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">unsubscribe_from_event</span><span class="p">(</span><span class="n">event_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">Unsubscribe a workflow from an event type.</span><span class="sh">"""</span>
+    <span class="n">success</span> <span class="o">=</span> <span class="n">event_dispatcher</span><span class="p">.</span><span class="nf">unsubscribe</span><span class="p">(</span><span class="n">event_type</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">success</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="nc">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="sh">"</span><span class="s">No subscription found for event </span><span class="si">{</span><span class="n">event_type</span><span class="si">}</span><span class="s"> and workflow </span><span class="si">{</span><span class="n">workflow_id</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="sh">"</span><span class="s">message</span><span class="sh">"</span><span class="p">:</span> <span class="sa">f</span><span class="sh">"</span><span class="s">Workflow </span><span class="si">{</span><span class="n">workflow_id</span><span class="si">}</span><span class="s"> unsubscribed from event </span><span class="si">{</span><span class="n">event_type</span><span class="si">}</span><span class="sh">"</span>
+    <span class="p">}</span>
+
+<span class="nd">@router.get</span><span class="p">(</span><span class="sh">"</span><span class="s">/events</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">list_events</span><span class="p">():</span>
+    <span class="sh">"""</span><span class="s">List all event subscriptions.</span><span class="sh">"""</span>
+    <span class="k">return</span> <span class="n">event_dispatcher</span><span class="p">.</span><span class="nf">get_subscriptions</span><span class="p">()</span>
+
+<span class="nd">@router.get</span><span class="p">(</span><span class="sh">"</span><span class="s">/events/{event_type}</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">get_event_subscriptions</span><span class="p">(</span><span class="n">event_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">Get subscriptions for a specific event type.</span><span class="sh">"""</span>
+    <span class="n">subscriptions</span> <span class="o">=</span> <span class="n">event_dispatcher</span><span class="p">.</span><span class="nf">get_subscriptions</span><span class="p">(</span><span class="n">event_type</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">subscriptions</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="n">event_type</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="nc">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="sh">"</span><span class="s">No subscriptions found for event </span><span class="si">{</span><span class="n">event_type</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">subscriptions</span>
+
+<span class="nd">@router.post</span><span class="p">(</span><span class="sh">"</span><span class="s">/events/trigger/{event_type}</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">trigger_event</span><span class="p">(</span><span class="n">event_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="nc">Body</span><span class="p">(</span><span class="bp">None</span><span class="p">)):</span>
+    <span class="sh">"""</span><span class="s">Trigger an event, executing all subscribed workflows.</span><span class="sh">"""</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">event_dispatcher</span><span class="p">.</span><span class="nf">dispatch</span><span class="p">(</span><span class="n">event_type</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="sh">"</span><span class="s">message</span><span class="sh">"</span><span class="p">:</span> <span class="sa">f</span><span class="sh">"</span><span class="s">Event </span><span class="si">{</span><span class="n">event_type</span><span class="si">}</span><span class="s"> triggered</span><span class="sh">"</span><span class="p">,</span>
+        <span class="sh">"</span><span class="s">workflows_executed</span><span class="sh">"</span><span class="p">:</span> <span class="nf">len</span><span class="p">(</span><span class="n">results</span><span class="p">),</span>
+        <span class="sh">"</span><span class="s">results</span><span class="sh">"</span><span class="p">:</span> <span class="n">results</span>
+    <span class="p">}</span>
+</code></pre></div></div> <h2 id="creating-webhook-triggers-with-verification">Creating Webhook Triggers with Verification</h2> <p>For secure communication with external systems, let’s add webhook support with signature verification:</p> <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># webhook_routes.py
+</span><span class="kn">from</span> <span class="n">fastapi</span> <span class="kn">import</span> <span class="n">APIRouter</span><span class="p">,</span> <span class="n">HTTPException</span><span class="p">,</span> <span class="n">Request</span><span class="p">,</span> <span class="n">Header</span><span class="p">,</span> <span class="n">Depends</span>
+<span class="kn">import</span> <span class="n">json</span>
+<span class="kn">import</span> <span class="n">hmac</span>
+<span class="kn">import</span> <span class="n">hashlib</span>
+<span class="kn">import</span> <span class="n">os</span>
+<span class="kn">from</span> <span class="n">event_dispatcher</span> <span class="kn">import</span> <span class="n">EventDispatcher</span>
+
+<span class="n">router</span> <span class="o">=</span> <span class="nc">APIRouter</span><span class="p">()</span>
+<span class="n">event_dispatcher</span> <span class="o">=</span> <span class="nc">EventDispatcher</span><span class="p">()</span>
+
+<span class="c1"># Get webhook secret from environment (should be properly managed in production)
+</span><span class="n">WEBHOOK_SECRET</span> <span class="o">=</span> <span class="n">os</span><span class="p">.</span><span class="n">environ</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">"</span><span class="s">WEBHOOK_SECRET</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">change-me-in-production</span><span class="sh">"</span><span class="p">)</span>
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">verify_webhook_signature</span><span class="p">(</span>
+    <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> 
+    <span class="n">x_signature</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nc">Header</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="sh">"</span><span class="s">X-Webhook-Signature</span><span class="sh">"</span><span class="p">)</span>
+<span class="p">):</span>
+    <span class="sh">"""</span><span class="s">Verify the webhook signature for authenticity.</span><span class="sh">"""</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">x_signature</span><span class="p">:</span>
+        <span class="c1"># You may want to make this mandatory in production
+</span>        <span class="k">return</span> <span class="bp">True</span>
+        
+    <span class="c1"># Get request body for signature validation
+</span>    <span class="n">body</span> <span class="o">=</span> <span class="k">await</span> <span class="n">request</span><span class="p">.</span><span class="nf">body</span><span class="p">()</span>
+    
+    <span class="c1"># Compute expected signature
+</span>    <span class="n">expected_signature</span> <span class="o">=</span> <span class="n">hmac</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span>
+        <span class="n">WEBHOOK_SECRET</span><span class="p">.</span><span class="nf">encode</span><span class="p">(),</span>
+        <span class="n">body</span><span class="p">,</span>
+        <span class="n">hashlib</span><span class="p">.</span><span class="n">sha256</span>
+    <span class="p">).</span><span class="nf">hexdigest</span><span class="p">()</span>
+    
+    <span class="c1"># Verify using constant-time comparison
+</span>    <span class="k">if</span> <span class="ow">not</span> <span class="n">hmac</span><span class="p">.</span><span class="nf">compare_digest</span><span class="p">(</span><span class="n">expected_signature</span><span class="p">,</span> <span class="n">x_signature</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="nc">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">401</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sh">"</span><span class="s">Invalid webhook signature</span><span class="sh">"</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="bp">True</span>
+
+<span class="nd">@router.post</span><span class="p">(</span><span class="sh">"</span><span class="s">/webhooks/{event_type}</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">webhook_handler</span><span class="p">(</span>
+    <span class="n">event_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span>
+    <span class="n">verified</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="nc">Depends</span><span class="p">(</span><span class="n">verify_webhook_signature</span><span class="p">)</span>
+<span class="p">):</span>
+    <span class="sh">"""</span><span class="s">Handle webhook calls for specific event types with signature verification.</span><span class="sh">"""</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Parse the payload
+</span>        <span class="n">body</span> <span class="o">=</span> <span class="k">await</span> <span class="n">request</span><span class="p">.</span><span class="nf">body</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">body</span><span class="p">:</span>
+            <span class="n">payload</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">payload</span> <span class="o">=</span> <span class="n">json</span><span class="p">.</span><span class="nf">loads</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">json</span><span class="p">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
+                <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span><span class="sh">"</span><span class="s">raw_body</span><span class="sh">"</span><span class="p">:</span> <span class="n">body</span><span class="p">.</span><span class="nf">decode</span><span class="p">(</span><span class="sh">"</span><span class="s">utf-8</span><span class="sh">"</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="sh">"</span><span class="s">replace</span><span class="sh">"</span><span class="p">)}</span>
+        
+        <span class="c1"># Add headers and query params to payload
+</span>        <span class="n">payload</span><span class="p">[</span><span class="sh">"</span><span class="s">headers</span><span class="sh">"</span><span class="p">]</span> <span class="o">=</span> <span class="nf">dict</span><span class="p">(</span><span class="n">request</span><span class="p">.</span><span class="n">headers</span><span class="p">)</span>
+        <span class="n">payload</span><span class="p">[</span><span class="sh">"</span><span class="s">query_params</span><span class="sh">"</span><span class="p">]</span> <span class="o">=</span> <span class="nf">dict</span><span class="p">(</span><span class="n">request</span><span class="p">.</span><span class="n">query_params</span><span class="p">)</span>
+        
+        <span class="c1"># Dispatch the event
+</span>        <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">event_dispatcher</span><span class="p">.</span><span class="nf">dispatch</span><span class="p">(</span><span class="n">event_type</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="sh">"</span><span class="s">status</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">success</span><span class="sh">"</span><span class="p">,</span>
+            <span class="sh">"</span><span class="s">event_type</span><span class="sh">"</span><span class="p">:</span> <span class="n">event_type</span><span class="p">,</span>
+            <span class="sh">"</span><span class="s">workflows_triggered</span><span class="sh">"</span><span class="p">:</span> <span class="nf">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+        <span class="p">}</span>
+        
+    <span class="k">except</span> <span class="nb">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="nc">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="sh">"</span><span class="s">Webhook processing failed: </span><span class="si">{</span><span class="nf">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div> <h2 id="scheduled-events-with-background-tasks">Scheduled Events with Background Tasks</h2> <p>Want to trigger workflows on a schedule? Let’s use FastAPI’s background tasks:</p> <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># scheduler.py
+</span><span class="kn">from</span> <span class="n">fastapi</span> <span class="kn">import</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">BackgroundTasks</span><span class="p">,</span> <span class="n">HTTPException</span><span class="p">,</span> <span class="n">Body</span>
+<span class="kn">import</span> <span class="n">asyncio</span>
+<span class="kn">from</span> <span class="n">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="n">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="n">event_dispatcher</span> <span class="kn">import</span> <span class="n">EventDispatcher</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="nc">FastAPI</span><span class="p">()</span>
+<span class="n">event_dispatcher</span> <span class="o">=</span> <span class="nc">EventDispatcher</span><span class="p">()</span>
+<span class="n">scheduled_tasks</span> <span class="o">=</span> <span class="p">{}</span>
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">run_scheduled_event</span><span class="p">(</span><span class="n">event_type</span><span class="p">,</span> <span class="n">payload</span><span class="p">,</span> <span class="n">interval_seconds</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">Run an event on a schedule.</span><span class="sh">"""</span>
+    <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">event_dispatcher</span><span class="p">.</span><span class="nf">dispatch</span><span class="p">(</span><span class="n">event_type</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>
+            <span class="c1"># Update payload with last_run timestamp
+</span>            <span class="k">if</span> <span class="nf">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">payload</span><span class="p">[</span><span class="sh">"</span><span class="s">last_run</span><span class="sh">"</span><span class="p">]</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">.</span><span class="nf">now</span><span class="p">().</span><span class="nf">isoformat</span><span class="p">()</span>
+        <span class="k">except</span> <span class="nb">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Error in scheduled event </span><span class="si">{</span><span class="n">event_type</span><span class="si">}</span><span class="s">: </span><span class="si">{</span><span class="nf">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+        
+        <span class="k">await</span> <span class="n">asyncio</span><span class="p">.</span><span class="nf">sleep</span><span class="p">(</span><span class="n">interval_seconds</span><span class="p">)</span>
+
+<span class="nd">@app.post</span><span class="p">(</span><span class="sh">"</span><span class="s">/schedule/{event_type}</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">schedule_event</span><span class="p">(</span>
+    <span class="n">event_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">interval_seconds</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">background_tasks</span><span class="p">:</span> <span class="n">BackgroundTasks</span><span class="p">,</span>
+    <span class="n">payload</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="nc">Body</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span>
+<span class="p">):</span>
+    <span class="sh">"""</span><span class="s">Schedule an event to run periodically.</span><span class="sh">"""</span>
+    <span class="k">if</span> <span class="n">event_type</span> <span class="ow">in</span> <span class="n">scheduled_tasks</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="sh">"</span><span class="s">message</span><span class="sh">"</span><span class="p">:</span> <span class="sa">f</span><span class="sh">"</span><span class="s">Event </span><span class="si">{</span><span class="n">event_type</span><span class="si">}</span><span class="s"> already scheduled</span><span class="sh">"</span><span class="p">}</span>
+    
+    <span class="k">if</span> <span class="n">interval_seconds</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="p">:</span>  <span class="c1"># Reasonable minimum in production
+</span>        <span class="k">raise</span> <span class="nc">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sh">"</span><span class="s">Interval must be at least 5 seconds</span><span class="sh">"</span><span class="p">)</span>
+    
+    <span class="c1"># Initialize payload if None
+</span>    <span class="n">actual_payload</span> <span class="o">=</span> <span class="n">payload</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">actual_payload</span><span class="p">[</span><span class="sh">"</span><span class="s">scheduled_at</span><span class="sh">"</span><span class="p">]</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">.</span><span class="nf">now</span><span class="p">().</span><span class="nf">isoformat</span><span class="p">()</span>
+    
+    <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="p">.</span><span class="nf">create_task</span><span class="p">(</span><span class="nf">run_scheduled_event</span><span class="p">(</span><span class="n">event_type</span><span class="p">,</span> <span class="n">actual_payload</span><span class="p">,</span> <span class="n">interval_seconds</span><span class="p">))</span>
+    <span class="n">scheduled_tasks</span><span class="p">[</span><span class="n">event_type</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="sh">"</span><span class="s">task</span><span class="sh">"</span><span class="p">:</span> <span class="n">task</span><span class="p">,</span>
+        <span class="sh">"</span><span class="s">interval</span><span class="sh">"</span><span class="p">:</span> <span class="n">interval_seconds</span><span class="p">,</span>
+        <span class="sh">"</span><span class="s">payload</span><span class="sh">"</span><span class="p">:</span> <span class="n">actual_payload</span><span class="p">,</span>
+        <span class="sh">"</span><span class="s">started_at</span><span class="sh">"</span><span class="p">:</span> <span class="n">datetime</span><span class="p">.</span><span class="nf">now</span><span class="p">().</span><span class="nf">isoformat</span><span class="p">()</span>
+    <span class="p">}</span>
+    
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="sh">"</span><span class="s">message</span><span class="sh">"</span><span class="p">:</span> <span class="sa">f</span><span class="sh">"</span><span class="s">Event </span><span class="si">{</span><span class="n">event_type</span><span class="si">}</span><span class="s"> scheduled to run every </span><span class="si">{</span><span class="n">interval_seconds</span><span class="si">}</span><span class="s"> seconds</span><span class="sh">"</span><span class="p">,</span>
+        <span class="sh">"</span><span class="s">event_type</span><span class="sh">"</span><span class="p">:</span> <span class="n">event_type</span><span class="p">,</span>
+        <span class="sh">"</span><span class="s">interval_seconds</span><span class="sh">"</span><span class="p">:</span> <span class="n">interval_seconds</span>
+    <span class="p">}</span>
+
+<span class="nd">@app.delete</span><span class="p">(</span><span class="sh">"</span><span class="s">/schedule/{event_type}</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">cancel_scheduled_event</span><span class="p">(</span><span class="n">event_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">Cancel a scheduled event.</span><span class="sh">"""</span>
+    <span class="k">if</span> <span class="n">event_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">scheduled_tasks</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="nc">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="sh">"</span><span class="s">No scheduled event found for </span><span class="si">{</span><span class="n">event_type</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+    
+    <span class="n">task_info</span> <span class="o">=</span> <span class="n">scheduled_tasks</span><span class="p">[</span><span class="n">event_type</span><span class="p">]</span>
+    <span class="n">task_info</span><span class="p">[</span><span class="sh">"</span><span class="s">task</span><span class="sh">"</span><span class="p">].</span><span class="nf">cancel</span><span class="p">()</span>
+    <span class="k">del</span> <span class="n">scheduled_tasks</span><span class="p">[</span><span class="n">event_type</span><span class="p">]</span>
+    
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="sh">"</span><span class="s">message</span><span class="sh">"</span><span class="p">:</span> <span class="sa">f</span><span class="sh">"</span><span class="s">Scheduled event </span><span class="si">{</span><span class="n">event_type</span><span class="si">}</span><span class="s"> cancelled</span><span class="sh">"</span><span class="p">,</span>
+        <span class="sh">"</span><span class="s">event_type</span><span class="sh">"</span><span class="p">:</span> <span class="n">event_type</span>
+    <span class="p">}</span>
+
+<span class="nd">@app.get</span><span class="p">(</span><span class="sh">"</span><span class="s">/schedule</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">list_scheduled_events</span><span class="p">():</span>
+    <span class="sh">"""</span><span class="s">List all scheduled events.</span><span class="sh">"""</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">event_type</span><span class="p">,</span> <span class="n">task_info</span> <span class="ow">in</span> <span class="n">scheduled_tasks</span><span class="p">.</span><span class="nf">items</span><span class="p">():</span>
+        <span class="n">result</span><span class="p">[</span><span class="n">event_type</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="sh">"</span><span class="s">interval_seconds</span><span class="sh">"</span><span class="p">:</span> <span class="n">task_info</span><span class="p">[</span><span class="sh">"</span><span class="s">interval</span><span class="sh">"</span><span class="p">],</span>
+            <span class="sh">"</span><span class="s">started_at</span><span class="sh">"</span><span class="p">:</span> <span class="n">task_info</span><span class="p">[</span><span class="sh">"</span><span class="s">started_at</span><span class="sh">"</span><span class="p">],</span>
+            <span class="sh">"</span><span class="s">payload</span><span class="sh">"</span><span class="p">:</span> <span class="n">task_info</span><span class="p">[</span><span class="sh">"</span><span class="s">payload</span><span class="sh">"</span><span class="p">]</span>
+        <span class="p">}</span>
+    <span class="k">return</span> <span class="n">result</span>
+</code></pre></div></div> <h2 id="using-the-event-system">Using the Event System</h2> <p>Here’s how to put all this together:</p> <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># main.py
+</span><span class="kn">from</span> <span class="n">fastapi</span> <span class="kn">import</span> <span class="n">FastAPI</span>
+<span class="kn">from</span> <span class="n">routes</span> <span class="kn">import</span> <span class="n">router</span> <span class="k">as</span> <span class="n">api_router</span>
+<span class="kn">from</span> <span class="n">webhook_routes</span> <span class="kn">import</span> <span class="n">router</span> <span class="k">as</span> <span class="n">webhook_router</span>
+<span class="kn">from</span> <span class="n">scheduler</span> <span class="kn">import</span> <span class="n">app</span> <span class="k">as</span> <span class="n">scheduler_app</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="nc">FastAPI</span><span class="p">()</span>
+
+<span class="c1"># Regular API routes
+</span><span class="n">app</span><span class="p">.</span><span class="nf">include_router</span><span class="p">(</span><span class="n">api_router</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="sh">"</span><span class="s">/api</span><span class="sh">"</span><span class="p">)</span>
+
+<span class="c1"># Webhook routes - no prefix for easier external access
+</span><span class="n">app</span><span class="p">.</span><span class="nf">include_router</span><span class="p">(</span><span class="n">webhook_router</span><span class="p">)</span>
+
+<span class="c1"># Include scheduler routes
+</span><span class="n">app</span><span class="p">.</span><span class="nf">include_router</span><span class="p">(</span><span class="n">scheduler_app</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="sh">"</span><span class="s">/api</span><span class="sh">"</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="sh">"</span><span class="s">__main__</span><span class="sh">"</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="n">uvicorn</span>
+    <span class="n">uvicorn</span><span class="p">.</span><span class="nf">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="sh">"</span><span class="s">0.0.0.0</span><span class="sh">"</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8000</span><span class="p">)</span>
+</code></pre></div></div> <h2 id="practical-examples">Practical Examples</h2> <h3 id="example-1-responding-to-a-payment-event">Example 1: Responding to a Payment Event</h3> <p>Subscribe to payment events:</p> <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">requests</span>
+
+<span class="c1"># Register a workflow to process orders when payment is received
+</span><span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span>
+    <span class="sh">"</span><span class="s">https://your-api.com/api/events/subscribe/payment_received</span><span class="sh">"</span><span class="p">,</span>
+    <span class="n">json</span><span class="o">=</span><span class="p">{</span>
+        <span class="sh">"</span><span class="s">workflow_id</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">order_processing</span><span class="sh">"</span><span class="p">,</span>
+        <span class="sh">"</span><span class="s">config</span><span class="sh">"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="sh">"</span><span class="s">priority</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">high</span><span class="sh">"</span><span class="p">,</span>
+            <span class="sh">"</span><span class="s">notify_on_completion</span><span class="sh">"</span><span class="p">:</span> <span class="bp">True</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</code></pre></div></div> <p>Trigger a payment event:</p> <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">requests</span>
+
+<span class="c1"># Trigger the event when payment is confirmed
+</span><span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span>
+    <span class="sh">"</span><span class="s">https://your-api.com/api/events/trigger/payment_received</span><span class="sh">"</span><span class="p">,</span>
+    <span class="n">json</span><span class="o">=</span><span class="p">{</span>
+        <span class="sh">"</span><span class="s">order_id</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">12345</span><span class="sh">"</span><span class="p">,</span>
+        <span class="sh">"</span><span class="s">amount</span><span class="sh">"</span><span class="p">:</span> <span class="mf">99.99</span><span class="p">,</span>
+        <span class="sh">"</span><span class="s">currency</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">USD</span><span class="sh">"</span><span class="p">,</span>
+        <span class="sh">"</span><span class="s">payment_method</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">credit_card</span><span class="sh">"</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</code></pre></div></div> <h3 id="example-2-setting-up-a-github-webhook-with-signature-verification">Example 2: Setting Up a GitHub Webhook with Signature Verification</h3> <ol> <li>Generate a secure webhook secret and configure it in your environment: <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>export WEBHOOK_SECRET=your-secure-secret-key
+</code></pre></div> </div> </li> <li>Configure your GitHub repository webhook settings: <ul> <li>URL: <code class="language-plaintext highlighter-rouge">https://your-api.com/webhooks/github_push</code></li> <li>Content type: <code class="language-plaintext highlighter-rouge">application/json</code></li> <li>Secret: Same as your <code class="language-plaintext highlighter-rouge">WEBHOOK_SECRET</code></li> <li>Events: Select “Push” events</li> </ul> </li> <li>Subscribe your workflow: <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">requests</span>
+   
+<span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span>
+    <span class="sh">"</span><span class="s">https://your-api.com/api/events/subscribe/github_push</span><span class="sh">"</span><span class="p">,</span>
+    <span class="n">json</span><span class="o">=</span><span class="p">{</span>
+        <span class="sh">"</span><span class="s">workflow_id</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">auto_deploy</span><span class="sh">"</span><span class="p">,</span>
+        <span class="sh">"</span><span class="s">config</span><span class="sh">"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="sh">"</span><span class="s">branches</span><span class="sh">"</span><span class="p">:</span> <span class="p">[</span><span class="sh">"</span><span class="s">main</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">production</span><span class="sh">"</span><span class="p">],</span>
+            <span class="sh">"</span><span class="s">deploy_target</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">production</span><span class="sh">"</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</code></pre></div> </div> </li> <li>Verify your webhook is working: <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">requests</span>
+   
+<span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span>
+    <span class="sh">"</span><span class="s">https://your-api.com/webhooks/github_push/test</span><span class="sh">"</span>
+<span class="p">)</span>
+</code></pre></div> </div> </li> </ol> <h3 id="example-3-scheduling-a-daily-report">Example 3: Scheduling a Daily Report</h3> <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">requests</span>
+
+<span class="c1"># Schedule a report generation event to run daily
+</span><span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span>
+    <span class="sh">"</span><span class="s">https://your-api.com/api/schedule/generate_daily_report</span><span class="sh">"</span><span class="p">,</span>
+    <span class="n">json</span><span class="o">=</span><span class="p">{</span>
+        <span class="sh">"</span><span class="s">interval_seconds</span><span class="sh">"</span><span class="p">:</span> <span class="mi">86400</span><span class="p">,</span>  <span class="c1"># 24 hours
+</span>        <span class="sh">"</span><span class="s">payload</span><span class="sh">"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="sh">"</span><span class="s">report_type</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">sales_summary</span><span class="sh">"</span><span class="p">,</span>
+            <span class="sh">"</span><span class="s">recipients</span><span class="sh">"</span><span class="p">:</span> <span class="p">[</span><span class="sh">"</span><span class="s">team@company.com</span><span class="sh">"</span><span class="p">]</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</code></pre></div></div> <h2 id="wrapping-up">Wrapping Up</h2> <p>With this event system, your workflows can spring to life at just the right moment. The persistent storage ensures your event subscriptions survive system restarts, while signature verification keeps your webhooks secure. Whether it’s responding to API calls, webhooks from external services, or running on a schedule, you’ve got the tools to make your state machine truly event-driven.</p> <p>Remember, the best automation is the kind you don’t have to think about - it just happens when it should!</p> </main> </div> </div> <div class="search-overlay"></div> </div> </body> </html>

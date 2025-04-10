@@ -4,33 +4,130 @@ layout: default
 nav_order: 1
 ---
 
-This is a *bare-minimum* template to create a Jekyll site that uses the [Just the Docs] theme. You can easily set the created site to be published on [GitHub Pages] – the [README] file explains how to do that, along with other details.
+# Welcome to Grapheteria!
 
-If [Jekyll] is installed on your computer, you can also build and preview the created site *locally*. This lets you test changes before committing them, and avoids waiting for GitHub Pages.[^1] And you will be able to deploy your local build to a different platform than GitHub Pages.
+Thanks for checking out this project! We're excited to show you what we've built.
 
-More specifically, the created site:
+## What is Grapheteria?
 
-- uses a gem-based approach, i.e. uses a `Gemfile` and loads the `just-the-docs` gem
-- uses the [GitHub Pages / Actions workflow] to build and publish the site on GitHub Pages
+Grapheteria is a no-bs library for creating agentic workflows. It helps you design, visualize, and execute complex processes with minimal fuss.
 
-Other than that, you're free to customize sites that you create with this template, however you like. You can easily change the versions of `just-the-docs` and Jekyll it uses, as well as adding further plugins.
+![Workflow Concept](assets/workflow-concept.png)
+<!-- An illustration showing a workflow with nodes, edges, and agents working together -->
 
-[Browse our documentation][Just the Docs] to learn more about how to use this theme.
+"Oh no, not ANOTHER workflow library!" - I hear you. But being late to the game has its advantages. We've learned from others' mistakes and borrowed their best ideas, while introducing some genuinely new features.
 
-To get started with creating a site, simply:
+## Why Grapheteria?
 
-1. click "[use this template]" to create a GitHub repository
-2. go to Settings > Pages > Build and deployment > Source, and select GitHub Actions
+While there are standards for agent creation and tool-calling, workflow creation remains fragmented. Grapheteria aims to change that with a clean, generic framework that provides essential features while remaining infinitely extensible.
 
-If you want to maintain your docs in the `docs` directory of an existing project repo, see [Hosting your docs from an existing project repo](https://github.com/just-the-docs/just-the-docs-template/blob/main/README.md#hosting-your-docs-from-an-existing-project-repo) in the template README.
+### Problems with Existing Tools
 
-----
+**Code-based workflow builders** often drown you in abstractions:
+- "Wait, what does this wrapper do again?" 
+- "How many layers of inheritance am I dealing with?"
+- "I just want to see what's happening!"
 
-[^1]: [It can take up to 10 minutes for changes to your site to publish after you push the changes to GitHub](https://docs.github.com/en/pages/setting-up-a-github-pages-site-with-jekyll/creating-a-github-pages-site-with-jekyll#creating-your-site).
+**UI-only tools** hit a ceiling:
+- Limited customization for complex scenarios
+- Multi-agent setups become impossible
+- You eventually end up back in code anyway
 
-[Just the Docs]: https://just-the-docs.github.io/just-the-docs/
-[GitHub Pages]: https://docs.github.com/en/pages
-[README]: https://github.com/just-the-docs/just-the-docs-template/blob/main/README.md
-[Jekyll]: https://jekyllrb.com
-[GitHub Pages / Actions workflow]: https://github.blog/changelog/2022-07-27-github-pages-custom-github-actions-workflows-beta/
-[use this template]: https://github.com/just-the-docs/just-the-docs-template/generate
+## The Vision: Best of Both Worlds
+
+Grapheteria seamlessly blends code and UI. Freely move between visual design and code customization without compromise. Get the full power of code with the clarity of visual debugging.
+
+![Code-UI Sync](assets/workflow.png)
+<!-- An animated GIF showing changes in code immediately reflected in the UI and vice versa -->
+
+
+{: .note }
+Grapheteria uses state machines to define workflows - a powerful pattern that makes complex processes manageable and predictable. [Learn more about state machines in Grapheteria](Concepts/state_machines).
+
+
+## Standout Features
+
+### Clean, Simple Code
+Write workflows without learning a complex API first:
+
+```python
+start_node = InputNode(id="get_name")
+process_node = ProcessNode(id="greet")
+output_node = OutputNode(id="display")
+
+start_node > process_node > output_node
+```
+
+### Visual Workflow Design
+![Workflow Editor](assets/code_sync.gif)
+<!-- A screenshot of the Grapheteria workflow editor with nodes, edges, and a properties panel -->
+
+Edit your workflows visually or programmatically - they stay in sync!
+
+### Time-Travel Debugging
+Made a mistake? No problem:
+- Step backwards in your workflow
+- Fix the issue
+- Step forwards
+- Continue from exactly where you left off
+
+![Time Travel Debug](assets/debug.gif)
+<!-- An animated GIF showing someone debugging, going back in time, fixing a node, and continuing -->
+
+### Built-in Essentials
+- Comprehensive logging
+- Automatic state persistence
+- Easy resumption of workflows
+
+![Logging Demo](Core/UI/assets/logs/log_run_details.png)
+<!-- A screenshot showing logs and state persistence in action -->
+
+### Production-Ready Path
+From prototype to production with minimal changes:
+- Scale from local to distributed execution
+- Monitor and track workflow performance
+- Handle errors gracefully
+
+![Scaling Diagram](assets/scaling.png)
+<!-- An illustration showing workflow scaling from local to distributed environments -->
+
+### Vibe-Coding Compatible
+Describe what you want, then refine:
+- Generate workflow skeletons with AI
+- Modify rather than starting from scratch
+- Rapidly prototype complex workflows
+
+![LLM Generation](assets/llm_generate.gif)
+<!-- An animated GIF showing a text prompt being turned into a workflow -->
+
+## Ready to Try It?
+
+### Installation
+
+```bash
+# Create a virtual environment (recommended)
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install Grapheteria
+pip install grapheteria
+```
+
+> **Note:** Grapheteria requires Python 3.6 or higher.
+{: .note}
+
+### Launch the UI
+
+Once installed, launch the UI with:
+
+```bash
+grapheteria
+```
+
+This will start the Grapheteria interface and automatically sync with your codebase.
+
+<div class="d-flex justify-content-center mt-4">
+  <a href="Core" class="btn btn-primary btn-sm px-3 py-2 mb-4">Learn Core Concepts →</a>
+</div>
+
+

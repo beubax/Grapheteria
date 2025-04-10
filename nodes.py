@@ -1,107 +1,118 @@
-# import requests
-# import json
-# from typing import Dict, Any, List, Optional
 from grapheteria import Node
+import re
+from typing import Dict, Any, Optional, List
 
-class Agent(Node):
-    def execute(self, prepared_result):
-        pass
-
-
-class Tool(Node):
-    def execute(self, prepared_result):
-        pass
-
-class Response(Node):
-    def execute(self, prepared_result):
-        pass
-
-# class UserInputNode(Node):
-#     async def prepare(self, shared, request_input):
-#         user_input = await request_input(prompt="What would you like to ask?")
-#         return user_input
+class UserInputNode(Node):
+    async def prepare(self, shared, request_input):
+        user_message = await request_input(prompt="What would you like to ask?")
+        return user_message
         
-#     def execute(self, user_input):
-#         return user_input
+    def execute(self, user_input):
+        return user_input
         
-#     def cleanup(self, shared, prepared_result, execution_result):
-#         shared["user_input"] = execution_result
-#         shared["messages"] = shared.get("messages", []) + [{"role": "user", "content": execution_result}]
-#         return execution_result
+    def cleanup(self, shared, prepared_result, execution_result):
+        shared["user_input"] = execution_result
+        return execution_result
 
-# class RouterNode(Node):
-#     def execute(self, prepared_result):
-#         # Determine if the query needs internet search
-#         user_input = prepared_result
-#         search_keywords = ["search", "find", "lookup", "latest", "news", "information", "data", "weather", "current"]
-#         needs_search = any(keyword in user_input.lower() for keyword in search_keywords)
-#         return needs_search
-        
-#     def cleanup(self, shared, prepared_result, execution_result):
-#         shared["needs_search"] = execution_result
-#         return execution_result
-
-# class InternetSearchNode(Node):
-#     def prepare(self, shared, request_input):
-#         return shared["user_input"]
+class AgentNode(Node):
+    async def prepare(self, shared, request_input):
+        return shared.get("user_input", "")
     
-#     def execute(self, query):
-#         try:
-#             # Simple mock search implementation
-#             # In production, replace with actual search API
-#             url = f"https://api.duckduckgo.com/?q={query}&format=json"
-#             response = requests.get(url)
-#             results = response.json()
-#             return {"query": query, "results": results}
-#         except Exception as e:
-#             return {"query": query, "error": str(e), "results": "No results found"}
-    
-#     def cleanup(self, shared, prepared_result, execution_result):
-#         shared["search_results"] = execution_result
-#         return execution_result
-
-# class LLMResponseNode(Node):
-#     def prepare(self, shared, request_input):
-#         messages = shared.get("messages", [])
-#         search_results = shared.get("search_results", None)
+    async def execute(self, user_input):
+        # In a real implementation, you would call your LLM API here
+        response = f"This is a response to: {user_input}"
         
-#         if search_results:
-#             # Include search results in context
-#             context = f"Search results for '{search_results['query']}':\n"
-#             context += json.dumps(search_results["results"], indent=2)[:1000] + "..."
-#             messages.append({"role": "system", "content": context})
+        # Check if search is needed
+        needs_search = "[search]" in user_input.lower()
+        search_query = self.extract_search_query(user_input) if needs_search else None
+        
+        return {
+            "response": response,
+            "needs_search": needs_search,
+            "search_query": search_query
+        }
+    
+    def cleanup(self, shared, prepared_result, execution_result):
+        shared["agent_response"] = execution_result["response"]
+        shared["needs_search"] = execution_result["needs_search"]
+        shared["search_query"] = execution_result["search_query"]
+        return execution_result
+    
+    def extract_search_query(self, text):
+        # Extract search query between brackets
+        match = re.search(r'\[search\](.*?)\[/search\]', text, re.IGNORECASE)
+        if match:
+            return match.group(1).strip()
+        return text  # Default to using the whole text
+
+class SearchNode(Node):
+    async def prepare(self, shared, request_input):
+        if not shared.get("needs_search", False):
+            return None
+        return shared.get("search_query", "")
+    
+    async def execute(self, query):
+        if not query:
+            return {"results": "No search query provided"}
+        
+        # In a real implementation, you would call a search API
+        try:
+            async with aiohttp.ClientSession() as session:
+                # This is a placeholder, replace with actual search API
+                search_url = f"https://example.com/search?q={query}"
+                async with session.get(search_url) as response:
+                    results = await response.text()
+                    return {"results": f"Search results for '{query}'"}
+        except Exception as e:
+            return {"results": f"Search failed: {str(e)}"}
+    
+    def cleanup(self, shared, prepared_result, execution_result):
+        if prepared_result:  # Only if search was performed
+            shared["search_results"] = execution_result["results"]
+        return execution_result
+
+class GuardrailsNode(Node):
+    async def prepare(self, shared, request_input):
+        response = shared.get("agent_response", "")
+        search_results = shared.get("search_results", "")
+        
+        # Combine agent response with search results if available
+        if search_results:
+            final_response = f"{response}\n\nBased on search results: {search_results}"
+        else:
+            final_response = response
             
-#         return messages
+        return final_response
     
-#     def execute(self, messages):
-#         # This is a mock LLM implementation
-#         # Replace with actual LLM API call in production
-#         last_message = messages[-1]["content"] if messages else ""
-#         if "search_results" in messages[-1]["content"]:
-#             return f"Based on my search, I found that {last_message}. Is there anything else you'd like to know?"
-#         return f"You asked: '{last_message}'. Here's my response. Would you like to know more?"
+    def execute(self, response):
+        # Apply content filtering
+        filtered_response = self.filter_content(response)
+        return filtered_response
     
-#     def cleanup(self, shared, prepared_result, execution_result):
-#         shared["llm_response"] = execution_result
-#         shared["messages"] = shared.get("messages", []) + [{"role": "assistant", "content": execution_result}]
-#         return execution_result
+    def cleanup(self, shared, prepared_result, execution_result):
+        shared["final_response"] = execution_result
+        return execution_result
+    
+    def filter_content(self, text):
+        # Simple implementation - would use more sophisticated guardrails in production
+        inappropriate_terms = ["offensive", "harmful", "illegal"]
+        filtered_text = text
+        for term in inappropriate_terms:
+            filtered_text = filtered_text.replace(term, "[filtered]")
+        return filtered_text
 
-# class ContinueConversationNode(Node):
-#     async def prepare(self, shared, request_input):
-#         continue_convo = await request_input(
-#             prompt="Would you like to continue the conversation?",
-#             options=["Yes", "No"],
-#             input_type="select"
-#         )
-#         return continue_convo
-        
-#     def execute(self, continue_convo):
-#         return continue_convo == "Yes"
-        
-#     def cleanup(self, shared, prepared_result, execution_result):
-#         shared["continue_conversation"] = execution_result
-#         return execution_result
-
-
-
-
+class ResponseNode(Node):
+    async def prepare(self, shared, request_input):
+        return shared.get("final_response", "Sorry, I couldn't process your request.")
+    
+    async def execute(self, response):
+        return response
+    
+    def cleanup(self, shared, prepared_result, execution_result):
+        # Present the response to the user
+        shared["conversation_history"] = shared.get("conversation_history", [])
+        shared["conversation_history"].append({
+            "user": shared.get("user_input", ""),
+            "agent": execution_result
+        })
+        return execution_result

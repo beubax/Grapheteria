@@ -1,3 +1,30 @@
 {
-    "nodes": []
+  "nodes": [
+    {
+      "id": "AgentNode_d0",
+      "class": "AgentNode",
+      "config": {}
+    },
+    {
+      "id": "ReportNode_5d",
+      "class": "ReportNode",
+      "config": {}
+    },
+    {
+      "id": "SupervisorNode_74",
+      "class": "SupervisorNode",
+      "config": {}
+    }
+  ],
+  "start": "AgentNode_d0",
+  "edges": [
+    {
+      "from": "AgentNode_d0",
+      "to": "ReportNode_5d"
+    },
+    {
+      "from": "AgentNode_d0",
+      "to": "SupervisorNode_74"
+    }
+  ]
 }
