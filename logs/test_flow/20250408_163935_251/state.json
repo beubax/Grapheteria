@@ -1,1 +1,0 @@
-{"workflow_id": "test_flow", "run_id": "20250408_163935_251", "steps": [{"shared": {}, "next_node_id": "Agent_c0", "workflow_status": "HEALTHY", "node_statuses": {}, "awaiting_input": null, "previous_node_id": null, "metadata": {"save_time": "2025-04-08T16:39:35.251517", "step": 0}}]}
