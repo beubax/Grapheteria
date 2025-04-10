@@ -45,13 +45,25 @@ async def step_workflow(
         # Store in cache
         active_workflows[(workflow_id, run_id)] = workflow
 
-    _ = asyncio.create_task(workflow.step(input_data=input_data))
+    # Create a completion event for this workflow
+    completion_event = asyncio.Event()
+    
+    # Create a wrapper task that sets the event when done
+    async def run_and_signal():
+        try:
+            result = await workflow.step(input_data=input_data)
+            return result
+        finally:
+            completion_event.set()
+    
+    task = asyncio.create_task(run_and_signal())
     
     try:
-        await asyncio.sleep(0)
-        while workflow.execution_state.workflow_status in [WorkflowStatus.RUNNING]:
-            await asyncio.sleep(0)
-            
+        # Wait for the workflow to complete or need input
+        await completion_event.wait()
+        # Get the result (if any error occurred, it will be raised here)
+        result = await task
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to step workflow: {str(e)}")
         
@@ -78,13 +90,25 @@ async def run_workflow(
         # Store in cache
         active_workflows[(workflow_id, run_id)] = workflow
 
-    _ = asyncio.create_task(workflow.run(input_data=input_data))
+    # Create a completion event for this workflow
+    completion_event = asyncio.Event()
+    
+    # Create a wrapper task that sets the event when done
+    async def run_and_signal():
+        try:
+            result = await workflow.run(input_data=input_data)
+            return result
+        finally:
+            completion_event.set()
+    
+    task = asyncio.create_task(run_and_signal())
     
     try:
-        await asyncio.sleep(0)
-        while workflow.execution_state.workflow_status in [WorkflowStatus.RUNNING, WorkflowStatus.HEALTHY]:
-            await asyncio.sleep(0)
-            
+        # Wait for the workflow to complete or need input
+        await completion_event.wait()
+        # Get the result (if any error occurred, it will be raised here)
+        result = await task
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to run workflow: {str(e)}")
         
