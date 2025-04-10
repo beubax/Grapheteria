@@ -127,7 +127,7 @@ grapheteria
 This will start the Grapheteria interface and automatically sync with your codebase.
 
 <div class="d-flex justify-content-center mt-4">
-  <a href="Core" class="btn btn-primary btn-sm px-3 py-2 mb-4">Learn Core Concepts →</a>
+  <a href="Core" class="btn btn-primary btn-sm px-2 py-2 mb-4">Learn Core Concepts →</a>
 </div>
 
 
