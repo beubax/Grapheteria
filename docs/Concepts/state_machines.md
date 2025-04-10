@@ -39,6 +39,8 @@ check_weather > decide_activity
 check_weather - "shared['weather'] == 'sunny'" > go_to_beach
 check_weather - "shared['weather'] == 'rainy'" > stay_indoors
 ```
+> Don't worry if this syntax looks unfamiliar or if you're wondering what `shared` refers to. We'll cover all that later! This example shows how to create a conditional connection between nodes. The pattern follows: from_node - "condition" > to_node
+{: .note}
 
 ### Nodes as States
 

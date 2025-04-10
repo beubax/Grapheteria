@@ -79,7 +79,7 @@ Made a mistake? No problem:
 - Automatic state persistence
 - Easy resumption of workflows
 
-![Logging Demo](Core/UI/assets/logs/log_run_details.png)
+![Logging Demo](assets/tracking.png)
 <!-- A screenshot showing logs and state persistence in action -->
 
 ### Production-Ready Path
