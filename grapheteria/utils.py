@@ -44,7 +44,7 @@ class FileSystemStorage(StorageBackend):
         temp_path = f"{state_file}.tmp"
         with open(temp_path, 'w') as f:
             json.dump(source_data, f)
-        os.rename(temp_path, state_file)  # Atomic operation
+        os.replace(temp_path, state_file)  # Atomic operation (not on windows tho :( )
     
     def load_state(self, workflow_id: str, run_id: str) -> Optional[Dict]:
         state_file = f"{self.base_dir}/{workflow_id}/{run_id}/state.json"
