@@ -54,6 +54,7 @@ export async function stepWorkflow(inputData: any): Promise<{error?: string}> {
     });
     
     const data = response.data;
+    console.log(data);
     setDebugStates(data.execution_data.steps);
     goToNextDebugState();
     return {};

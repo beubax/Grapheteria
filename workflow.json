@@ -1,0 +1,39 @@
+{
+  "nodes": [
+    {
+      "id": "Agent_df",
+      "class": "Agent",
+      "config": {}
+    },
+    {
+      "id": "Agent_18",
+      "class": "Agent",
+      "config": {}
+    },
+    {
+      "id": "Agent2_7e",
+      "class": "Agent2",
+      "config": {}
+    },
+    {
+      "id": "Agent_8d",
+      "class": "Agent",
+      "config": {}
+    }
+  ],
+  "start": "Agent_df",
+  "edges": [
+    {
+      "from": "Agent_df",
+      "to": "Agent_18"
+    },
+    {
+      "from": "Agent_18",
+      "to": "Agent2_7e"
+    },
+    {
+      "from": "Agent2_7e",
+      "to": "Agent_8d"
+    }
+  ]
+}

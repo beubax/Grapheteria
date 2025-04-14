@@ -19,7 +19,6 @@ _NODE_REGISTRY: Dict[str, Type['Node']] = {}
 class WorkflowStatus(Enum):
     """Represents the overall status of a workflow."""
     HEALTHY = auto()
-    RUNNING = auto()
     COMPLETED = auto()
     FAILED = auto()
     WAITING_FOR_INPUT = auto()
@@ -400,12 +399,11 @@ class WorkflowEngine:
         # Save to storage backend
         self.storage.save_state(self.workflow_id, self.run_id, self.tracking_data)
 
-    async def execute_node(self, node_id: str, input_data: Optional[Dict[str, Any]] = None) -> Optional[str]:
-        node = copy.copy(self.nodes[node_id])
-
+    async def execute_node(self, node: str, input_data: Optional[Dict[str, Any]] = None) -> Optional[str]:
+        node_id = node.id
         async def request_input(prompt=None, options=None, input_type="text", request_id=None):
+            
             actual_request_id = request_id if request_id else node_id
-
             if input_data and actual_request_id in input_data:
                 node_input = input_data[actual_request_id]
                 if node_input is not None:
@@ -428,73 +426,74 @@ class WorkflowEngine:
             
             future = asyncio.Future()
             self._input_futures[actual_request_id] = future
-            return await future
-        
-        await node.run(self.execution_state, request_input)
-        next_node_id = node.get_next_node_id(self.execution_state)
-        
-        return next_node_id
-    
-    async def step(self, input_data=None) -> bool:
-        if (not self.execution_state.next_node_id and not self.execution_state.awaiting_input) or self.execution_state.workflow_status == WorkflowStatus.FAILED:
-            return False, self.tracking_data
+            self.execute_event.set()
+            result = await future
+            return result
         
         if self.execution_state.workflow_status == WorkflowStatus.WAITING_FOR_INPUT:
             request_id = self.execution_state.awaiting_input['request_id']
             if not input_data or request_id not in input_data:
-                return True, self.tracking_data
+                return False
 
             message = input_data[request_id]
             node_id = self.execution_state.awaiting_input['node_id']
             # Clear awaiting input
             self.execution_state.awaiting_input = None
-            
+            self.execution_state.workflow_status = WorkflowStatus.HEALTHY
             # We're removing the node from waiting for input status
             # We don't mark it as "active" because we don't track future/pending nodes
             if node_id in self.execution_state.node_statuses and self.execution_state.node_statuses[node_id] == NodeStatus.WAITING_FOR_INPUT:
                 del self.execution_state.node_statuses[node_id]  # Remove waiting status
             
             if request_id in self._input_futures:
-                # Handle in-process resumption via futures
                 future = self._input_futures[request_id]
                 if not future.done():
-                    # Resolve the future to resume the coroutine
                     future.set_result(message)
-                    # Clean up after handling
                     del self._input_futures[request_id]
-                    self.execution_state.workflow_status = WorkflowStatus.RUNNING
-                    # Return immediately without further processing
-                    return
-            
-            # Only for cross-process resumption via re-execution
-            self.execution_state.next_node_id = node_id
+                    await asyncio.sleep(0) #Let the resumed coroutine finish
+                    return True
+
+        await node.run(self.execution_state, request_input)
+        return True
         
-        self.execution_state.workflow_status = WorkflowStatus.RUNNING
-        current_node = self.execution_state.next_node_id
+    async def step(self, input_data=None) -> bool:
+        if (not self.execution_state.next_node_id and not self.execution_state.awaiting_input) or self.execution_state.workflow_status == WorkflowStatus.FAILED:
+            return False
+        
+        current_node_id = self.execution_state.next_node_id
         
         # Set up the save callback
         self.execution_state.save_callback = self.save_state
         
         try:            
-            # Execute the current node
-            next_node_id = await self.execute_node(current_node, input_data)
+            self.execute_event = asyncio.Event()
+            node = copy.copy(self.nodes[current_node_id])
+
+            task = asyncio.create_task(self.execute_node(node, input_data))
+            event_wait_task = asyncio.create_task(self.execute_event.wait())
+            
+            _ = await asyncio.wait([task, event_wait_task], return_when=asyncio.FIRST_COMPLETED)
+            
+            #Exceptions would be raised here
+            if (task.done() and not task.result()) or self.execution_state.awaiting_input:
+                return False
+            
             # Store current node as previous_node_id before execution
-            self.execution_state.previous_node_id = current_node
+            self.execution_state.previous_node_id = current_node_id
+
+            next_node_id = node.get_next_node_id(self.execution_state)
             
             # Update next_node_id
             self.execution_state.next_node_id = next_node_id
-
-            self.execution_state.workflow_status = WorkflowStatus.HEALTHY
             
             # Check if workflow is complete
             if not self.execution_state.next_node_id and not self.execution_state.awaiting_input:
                 self.execution_state.workflow_status = WorkflowStatus.COMPLETED
-            
             # Save current state
             self.save_state()
             
             # Return whether workflow is still active
-            return self.execution_state.workflow_status != WorkflowStatus.COMPLETED, self.tracking_data
+            return self.execution_state.workflow_status != WorkflowStatus.COMPLETED
         
         except Exception as e:
             # Handle workflow-level failures
@@ -531,19 +530,12 @@ class WorkflowEngine:
             self.execution_state.next_node_id = next_node_id
         
     async def run(self, input_data=None):        
-        # Process one step with provided input data
-        if input_data and self.execution_state.awaiting_input:         
-            # Call step with input data
-            await self.step(input_data)
-            # Give the resumed coroutine a chance to complete
-            await asyncio.sleep(0)
-        # Continue running until we need input or workflow completes
         while True:
             # Call step with no inputs to prevent accidental reuse
-            continuing, tracking_data = await self.step(None)
+            continuing = await self.step(input_data)
             
             # Stop if workflow is completed or waiting for input
-            if not continuing or self.execution_state.awaiting_input:
+            if not continuing:
                 break
             
-        return continuing, tracking_data
+        return continuing

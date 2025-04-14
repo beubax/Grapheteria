@@ -45,28 +45,13 @@ async def step_workflow(
         # Store in cache
         active_workflows[(workflow_id, run_id)] = workflow
 
-    # Create a completion event for this workflow
-    completion_event = asyncio.Event()
-    
-    # Create a wrapper task that sets the event when done
-    async def run_and_signal():
-        try:
-            result = await workflow.step(input_data=input_data)
-            return result
-        finally:
-            completion_event.set()
-    
-    task = asyncio.create_task(run_and_signal())
-    
     try:
-        # Wait for the workflow to complete or need input
-        await completion_event.wait()
-        # Get the result (if any error occurred, it will be raised here)
-        result = await task
-        
+        await workflow.step(input_data=input_data)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to step workflow: {str(e)}")
+        # Just catch the exception, don't return here
+        pass
         
+    # Return response regardless of whether an exception occurred
     return {    
         "message": "Workflow stepped",
         "execution_data": workflow.tracking_data
@@ -90,27 +75,11 @@ async def run_workflow(
         # Store in cache
         active_workflows[(workflow_id, run_id)] = workflow
 
-    # Create a completion event for this workflow
-    completion_event = asyncio.Event()
-    
-    # Create a wrapper task that sets the event when done
-    async def run_and_signal():
-        try:
-            result = await workflow.run(input_data=input_data)
-            return result
-        finally:
-            completion_event.set()
-    
-    task = asyncio.create_task(run_and_signal())
-    
     try:
-        # Wait for the workflow to complete or need input
-        await completion_event.wait()
-        # Get the result (if any error occurred, it will be raised here)
-        result = await task
-        
+        await workflow.run(input_data=input_data)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to run workflow: {str(e)}")
+        # Just catch the exception, don't return here
+        pass
         
     return {    
         "message": "Workflow run",

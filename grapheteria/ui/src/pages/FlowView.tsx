@@ -87,7 +87,7 @@ const FlowView = () => {
         >
           <Background />
           <Controls />
-          
+      
           {contextMenu && (
             <div
               style={{
@@ -99,6 +99,8 @@ const FlowView = () => {
                 boxShadow: '0 0 10px rgba(0,0,0,0.3)',
                 borderRadius: '4px',
                 padding: '8px 0',
+                maxHeight: '300px',
+                overflowY: 'auto'
               }}
             >
               {Object.keys(availableNodes).map((className) => (
