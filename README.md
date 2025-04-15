@@ -1,7 +1,6 @@
-
-# ✨ Welcome to Grapheteria! ✨
-
-Thanks for stopping by! We've built something cool and can't wait to share it with you.
+<div align="center">
+  <img src="docs/assets/grapheteria.png" width="600"/>
+</div>
 
 ## 🤔 What is Grapheteria?
 
@@ -49,14 +48,14 @@ start_node > process_node > output_node
 ```
 
 ### 🎨 Visual Workflow Design
-![Workflow Editor](docs/assets/code_sync.gif)
-<!-- A screenshot of the Grapheteria workflow editor with nodes, edges, and a properties panel -->
-
 Edit visually or with code - they stay perfectly in sync!
 - Drop nodes right in the UI
 - Reroute your flow with a few clicks
 - Debug in real-time while tweaking code
 - Switch between code and UI whenever you want
+
+![Workflow Editor](docs/assets/code_sync.gif)
+<!-- A screenshot of the Grapheteria workflow editor with nodes, edges, and a properties panel -->
 
 ### ⏰ Time-Travel Debugging
 Made a mistake? No sweat:
