@@ -305,7 +305,7 @@ class WorkflowEngine:
                 nodes_dict[edge.from_id].add_edge(edge)
 
             start_node_id = data.get('start', None) or nodes[0]['id']
-            initial_shared_state = data.get('initial_state', {})
+            initial_shared_state = data.get('initial_state') or initial_shared_state or {}
             
             # Initialize workflow properties
             self.nodes = nodes_dict
@@ -378,7 +378,9 @@ class WorkflowEngine:
         # Save initial state
         self.storage.save_state(self.workflow_id, self.run_id, self.tracking_data)
         self._input_futures = {}
-    
+        self._current_execute_task = None  # Track the current execute task
+        self.execute_event = asyncio.Event()
+
     def save_state(self) -> None:
         """Save current execution state to the storage backend"""
         if not self.execution_state:
@@ -429,54 +431,71 @@ class WorkflowEngine:
             self.execute_event.set()
             result = await future
             return result
-        
-        if self.execution_state.workflow_status == WorkflowStatus.WAITING_FOR_INPUT:
-            request_id = self.execution_state.awaiting_input['request_id']
-            if not input_data or request_id not in input_data:
-                return False
-
-            message = input_data[request_id]
-            node_id = self.execution_state.awaiting_input['node_id']
-            # Clear awaiting input
-            self.execution_state.awaiting_input = None
-            self.execution_state.workflow_status = WorkflowStatus.HEALTHY
-            # We're removing the node from waiting for input status
-            # We don't mark it as "active" because we don't track future/pending nodes
-            if node_id in self.execution_state.node_statuses and self.execution_state.node_statuses[node_id] == NodeStatus.WAITING_FOR_INPUT:
-                del self.execution_state.node_statuses[node_id]  # Remove waiting status
-            
-            if request_id in self._input_futures:
-                future = self._input_futures[request_id]
-                if not future.done():
-                    future.set_result(message)
-                    del self._input_futures[request_id]
-                    await asyncio.sleep(0) #Let the resumed coroutine finish
-                    return True
 
         await node.run(self.execution_state, request_input)
-        return True
+        return
         
     async def step(self, input_data=None) -> bool:
         if (not self.execution_state.next_node_id and not self.execution_state.awaiting_input) or self.execution_state.workflow_status == WorkflowStatus.FAILED:
             return False
+        
+        if self.execution_state.workflow_status == WorkflowStatus.WAITING_FOR_INPUT:
+                request_id = self.execution_state.awaiting_input['request_id']
+                if not input_data or request_id not in input_data:
+                    return False
+
+                message = input_data[request_id]
+                node_id = self.execution_state.awaiting_input['node_id']
+                # Clear awaiting input
+                self.execution_state.awaiting_input = None
+                self.execution_state.workflow_status = WorkflowStatus.HEALTHY
+                # We're removing the node from waiting for input status
+                # We don't mark it as "active" because we don't track future/pending nodes
+                if node_id in self.execution_state.node_statuses and self.execution_state.node_statuses[node_id] == NodeStatus.WAITING_FOR_INPUT:
+                    del self.execution_state.node_statuses[node_id]  # Remove waiting status
         
         current_node_id = self.execution_state.next_node_id
         
         # Set up the save callback
         self.execution_state.save_callback = self.save_state
         
-        try:            
+        try:
             self.execute_event = asyncio.Event()
             node = copy.copy(self.nodes[current_node_id])
-
-            task = asyncio.create_task(self.execute_node(node, input_data))
-            event_wait_task = asyncio.create_task(self.execute_event.wait())
+            if self._current_execute_task:
+                    future = self._input_futures[request_id]
+                    if not future.done():
+                        future.set_result(message)
+                        del self._input_futures[request_id]
+                        await asyncio.sleep(0) #Let the resumed coroutine finish              
+            else:
+                self._current_execute_task = asyncio.create_task(self.execute_node(node, input_data))
+                event_task = asyncio.create_task(self.execute_event.wait())
+                # Wait for either task to complete
+                done, pending = await asyncio.wait(
+                    [self._current_execute_task, event_task], 
+                    return_when=asyncio.FIRST_COMPLETED
+                )
             
-            _ = await asyncio.wait([task, event_wait_task], return_when=asyncio.FIRST_COMPLETED)
-            
-            #Exceptions would be raised here
-            if (task.done() and not task.result()) or self.execution_state.awaiting_input:
-                return False
+                # If the event task completed, it means we're waiting for input
+                if event_task in done:
+                    # Don't cancel execute_task as it's waiting for input
+                    # We keep self._current_execute_task for next step call
+                    return False
+                
+                event_task.cancel()
+                try:
+                    await event_task
+                except asyncio.CancelledError:
+                    pass
+                
+            # If execute_task completed, we clear the reference to it
+            if self._current_execute_task.done():
+                # Purely for raising exceptions
+                _ = self._current_execute_task.result()
+                
+                # Clear the reference to the completed task
+                self._current_execute_task = None
             
             # Store current node as previous_node_id before execution
             self.execution_state.previous_node_id = current_node_id

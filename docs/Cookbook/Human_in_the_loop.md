@@ -25,6 +25,7 @@ Grapheteria excels at creating human-in-the-loop workflows with minimal effort. 
 
 ```python
 # utils.py
+from functools import lru_cache
 import os
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -32,12 +33,16 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+@lru_cache(maxsize=1)
+def get_llm_client():
+    return OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
 def call_llm(prompt, max_tokens=500):
     """Call OpenAI's API to generate text."""
-    client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+    llm_client = get_llm_client()
     
     try:
-        response = client.chat.completions.create(
+        response = llm_client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a helpful article writer."},
@@ -50,6 +55,8 @@ def call_llm(prompt, max_tokens=500):
     except Exception as e:
         print(f"Error calling OpenAI API: {e}")
         return f"Failed to generate article about {prompt}"
+
+
 ```
 
 ### Now let's create our workflow nodes
@@ -122,9 +129,9 @@ class ReviseNode(Node):
 
 ```python
 # main.py
-import asyncio
-from grapheteria import WorkflowEngine
 from nodes import *
+from grapheteria import WorkflowEngine
+import asyncio
 
 # Create nodes
 generate = GenerateContentNode(id="generate_content")
@@ -144,7 +151,7 @@ workflow = WorkflowEngine(
     start=generate
 )
 
-async def main():
+async def run_workflow():
     user_input = None
     
     while True:
@@ -170,8 +177,10 @@ async def main():
         elif not continue_workflow:
             break
             
-# Run the workflow
-asyncio.run(main())
+            
+if __name__ == "__main__":
+    # Run the workflow
+    asyncio.run(run_workflow())
 ```
 
 ### Workflow JSON Schema
@@ -202,6 +211,18 @@ asyncio.run(main())
 }
 ```
 
+## Setup
+
+```bash
+# Install dependencies
+pip install grapheteria openai
+
+# Set your OpenAI API key in the .env file
+
+# Run the example to test functionality 
+python main.py
+```
+
 ## Key Features Demonstrated
 
 - **User Input** - Workflow pauses twice for human input (topic and approval)
@@ -210,7 +231,7 @@ asyncio.run(main())
 - **Decision Points** - Human makes the publish/revise decision
 - **State Persistence** - All data flows through the shared state
 
-As always run `grapheteria` in your terminal to launch the UI and visualize/run this workflow.
+As always, run `grapheteria` in your terminal to launch the UI and visualize/run this workflow.
 
 ![Human in the loop (UI View)](assets/human_in_the_loop.png)
 

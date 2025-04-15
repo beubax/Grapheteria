@@ -7,17 +7,12 @@ from grapheteria.utils import FileSystemStorage
 
 router = APIRouter()
 
-# Dictionary to store active workflows
-active_workflows = {}
-
 @router.get("/workflows/create/{workflow_id}")
 async def create_workflow(workflow_id: str):
     try:
         workflow = WorkflowEngine(workflow_id=workflow_id)
         
         run_id = workflow.run_id
-        # Store workflow in active_workflows dictionary
-        active_workflows[(workflow_id, run_id)] = workflow
         
         return {    
             "message": "Workflow created",
@@ -36,14 +31,8 @@ async def step_workflow(
     resume_from: Optional[int] = Body(None),
     fork: bool = Body(False)
 ):
-    # Check if workflow exists in cache and resume_from and fork are None
-    if resume_from is None and fork is False and (workflow_id, run_id) in active_workflows:
-        workflow = active_workflows[(workflow_id, run_id)]
-    else:
-        # Create new workflow with specified parameters
-        workflow = WorkflowEngine(workflow_id=workflow_id, run_id=run_id, resume_from=resume_from, fork=fork)
-        # Store in cache
-        active_workflows[(workflow_id, run_id)] = workflow
+    # Create new workflow with specified parameters
+    workflow = WorkflowEngine(workflow_id=workflow_id, run_id=run_id, resume_from=resume_from, fork=fork)
 
     try:
         await workflow.step(input_data=input_data)
@@ -66,14 +55,8 @@ async def run_workflow(
     resume_from: Optional[int] = Body(None),
     fork: bool = Body(False)
 ):
-    # Check if workflow exists in cache and resume_from and fork are None
-    if resume_from is None and fork is False and (workflow_id, run_id) in active_workflows:
-        workflow = active_workflows[(workflow_id, run_id)]
-    else:
-        # Create new workflow with specified parameters
-        workflow = WorkflowEngine(workflow_id=workflow_id, run_id=run_id, resume_from=resume_from, fork=fork)
-        # Store in cache
-        active_workflows[(workflow_id, run_id)] = workflow
+    # Create new workflow with specified parameters
+    workflow = WorkflowEngine(workflow_id=workflow_id, run_id=run_id, resume_from=resume_from, fork=fork)
 
     try:
         await workflow.run(input_data=input_data)

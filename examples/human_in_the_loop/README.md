@@ -24,7 +24,7 @@ This example shows how to create a workflow where:
 The workflow creates a feedback loop between AI and humans:
 
 1. User provides a topic
-2. OpenAI generates an article
+2. OpenAI LLM generates an article
 3. User reviews and decides to approve or reject
 4. If approved, content is published
 5. If rejected, user provides feedback and AI revises

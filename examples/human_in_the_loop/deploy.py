@@ -67,7 +67,7 @@ async def step_workflow(run_id: str, input_data: Optional[InputData] = None):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Step failed: {str(e)}")
 
-@app.get("/workflows/{run_id}/status")
+@app.get("/workflows/status/{run_id}")
 async def get_workflow_status(run_id: str):
     """Check the current status of a workflow"""
     if run_id not in active_workflows:
