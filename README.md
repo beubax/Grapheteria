@@ -2,17 +2,16 @@
   <img src="docs/assets/grapheteria.gif"/>
 </div>
 
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-![Docs](https://img.shields.io/badge/docs-latest-blue)(https://beubax.github.io/Grapheteria/)
-![Tests](https://github.com/beubax/Grapheteria/actions/workflows/test.yml/badge.svg)(https://github.com/beubax/Grapheteria/tests)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/license/mit)
+[![Docs](https://img.shields.io/badge/docs-latest-blue)](https://beubax.github.io/Grapheteria/)
+[![Tests](https://github.com/beubax/Grapheteria/actions/workflows/test.yml/badge.svg)](https://github.com/beubax/Grapheteria/tests)
 
 ## What is Grapheteria?
 
 A structured agentic workflow framework bringing uniformity to agent orchestration:
-- 🎨 Design complex agent topologies with standardized visual primitives
-- 💻 Implement workflows with a consistent, inheritance-free API
-- ⏰ Debug execution graphs with deterministic state tracking
-- 🚀 Deploy scalable systems without abstraction overhead
+- 🎨 Design complex agent topologies with standardized visual primitives and a consistent API
+- ⏰ Debug and deploy with deterministic state tracking and minimal abstraction overhead
+- 🔌 Seamlessly integrate with ecosystem innovations like MCP tool interfaces, Agent2Agent communication, and any foundation model
 
 "Oh no 😵‍💫, not ANOTHER workflow library! " - I hear you. But being fashionably late means we've learned from everyone else's mistakes and cherry-picked their best ideas, while adding our own secret sauce.
 
@@ -42,11 +41,6 @@ Grapheteria blends code and UI seamlessly. Bounce between visual design and code
 
 ![Code-UI Sync](docs/assets/workflow.png)
 <!-- An animated GIF showing changes in code immediately reflected in the UI and vice versa -->
-
-Seamlessly integrate with existing agentic ecosystem innovations:
-- Use MCP for standardized tool interfaces
-- Implement Agent2Agent communication for consistent inter-agent messaging
-- Plug in any foundation model or specialized agent architecture
 
 ## Standout Features
 
