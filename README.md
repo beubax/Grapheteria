@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/assets/grapheteria.png" width="800"/>
+  <img src="docs/assets/grapheteria.png"/>
 </div>
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
