@@ -59,9 +59,13 @@ start_node > process_node > output_node
 Build sophisticated agent architectures with proven patterns:
 - Chain-of-Thought: Break down complex reasoning into sequential steps
 - Verification Loops: Self-check outputs with critic agents
-- Parallel Processing: Distribute tasks across multiple specialized agents
 - ReAct Framework: Integrate reasoning and action loops seamlessly
 - Human-in-the-Loop: Add supervision exactly where needed
+
+Seamlessly integrate with existing agentic ecosystem innovations:
+- Use MCP for standardized tool interfaces
+- Implement Agent2Agent communication for consistent inter-agent messaging
+- Plug in any foundation model or specialized agent architecture
 
 ```mermaid
 %%{init: {'theme': 'neutral' }}%%
@@ -80,16 +84,6 @@ graph TD
     B2 --> C2[Critic]
     C2 -->|Pass| D2[Output]
     C2 -->|Fail| B2
-    end
-    
-    %% Parallel Processing
-    subgraph "Parallel Processing"
-    A3[Task] --> B3[Splitter]
-    B3 --> C3[Agent 1]
-    B3 --> D3[Agent 2]
-    B3 --> E3[Agent 3]
-    C3 & D3 & E3 --> F3[Aggregator]
-    F3 --> G3[Result]
     end
     
     %% ReAct Framework
