@@ -42,6 +42,11 @@ Grapheteria blends code and UI seamlessly. Bounce between visual design and code
 ![Code-UI Sync](docs/assets/workflow.png)
 <!-- An animated GIF showing changes in code immediately reflected in the UI and vice versa -->
 
+Seamlessly integrate with existing agentic ecosystem innovations:
+- Use MCP for standardized tool interfaces
+- Implement Agent2Agent communication for consistent inter-agent messaging
+- Plug in any foundation model or specialized agent architecture
+
 ## Standout Features
 
 ### Clean, Simple Code
@@ -61,11 +66,6 @@ Build sophisticated agent architectures with proven patterns:
 - Verification Loops: Self-check outputs with critic agents
 - ReAct Framework: Integrate reasoning and action loops seamlessly
 - Human-in-the-Loop: Add supervision exactly where needed
-
-Seamlessly integrate with existing agentic ecosystem innovations:
-- Use MCP for standardized tool interfaces
-- Implement Agent2Agent communication for consistent inter-agent messaging
-- Plug in any foundation model or specialized agent architecture
 
 ```mermaid
 %%{init: {'theme': 'neutral' }}%%
