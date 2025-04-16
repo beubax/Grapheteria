@@ -8,18 +8,18 @@
 ## What is Grapheteria?
 
 Grapheteria: The no-nonsense workflow engine that lets you:
-• Design complex agent processes visually
-• Code with simple, intuitive syntax
-• Debug with time-travel superpowers
-• Deploy without the usual headaches
+- Design complex agent processes visually
+- Code with simple, intuitive syntax
+- Debug with time-travel superpowers
+- Deploy without the usual headaches
 
-<div align="center">
+<!-- <div align="center">
   <img src="docs/assets/workflow-concept.png" width="750"/>
-</div>
+</div> -->
 
 "Oh no, not ANOTHER workflow library!" - Yeah, we hear you! But being fashionably late means we've learned from everyone else's mistakes and cherry-picked their best ideas, while adding our own secret sauce.
 
-## 🚀 Why Grapheteria?
+## Why Grapheteria?
 
 While agent creation and tool-calling have standards, workflow creation is still a mess. Grapheteria fixes that with a clean framework that gives you what you need while letting you extend things however you want.
 
@@ -35,14 +35,14 @@ While agent creation and tool-calling have standards, workflow creation is still
 - Multi-agent setups? Forget about it
 - You eventually crawl back to code anyway
 
-## 🌈 The Vision: Best of Both Worlds
+## The Vision: Best of Both Worlds
 
 Grapheteria blends code and UI seamlessly. Bounce between visual design and code customization without compromises. Get all the power of code with the clarity of visual debugging.
 
 ![Code-UI Sync](docs/assets/workflow.png)
 <!-- An animated GIF showing changes in code immediately reflected in the UI and vice versa -->
 
-## ✅ Standout Features
+## Standout Features
 
 ### 👨‍💻 Clean, Simple Code
 Write workflows without a PhD in API-ology:
@@ -101,7 +101,7 @@ Describe what you want, then fine-tune:
 ![LLM Generation](docs/assets/llm_generate.gif)
 <!-- An animated GIF showing a text prompt being turned into a workflow -->
 
-## 🚦 Ready to Try It?
+## Ready to Try It?
 
 ### Installation
 
