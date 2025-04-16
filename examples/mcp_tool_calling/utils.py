@@ -1,12 +1,6 @@
 # utils.py
-import asyncio
 from functools import lru_cache
-from typing import Optional, Dict, Any, List
-from contextlib import AsyncExitStack
-
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
-
+from typing import Dict, Any, List
 from anthropic import Anthropic
 from dotenv import load_dotenv
 import os
