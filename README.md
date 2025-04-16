@@ -2,9 +2,9 @@
   <img src="docs/assets/grapheteria.gif"/>
 </div>
 
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-![Docs](https://img.shields.io/badge/docs-latest-blue)(https://beubax.github.io/Grapheteria/)
-![Tests](https://github.com/beubax/Grapheteria/actions/workflows/test.yml/badge.svg)(https://github.com/beubax/Grapheteria/tests)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/license/mit)
+[![Docs](https://img.shields.io/badge/docs-latest-blue)](https://beubax.github.io/Grapheteria/)
+[![Tests](https://github.com/beubax/Grapheteria/actions/workflows/test.yml/badge.svg)](https://github.com/beubax/Grapheteria/tests)
 
 ## What is Grapheteria?
 
