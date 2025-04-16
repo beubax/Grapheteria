@@ -2,12 +2,11 @@
   <img src="docs/assets/grapheteria.png" width="800"/>
 </div>
 
-## 🤔 What is Grapheteria?
-
 Grapheteria is a no-BS library for creating agentic workflows. Design, visualize, and run complex processes without the headaches.
 
-![Workflow Concept](docs/assets/workflow-concept.png)
-<!-- An illustration showing a workflow with nodes, edges, and agents working together -->
+<div align="center">
+  <img src="docs/assets/workflow-concept.png" width="600"/>
+</div>
 
 "Oh no, not ANOTHER workflow library!" - Yeah, we hear you! But being fashionably late means we've learned from everyone else's mistakes and cherry-picked their best ideas, while adding our own secret sauce.
 
