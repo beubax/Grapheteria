@@ -55,52 +55,6 @@ output_node = OutputNode(id="display")
 start_node > process_node > output_node
 ```
 
-### Visual Workflow Design
-Edit visually or with code - they stay perfectly in sync!
-- Drop nodes right in the UI
-- Reroute your flow with a few clicks
-- Debug in real-time while tweaking code
-- Switch between code and UI whenever you want
-
-![Workflow Editor](docs/assets/code_sync.gif)
-<!-- A screenshot of the Grapheteria workflow editor with nodes, edges, and a properties panel -->
-
-### Time-Travel Debugging
-Made a mistake? No sweat:
-- Step backward in time
-- Fix the bug
-- Step forward
-- Keep going from exactly where you left off
-
-![Time Travel Debug](docs/assets/debug.gif)
-<!-- An animated GIF showing someone debugging, going back in time, fixing a node, and continuing -->
-
-### Built-in Essentials
-- Super detailed logging
-- Auto-saves your state
-- Easy resume after stopping
-
-![Logging Demo](docs/assets/tracking.png)
-<!-- A screenshot showing logs and state persistence in action -->
-
-### Production-Ready Path
-From your laptop to the cloud with minimal changes:
-- Scale to distributed execution
-- Track everything automatically
-- Handle errors like a pro
-
-![Scaling Diagram](docs/assets/scaling.png)
-<!-- An illustration showing workflow scaling from local to distributed environments -->
-
-### Vibe-Coding Compatible
-Describe what you want, then fine-tune:
-- Generate workflows with AI
-- Tweak instead of starting from scratch
-- Build complex flows in minutes, not hours
-
-![LLM Generation](docs/assets/llm_generate.gif)
-<!-- An animated GIF showing a text prompt being turned into a workflow -->
-
 ### Powerful Agentic Patterns
 Build sophisticated agent architectures with proven patterns:
 - Chain-of-Thought: Break down complex reasoning into sequential steps
@@ -156,6 +110,52 @@ graph TD
     B5 -->|Confident| E5[Output]
     end
 ```
+
+### Visual Workflow Design
+Edit visually or with code - they stay perfectly in sync!
+- Drop nodes right in the UI
+- Reroute your flow with a few clicks
+- Debug in real-time while tweaking code
+- Switch between code and UI whenever you want
+
+![Workflow Editor](docs/assets/code_sync.gif)
+<!-- A screenshot of the Grapheteria workflow editor with nodes, edges, and a properties panel -->
+
+### Time-Travel Debugging
+Made a mistake? No sweat:
+- Step backward in time
+- Fix the bug
+- Step forward
+- Keep going from exactly where you left off
+
+![Time Travel Debug](docs/assets/debug.gif)
+<!-- An animated GIF showing someone debugging, going back in time, fixing a node, and continuing -->
+
+### Built-in Essentials
+- Super detailed logging
+- Auto-saves your state
+- Easy resume after stopping
+
+![Logging Demo](docs/assets/tracking.png)
+<!-- A screenshot showing logs and state persistence in action -->
+
+### Production-Ready Path
+From your laptop to the cloud with minimal changes:
+- Scale to distributed execution
+- Track everything automatically
+- Handle errors like a pro
+
+![Scaling Diagram](docs/assets/scaling.png)
+<!-- An illustration showing workflow scaling from local to distributed environments -->
+
+### Vibe-Coding Compatible
+Describe what you want, then fine-tune:
+- Generate workflows with AI
+- Tweak instead of starting from scratch
+- Build complex flows in minutes, not hours
+
+![LLM Generation](docs/assets/llm_generate.gif)
+<!-- An animated GIF showing a text prompt being turned into a workflow -->
 
 ## Ready to Try It?
 
