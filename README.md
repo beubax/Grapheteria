@@ -14,6 +14,11 @@ A structured agentic workflow framework bringing uniformity to agent orchestrati
 - ⏰ Debug execution graphs with deterministic state tracking
 - 🚀 Deploy scalable systems without abstraction overhead
 
+Seamlessly integrate with existing agentic ecosystem innovations:
+- Use MCP for standardized tool interfaces
+- Implement Agent2Agent communication for consistent inter-agent messaging
+- Plug in any foundation model or specialized agent architecture
+
 "Oh no 😵‍💫, not ANOTHER workflow library! " - I hear you. But being fashionably late means we've learned from everyone else's mistakes and cherry-picked their best ideas, while adding our own secret sauce.
 
 <div align="center">
@@ -42,11 +47,6 @@ Grapheteria blends code and UI seamlessly. Bounce between visual design and code
 
 ![Code-UI Sync](docs/assets/workflow.png)
 <!-- An animated GIF showing changes in code immediately reflected in the UI and vice versa -->
-
-Seamlessly integrate with existing agentic ecosystem innovations:
-- Use MCP for standardized tool interfaces
-- Implement Agent2Agent communication for consistent inter-agent messaging
-- Plug in any foundation model or specialized agent architecture
 
 ## Standout Features
 
