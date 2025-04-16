@@ -1,0 +1,22 @@
+{
+    "start": "question",
+    "nodes": [
+      { "id": "question", "class": "QuestionNode" },
+      { "id": "collect_mcp_tools", "class": "CollectMCPToolsNode" },
+      { "id": "initial_response", "class": "InitialResponseNode" },
+      { "id": "tool_execution", "class": "ToolExecutionNode" },
+      { "id": "final_response", "class": "FinalResponseNode" },
+      { "id": "feedback", "class": "FeedbackNode" }
+    ],
+    "edges": [
+      { "from": "question", "to": "collect_mcp_tools" },
+      { "from": "collect_mcp_tools", "to": "initial_response" },
+      { "from": "question", "to": "initial_response", "condition": "shared.get('collected_tools', False) == True" },
+      { "from": "initial_response", "to": "final_response" },
+      { "from": "initial_response", "to": "tool_execution", "condition": "shared.get('tool_calls', False)" },
+      { "from": "tool_execution", "to": "final_response" },
+      { "from": "final_response", "to": "feedback" },
+      { "from": "feedback", "to": "question", "condition": "shared['feedback'] == 'no'" }
+    ]
+  }
+  

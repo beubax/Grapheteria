@@ -46,12 +46,13 @@ class TestAsyncNode:
 class TestParallelNode:
     class ParallelTestNode(Node):
         async def prepare(self, shared, request_input):
+            if "items" in shared:
+                return shared["items"]
             return [{"id": i} for i in range(shared.get("item_count", 3))]
         
         async def _execute_with_retry(self, items):
             tasks = [self._process_item(item) for item in items]
             results = await asyncio.gather(*tasks, return_exceptions=True)
-            
             exceptions = [r for r in results if isinstance(r, Exception)]
             if exceptions:
                 raise exceptions[0]
@@ -60,6 +61,7 @@ class TestParallelNode:
         
         async def execute(self, item):
             await asyncio.sleep(0.05)  # Simulate some work
+            print("Item", item)
             if item.get("id") == 99:  # Simulate failure case
                 raise ValueError("Item 99 always fails")
             return f"processed-{item['id']}"
@@ -103,7 +105,15 @@ class TestBatchNode:
         async def _execute_with_retry(self, items):
             results = []
             for item in items:
-                result = await super()._process_item(item)
+                for self.cur_retry in range(self.max_retries):
+                    try:
+                        result = await super()._process_item(item)  
+                        break
+                    except Exception as e:
+                        if self.cur_retry == self.max_retries - 1:
+                            return await self._handle_fallback(item, e)
+                        if self.wait > 0:
+                            await asyncio.sleep(self.wait)
                 results.append(result)
             return results
         
@@ -141,6 +151,9 @@ class TestBatchNode:
             def __init__(self):
                 super().__init__(max_retries=3, wait=0.01)
                 self.attempt_counts = {}
+
+            def prepare(self, shared, request_input):
+                return shared.get("test_items")
             
             def execute(self, item):
                 if item not in self.attempt_counts:
@@ -150,6 +163,8 @@ class TestBatchNode:
                 # Succeed on the second try for this item
                 if item == "item-retry" and self.attempt_counts[item] < 2:
                     raise ValueError("Temporary failure")
+                
+            
                 
                 return f"processed-{item}-attempt-{self.attempt_counts[item]}"
         
@@ -177,6 +192,9 @@ class TestErrorHandling:
         
         def exec_fallback(self, prepared_result, exception):
             return {"error": str(exception), "fallback_value": float('inf')}
+        
+        def cleanup(self, shared, prepared_result, execution_result):
+            shared["result"] = execution_result
     
     @pytest.mark.asyncio
     async def test_fallback_execution(self):
@@ -223,6 +241,9 @@ class TestErrorHandling:
                     for item in prepared_result
                 ]
             }
+        
+        def cleanup(self, shared, prepared_result, execution_result):
+            shared["result"] = execution_result
     
     @pytest.mark.asyncio
     async def test_parallel_fallback(self):

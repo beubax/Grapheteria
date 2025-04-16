@@ -27,7 +27,7 @@ Grapheteria nodes follow a clear three-phase execution model inspired by <a href
 ### 1. Prepare
 
 The prepare function sets the stage for execution. It receives two parameters:
-- `shared`: The shared state dictionary for cross-node communication
+- `shared`: The shared state dictionary for cross-node [communication](./Shared)
 - `request_input`: A function that can request for human input
 
 ```python
@@ -57,7 +57,7 @@ def execute(self, prepared_result):
 
 Notice how `execute` doesn't receive the shared state directly. This is intentional! It:
 1. Prevents accidental corruption of shared state during critical operations
-2. Enables future parallel execution of multiple nodes ([see Parallelism docs](../Advanced/Advanced_Nodes))
+2. Enables parallel execution within a node (e.g., map-reduce patterns, concurrent API calls) by isolating execution logic from shared state. ([see Parallelism docs](../Advanced/Advanced_Nodes))
 3. Forces clean separation of concerns between phases
 
 Execution comes with built-in resilience:

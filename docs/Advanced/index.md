@@ -34,4 +34,4 @@ Make your state machine responsive to the world around it. Discover how to build
 
 We're constantly working to add new features and improve grapheteria's capabilities. Our goal is to make your experience with state machines better, easier, and more powerful with each update.
 
-Have an idea for a feature that would make your workflow smoother? Something you wish grapheteria could do? We'd love to hear about it! Please reach out in the [GitHub discussions](https://github.com/yourorg/grapheteria/discussions) page to share your suggestions. Your feedback directly shapes the future of this library.
+Have an idea for a feature that would make your workflow smoother? Something you wish grapheteria could do? We'd love to hear about it! Please reach out in the [GitHub discussions](https://github.com/beubax/grapheteria/discussions) page to share your suggestions. Your feedback directly shapes the future of this library.

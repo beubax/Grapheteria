@@ -109,12 +109,12 @@ class TestSharedDictionary:
         )
         
         # Run the workflow
-        continuing, tracking_data = await workflow.run()
+        continuing = await workflow.run()
         
         # Verify the shared state contains our values
         assert not continuing  # Workflow should be complete
-        assert tracking_data['steps'][-1]['shared']['test_key'] == "test_value"
-        assert tracking_data['steps'][-1]['shared']['read_node_processed'] == True
+        assert workflow.tracking_data['steps'][-1]['shared']['test_key'] == "test_value"
+        assert workflow.tracking_data['steps'][-1]['shared']['read_node_processed'] == True
     
     @pytest.mark.asyncio
     async def test_initial_state(self):
@@ -130,11 +130,11 @@ class TestSharedDictionary:
         )
         
         # Run the workflow
-        continuing, tracking_data = await workflow.run()
+        continuing = await workflow.run()
         
         # Verify the shared state contains our initial values
         assert not continuing  # Workflow should be complete
-        final_state = tracking_data['steps'][-1]['shared']
+        final_state = workflow.tracking_data['steps'][-1]['shared']
         assert final_state['test_key'] == "initial_value"
         assert final_state['items'] == [1, 2, 3]
         assert final_state['read_node_processed'] == True
@@ -156,11 +156,11 @@ class TestSharedDictionary:
         )
         
         # Run the workflow
-        continuing, tracking_data = await workflow.run()
+        continuing = await workflow.run()
         
         # Verify the changes through the chain
         assert not continuing
-        steps = tracking_data['steps']
+        steps = workflow.tracking_data['steps']
         
         # First step (after write_node)
         assert steps[1]['shared']['test_key'] == "original"
@@ -189,11 +189,11 @@ class TestSharedDictionary:
         )
         
         # Run the workflow
-        continuing, tracking_data = await workflow.run()
+        continuing = await workflow.run()
         
         # Check the final list
         assert not continuing
-        final_state = tracking_data['steps'][-1]['shared']
+        final_state = workflow.tracking_data['steps'][-1]['shared']
         assert final_state['items'] == ["initial_item", "item1", "item2", "item3"]
     
     @pytest.mark.asyncio
@@ -209,11 +209,11 @@ class TestSharedDictionary:
         )
         
         # Run the workflow
-        continuing, tracking_data = await workflow.run()
+        continuing = await workflow.run()
         
         # Verify behavior with empty state
         assert not continuing
-        final_state = tracking_data['steps'][-1]['shared']
+        final_state = workflow.tracking_data['steps'][-1]['shared']
         assert 'read_node_processed' in final_state
         assert final_state['read_node_processed'] == True
         assert 'test_key' not in final_state  # The key wasn't created
@@ -230,11 +230,11 @@ class TestSharedDictionary:
         )
         
         # Run the workflow
-        continuing, tracking_data = await workflow.run()
+        continuing = await workflow.run()
         
         # Grab the run_id
-        run_id = tracking_data['run_id']
-        workflow_id = tracking_data['workflow_id']
+        run_id = workflow.tracking_data['run_id']
+        workflow_id = workflow.tracking_data['workflow_id']
         
         # Create a new workflow engine that loads the existing run
         resumed_workflow = WorkflowEngine(
@@ -292,11 +292,11 @@ class TestSharedDictionary:
         )
         
         # Run the workflow - this should succeed as the data is JSON serializable
-        continuing, tracking_data = await workflow.run()
+        continuing = await workflow.run()
         
         # Verify the complex data structure was preserved
         assert not continuing
-        complex_data = tracking_data['steps'][-1]['shared']['complex_data']
+        complex_data = workflow.tracking_data['steps'][-1]['shared']['complex_data']
         assert complex_data['top_level'] == "value"
         assert complex_data['level1']['level2']['level3'][2]['key'] == "value"
         assert complex_data['level1']['another_key'][0]['nested'] == True

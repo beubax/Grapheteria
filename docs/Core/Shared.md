@@ -54,22 +54,35 @@ Setting the same initial state in JSON which can be used with .... yeah yeah the
     } } }
 ```
 
-## Serialization Constraints
+## Serialization Superpowers
 
-Since workflow states are saved to disk, variables in your shared dictionary must be JSON-serializable by default. This includes:
+Now with the magic of Python pickling (via dill), your shared dictionary can store almost any Python object! Unlike before, you're no longer limited to JSON-friendly types:
 
-- Simple types: strings, numbers, booleans, None
-- Containers: lists, dictionaries
-- Nested combinations of the above
+- Complex objects: queues, custom classes, trained ML models
+- Function references and callables
+- Basically anything Python can create
 
 ```python
-# ✅ This works fine
-shared["results"] = [1, 2, 3]
-shared["config"] = {"max_retries": 3, "enabled": True}
+# ✅ Go wild with complex objects
+from queue import Queue
+import sklearn.linear_model
 
-# ❌ This will cause errors during state saving
-shared["queue"] = queue.Queue()  # Not JSON serializable
-shared["model"] = sklearn.linear_model.LinearRegression()  # Not serializable
+# Pass messages between nodes with queues
+shared["task_queue"] = Queue()
+shared["task_queue"].put({"priority": "high", "task": "analyze_data"})
+
+# Share trained ML models between nodes
+model = sklearn.linear_model.LinearRegression()
+model.fit([[0], [1], [2]], [0, 1, 2])  # Train it
+shared["prediction_model"] = model     # Store it
+
+# ✅ Even store functions for maximum flexibility
+def calculate_score(data):
+    return sum(data) / len(data)
+    
+shared["scoring_function"] = calculate_score
 ```
 
-Need to store complex Python objects? You'll need to extend the storage backend to use pickle or another serialization method. See our [Extending Storage](../Advanced/Extending_Logging) guide for the full details.
+This opens up powerful patterns: passing trained models between nodes, creating inter-node communication channels, or even building responsive agent networks that collaborate through shared resources.
+
+By default, these serialized states are stored in your local filesystem. Need to persist to a database instead? Check out our [Extending Storage](../Advanced/Extending_Logging) guide.

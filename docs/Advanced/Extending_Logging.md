@@ -38,7 +38,7 @@ The `StorageBackend` abstract class defines the interface any storage implementa
 ```python
 class StorageBackend(ABC):
     @abstractmethod
-    def save_state(self, workflow_id: str, run_id: str, tracking_data: dict) -> None:
+    def save_state(self, workflow_id: str, run_id: str, save_data: dict) -> None:
         """Save the workflow execution state."""
         pass
     
@@ -47,12 +47,11 @@ class StorageBackend(ABC):
         """Load a workflow execution state."""
         pass
 
-    @abstractmethod
+    #Optional methods for easier resumeability
     def list_runs(self, workflow_id: str) -> List[str]:
         """List all runs for a given workflow."""
         pass
 
-    @abstractmethod
     def list_workflows(self) -> List[str]:
         """List all workflows."""
         pass
@@ -73,12 +72,13 @@ Here's an example of implementing SQLite storage - observe how it satisfies the 
 from grapheteria.utils import StorageBackend
 
 class SQLiteStorage(StorageBackend):
+    """SQLite implementation of storage backend."""
+    
     def __init__(self, db_path: str = "workflows.db"):
         self.db_path = db_path
         self._init_db()
         
     def _init_db(self):
-        # Creates the database table if it doesn't exist
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
@@ -100,8 +100,8 @@ class SQLiteStorage(StorageBackend):
         finally:
             conn.close()
     
-    def save_state(self, workflow_id: str, run_id: str, source_data: dict) -> None:
-        # Saves workflow state as JSON in the database
+    def save_state(self, workflow_id: str, run_id: str, save_data: dict) -> None:
+        
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
@@ -109,12 +109,11 @@ class SQLiteStorage(StorageBackend):
                 INSERT OR REPLACE INTO workflow_states (workflow_id, run_id, state_json, updated_at)
                 VALUES (?, ?, ?, CURRENT_TIMESTAMP)
                 ''',
-                (workflow_id, run_id, json.dumps(source_data))
+                (workflow_id, run_id, json.dumps(save_data))
             )
             conn.commit()
-            
+    
     def load_state(self, workflow_id: str, run_id: str) -> Optional[Dict]:
-        # Retrieves workflow state from the database
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
@@ -154,12 +153,12 @@ class MyAwesomeStorage(StorageBackend):
         # Connect to your storage service
         self.client = AwesomeStorageClient(connection_string)
     
-    def save_state(self, workflow_id, run_id, source_data):
+    def save_state(self, workflow_id, run_id, save_data):
         # Your code to save state
         self.client.upsert_document(
             collection="workflows",
             key=f"{workflow_id}:{run_id}",
-            data=source_data
+            data=save_data
         )
     
     # Implement the other required methods...

@@ -34,11 +34,11 @@ engine = WorkflowEngine(
 
 ## JSON or Code? Choose Your Adventure
 
-The workflow engine is flexible - you can define workflows either through code (as shown above) or via JSON files.
+The workflow engine is flexible - you can define your workflow schema either through code (as shown above) or via JSON files.
 
-### Code-Based Workflows
+### Code-Based Schema
 
-With code-based workflows, you directly pass your node objects as a list:
+With code-based schema definitions, you directly pass your node objects as a list:
 
 ```python
 # Create your node instances
@@ -53,7 +53,7 @@ engine = WorkflowEngine(
 )
 ```
 
-### JSON-Based Workflows
+### JSON-Based Schema
 
 You might have a JSON file with the following format -
 ```json
@@ -65,7 +65,7 @@ You might have a JSON file with the following format -
 }
 ```
 
-For JSON-based workflows, you need to import all node classes first, then provide the path or ID 
+For JSON-based schemas, you need to import all node classes before initializing the WorkflowEngine. 
 {: .important}
 
 ```python
@@ -112,7 +112,7 @@ Perfect for debugging or when you need granular control:
 
 ```python
 # Execute just one node and stop
-continuing, _ = await engine.step()
+await engine.step()
 ```
 
 ### Full Speed Ahead
@@ -121,7 +121,7 @@ When you're ready to let it rip:
 
 ```python
 # Run the entire workflow until completion or until input is required
-continuing, _ = await engine.run()
+await engine.run()
 ```
 > For providing inputs when a node awaits `request_input()`, both the `step()` and `run()` functions take in a optional parameter called `input_data`. Check out [Human-in-the-Loop](../Advanced/Human_in_the_loop) for a more detailed explanation.
 {: .note}
@@ -153,7 +153,7 @@ if engine.execution_state.workflow_status == WorkflowStatus.WAITING_FOR_INPUT:
     
     # Provide the requested input and continue
     user_response = input("> ")
-    continuing, _ = await engine.step({node_id: user_response})
+    continuing = await engine.run({node_id: user_response})
 ```
 
 The engine also maintains a complete history in `tracking_data` (we cover this in more detail in the next section), which captures the entire journey of your workflow for analysis and resumability.

@@ -1,0 +1,24 @@
+{
+    "start": "generate_content",
+    "nodes": [{
+        "id": "generate_content",
+        "class": "GenerateContentNode" },
+      { "id": "human_review",
+        "class": "HumanReviewNode" },
+      { "id": "publish",
+        "class": "PublishNode" },
+      { "id": "revise",
+        "class": "ReviseNode" }],
+    "edges": [{
+        "from": "generate_content",
+        "to": "human_review" },
+      { "from": "human_review",
+        "to": "publish",
+        "condition": "shared['human_decision'] == 'approve'" },
+      { "from": "human_review",
+        "to": "revise",
+        "condition": "shared['human_decision'] == 'reject'" },
+      { "from": "revise",
+        "to": "human_review" }]
+  }
+  

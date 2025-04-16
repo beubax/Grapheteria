@@ -277,7 +277,7 @@ class TestExecutionState:
         """Test execution state after a step."""
         engine = WorkflowEngine(nodes=nodes)
         
-        continuing, _ = await engine.step()
+        continuing = await engine.step()
         
         assert continuing is True
         assert engine.execution_state.previous_node_id == "start"
@@ -296,9 +296,9 @@ class TestInputHandling:
         engine = WorkflowEngine(nodes=nodes_with_input)
         
         # Run until we hit the input node
-        continuing, _ = await engine.run()
+        continuing = await engine.run()
         
-        assert continuing is True
+        assert continuing is False
         assert engine.execution_state.workflow_status == WorkflowStatus.WAITING_FOR_INPUT
         assert engine.execution_state.awaiting_input is not None
         assert engine.execution_state.awaiting_input['node_id'] == "input"
@@ -310,10 +310,10 @@ class TestInputHandling:
         engine = WorkflowEngine(nodes=nodes_with_input)
         
         # Run until we hit the input node
-        continuing, _ = await engine.run()
+        continuing = await engine.run()
         
         # Now provide the requested input
-        continuing, _ = await engine.step({"input": "Alice"})
+        continuing = await engine.step({"input": "Alice"})
         
         # Input should be processed and workflow should continue
         assert engine.execution_state.shared.get("user_name") == "Alice"
@@ -329,14 +329,14 @@ class TestExecution:
         engine = WorkflowEngine(nodes=nodes)
         
         # Execute first node
-        continuing, _ = await engine.step()
+        continuing = await engine.step()
         
         assert continuing is True
         assert engine.execution_state.shared == {"start_executed": True}
         assert engine.execution_state.next_node_id == "process"
         
         # Execute second node
-        continuing, _ = await engine.step()
+        continuing = await engine.step()
         
         assert continuing is True
         assert engine.execution_state.shared == {"start_executed": True, "process_executed": True}
@@ -348,7 +348,7 @@ class TestExecution:
         engine = WorkflowEngine(nodes=nodes)
         
         # Run the whole workflow
-        continuing, _ = await engine.run()
+        continuing = await engine.run()
         
         assert continuing is False  # Workflow should be complete
         assert engine.execution_state.workflow_status == WorkflowStatus.COMPLETED
@@ -364,21 +364,21 @@ class TestExecution:
         engine = WorkflowEngine(nodes=nodes_with_input)
         
         # First step (start node)
-        continuing, _ = await engine.step()
+        continuing = await engine.step()
         assert continuing is True
         
         # Second step (input node) - will wait for input
-        continuing, _ = await engine.step()
-        assert continuing is True
+        continuing = await engine.step()
+        assert continuing is False
         assert engine.execution_state.awaiting_input is not None
         
         # Provide input
-        continuing, _ = await engine.step({"input": "Bob"})
+        continuing = await engine.step({"input": "Bob"})
         assert continuing is True
         assert engine.execution_state.shared.get("user_name") == "Bob"
         
         # Final step (end node)
-        continuing, _ = await engine.step()
+        continuing = await engine.step()
         assert continuing is False
         assert engine.execution_state.workflow_status == WorkflowStatus.COMPLETED
         
@@ -388,12 +388,12 @@ class TestExecution:
         engine = WorkflowEngine(nodes=nodes_with_input)
         
         # Run until input is needed
-        continuing, _ = await engine.run()
-        assert continuing is True
+        continuing = await engine.run()
+        assert continuing is False
         assert engine.execution_state.awaiting_input is not None
         
         # Provide input and complete the workflow
-        continuing, _ = await engine.run({"input": "Charlie"})
+        continuing = await engine.run({"input": "Charlie"})
         assert continuing is False
         assert engine.execution_state.workflow_status == WorkflowStatus.COMPLETED
         assert engine.execution_state.shared.get("user_name") == "Charlie"
@@ -425,11 +425,11 @@ class TestEdgeCases:
         engine = WorkflowEngine(nodes=nodes)
         
         # Run to completion
-        continuing, _ = await engine.run()
+        continuing = await engine.run()
         assert continuing is False
         
         # Try to step again
-        continuing, _ = await engine.step()
+        continuing = await engine.step()
         assert continuing is False  # Should still be complete
         
     @pytest.mark.asyncio
@@ -438,7 +438,7 @@ class TestEdgeCases:
         engine = WorkflowEngine(nodes=nodes)
         
         # Provide input when none is needed
-        continuing, _ = await engine.step({"input": "Should be ignored"})
+        continuing = await engine.step({"input": "Should be ignored"})
         
         # Workflow should continue normally
         assert engine.execution_state.next_node_id == "process"
@@ -449,10 +449,10 @@ class TestEdgeCases:
         engine = WorkflowEngine(nodes=nodes_with_input)
         
         # Run until input is needed
-        continuing, _ = await engine.run()
+        continuing = await engine.run()
         
         # Provide input with wrong key
-        continuing, _ = await engine.step({"wrong_key": "Alice"})
+        continuing = await engine.step({"wrong_key": "Alice"})
         
         # Should still be waiting for input
         assert engine.execution_state.workflow_status == WorkflowStatus.WAITING_FOR_INPUT

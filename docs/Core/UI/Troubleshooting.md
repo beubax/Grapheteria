@@ -96,6 +96,6 @@ This ensures all your code is freshly scanned and registered properly.
 
 ## Getting Help
 
-Encountered an issue not covered here? Please report it on our [GitHub Issues page](https://github.com/grapheteria/grapheteria/issues). Your feedback helps make Grapheteria better for everyone!
+Encountered an issue not covered here? Please report it on our [GitHub Issues page](https://github.com/beubax/grapheteria/issues). Your feedback helps make Grapheteria better for everyone!
 
 Happy graph-building! 🚀

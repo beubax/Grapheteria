@@ -1,19 +1,14 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse
 from fastapi.requests import Request
 import os
 import uvicorn
 from watchdog.observers import Observer
-import sys
 from grapheteria.server.workflow_manager import WorkflowManager
 from grapheteria.server.handlers.file_handlers import NodeChangeHandler, WorkflowChangeHandler
 from grapheteria.server.routes import router as api_router
-import time
-
 # Create WorkflowManager instance
 workflow_manager = WorkflowManager()
 

@@ -1,15 +1,16 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional, List
+from typing import Dict, Optional, List
 import json
 import os
 from contextlib import contextmanager
 import sqlite3
+from dill import dump, load
 
 class StorageBackend(ABC):
     """Abstract base class for workflow state storage backends."""
     
     @abstractmethod
-    def save_state(self, workflow_id: str, run_id: str, source_data: dict) -> None:
+    def save_state(self, workflow_id: str, run_id: str, save_data: dict) -> None:
         """Save the current workflow execution state."""
         pass
     
@@ -18,12 +19,10 @@ class StorageBackend(ABC):
         """Load a workflow execution state."""
         pass
 
-    @abstractmethod
     def list_runs(self, workflow_id: str) -> List[str]:
         """List all runs for a given workflow."""
         pass
 
-    @abstractmethod
     def list_workflows(self) -> List[str]:
         """List all workflows."""
         pass
@@ -35,24 +34,24 @@ class FileSystemStorage(StorageBackend):
     def __init__(self, base_dir: str = "logs"):
         self.base_dir = base_dir
         
-    def save_state(self, workflow_id: str, run_id: str, source_data: dict) -> None:
+    def save_state(self, workflow_id: str, run_id: str, save_data: dict) -> None:
         log_dir = f"{self.base_dir}/{workflow_id}/{run_id}"
         os.makedirs(log_dir, exist_ok=True)
-        state_file = os.path.join(log_dir, "state.json")
-        
-        # Efficient file writing with atomic operation
-        temp_path = f"{state_file}.tmp"
-        with open(temp_path, 'w') as f:
-            json.dump(source_data, f)
-        os.replace(temp_path, state_file)  # Atomic operation (not on windows tho :( )
+        dill_file = os.path.join(log_dir, "state.pkl")
+
+        try:
+            with open(dill_file, 'wb') as f:
+                dump(save_data, f)
+        except Exception as e:
+            raise e
     
     def load_state(self, workflow_id: str, run_id: str) -> Optional[Dict]:
-        state_file = f"{self.base_dir}/{workflow_id}/{run_id}/state.json"
-        if not os.path.exists(state_file):
+        dill_file = f"{self.base_dir}/{workflow_id}/{run_id}/state.pkl"
+        if not os.path.exists(dill_file):
             return None
             
-        with open(state_file, 'r') as f:
-            return json.load(f)
+        with open(dill_file, 'rb') as f:
+            return load(f)
 
     def list_runs(self, workflow_id: str) -> List[str]:
         workflow_dir = f"{self.base_dir}/{workflow_id}"
@@ -98,7 +97,7 @@ class SQLiteStorage(StorageBackend):
         finally:
             conn.close()
     
-    def save_state(self, workflow_id: str, run_id: str, source_data: dict) -> None:
+    def save_state(self, workflow_id: str, run_id: str, save_data: dict) -> None:
         
         with self._get_connection() as conn:
             cursor = conn.cursor()
@@ -107,7 +106,7 @@ class SQLiteStorage(StorageBackend):
                 INSERT OR REPLACE INTO workflow_states (workflow_id, run_id, state_json, updated_at)
                 VALUES (?, ?, ?, CURRENT_TIMESTAMP)
                 ''',
-                (workflow_id, run_id, json.dumps(source_data))
+                (workflow_id, run_id, json.dumps(save_data))
             )
             conn.commit()
     

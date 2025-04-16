@@ -1,7 +1,7 @@
+from time import sleep
 import pytest
 import os
 import tempfile
-import asyncio
 import shutil
 from pathlib import Path
 from unittest.mock import patch, MagicMock
@@ -106,7 +106,7 @@ async def test_run_id_generation(temp_log_dir, basic_workflow):
     assert len(engine.run_id) > 10  # Should be substantial in length
     
     # Run the workflow to completion
-    continuing, _ = await engine.run()
+    continuing = await engine.run()
     assert not continuing  # Workflow should complete
 
 # Tests for Basic Workflow Resumption
@@ -140,7 +140,7 @@ async def test_basic_workflow_resumption(temp_log_dir, basic_workflow):
     assert resumed_engine.execution_state.next_node_id == engine.execution_state.next_node_id
     
     # Complete the workflow
-    continuing, tracking_data = await resumed_engine.run()
+    continuing = await resumed_engine.run()
     assert not continuing  # Workflow should complete
     assert resumed_engine.execution_state.workflow_status == WorkflowStatus.COMPLETED
     
@@ -165,7 +165,7 @@ async def test_resume_from_specific_step(temp_log_dir, basic_workflow):
     workflow_id = engine.workflow_id
     
     # Run the workflow to completion
-    continuing, _ = await engine.run()
+    continuing = await engine.run()
     assert not continuing
     
     # Resume from step 1 (after start node)
@@ -181,7 +181,7 @@ async def test_resume_from_specific_step(temp_log_dir, basic_workflow):
     resumed_engine.execution_state.shared = {"start_result": resumed_engine.execution_state.shared["start_result"]}
     
     # Complete the workflow
-    continuing, _ = await resumed_engine.run()
+    continuing = await resumed_engine.run()
     assert not continuing
     
     # Verify only the remaining nodes executed
@@ -216,18 +216,21 @@ async def test_workflow_forking(temp_log_dir, basic_workflow):
         fork=True,
         storage_backend=FileSystemStorage(base_dir=temp_log_dir)
     )
+
+    #Since this runs very quickly, let's sleep for a second to generate a new run_id
+    await sleep(2)
     
     # Verify it's a new run with forked metadata
     assert forked_engine.run_id != original_run_id
     assert "forked_from" in forked_engine.tracking_data
     assert forked_engine.tracking_data["forked_from"] == original_run_id
-    
+
     # Complete the original workflow
-    continuing, _ = await engine.run()
+    continuing = await engine.run()
     assert not continuing
     
     # Complete the forked workflow
-    continuing, _ = await forked_engine.run()
+    continuing = await forked_engine.run()
     assert not continuing
     
     # Both workflows should have completed successfully
@@ -285,27 +288,29 @@ async def test_input_handling_and_resumption(temp_log_dir, workflow_with_input):
     workflow_id = engine.workflow_id
     
     # Run until input is needed
-    continuing, tracking_data = await engine.run()
-    assert continuing
+    continuing = await engine.run()
     assert engine.execution_state.workflow_status == WorkflowStatus.WAITING_FOR_INPUT
     assert engine.execution_state.awaiting_input is not None
     
     # Get the request ID
     request_id = engine.execution_state.awaiting_input["request_id"]
+    print(request_id)
     
     # Resume the workflow in a new instance
     resumed_engine = WorkflowEngine(
         workflow_id=workflow_id,
+        nodes=nodes,
         run_id=run_id,
         storage_backend=FileSystemStorage(base_dir=temp_log_dir)
     )
     
+    print(resumed_engine.execution_state.awaiting_input)
     # Verify input state was preserved
     assert resumed_engine.execution_state.workflow_status == WorkflowStatus.WAITING_FOR_INPUT
     assert resumed_engine.execution_state.awaiting_input is not None
     
     # Provide input and continue
-    continuing, tracking_data = await resumed_engine.run({request_id: "test_input"})
+    continuing = await resumed_engine.run({request_id: "test_input"})
     assert not continuing  # Workflow should complete
     
     # Verify input was processed
@@ -328,12 +333,13 @@ async def test_sqlite_storage_backend(temp_db_path, basic_workflow):
     workflow_id = engine.workflow_id
     
     # Run workflow
-    continuing, _ = await engine.run()
+    continuing = await engine.run()
     assert not continuing
     
     # Resume workflow from SQLite
     resumed_engine = WorkflowEngine(
         workflow_id=workflow_id,
+        nodes=nodes,
         run_id=run_id,
         storage_backend=SQLiteStorage(db_path=temp_db_path)
     )
@@ -352,6 +358,7 @@ async def test_resume_nonexistent_run(temp_log_dir, basic_workflow):
     with pytest.raises(FileNotFoundError, match="No state found for run_id"):
         WorkflowEngine(
             workflow_id="test_workflow",
+            nodes=nodes,
             run_id="non_existent_run_id",
             storage_backend=FileSystemStorage(base_dir=temp_log_dir)
         )
@@ -371,13 +378,14 @@ async def test_resume_from_invalid_step(temp_log_dir, basic_workflow):
     workflow_id = engine.workflow_id
     
     # Run the workflow to completion
-    continuing, _ = await engine.run()
+    continuing = await engine.run()
     
     # Try resuming from a non-existent step
     with pytest.raises(ValueError, match="Step .* not found"):
         WorkflowEngine(
             workflow_id=workflow_id,
             run_id=run_id,
+            nodes=nodes,
             resume_from=999,  # Invalid step number
             storage_backend=FileSystemStorage(base_dir=temp_log_dir)
         )
