@@ -44,7 +44,7 @@ Grapheteria blends code and UI seamlessly. Bounce between visual design and code
 
 ## Standout Features
 
-### 👨‍💻 Clean, Simple Code
+### Clean, Simple Code
 Write workflows without a PhD in API-ology:
 
 ```python
@@ -55,7 +55,7 @@ output_node = OutputNode(id="display")
 start_node > process_node > output_node
 ```
 
-### 🎨 Visual Workflow Design
+### Visual Workflow Design
 Edit visually or with code - they stay perfectly in sync!
 - Drop nodes right in the UI
 - Reroute your flow with a few clicks
@@ -65,7 +65,7 @@ Edit visually or with code - they stay perfectly in sync!
 ![Workflow Editor](docs/assets/code_sync.gif)
 <!-- A screenshot of the Grapheteria workflow editor with nodes, edges, and a properties panel -->
 
-### ⏰ Time-Travel Debugging
+### Time-Travel Debugging
 Made a mistake? No sweat:
 - Step backward in time
 - Fix the bug
@@ -75,7 +75,7 @@ Made a mistake? No sweat:
 ![Time Travel Debug](docs/assets/debug.gif)
 <!-- An animated GIF showing someone debugging, going back in time, fixing a node, and continuing -->
 
-### 🧰 Built-in Essentials
+### Built-in Essentials
 - Super detailed logging
 - Auto-saves your state
 - Easy resume after stopping
@@ -83,7 +83,7 @@ Made a mistake? No sweat:
 ![Logging Demo](docs/assets/tracking.png)
 <!-- A screenshot showing logs and state persistence in action -->
 
-### 🏭 Production-Ready Path
+### Production-Ready Path
 From your laptop to the cloud with minimal changes:
 - Scale to distributed execution
 - Track everything automatically
@@ -92,7 +92,7 @@ From your laptop to the cloud with minimal changes:
 ![Scaling Diagram](docs/assets/scaling.png)
 <!-- An illustration showing workflow scaling from local to distributed environments -->
 
-### 🤖 Vibe-Coding Compatible
+### Vibe-Coding Compatible
 Describe what you want, then fine-tune:
 - Generate workflows with AI
 - Tweak instead of starting from scratch
