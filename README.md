@@ -13,17 +13,17 @@ Grapheteria: The no-nonsense workflow engine that lets you:
 - Debug with time-travel superpowers
 - Deploy without the usual headaches
 
-<!-- <div align="center">
+<div align="center">
   <img src="docs/assets/workflow-concept.png" width="750"/>
-</div> -->
+</div>
 
-"Oh no, not ANOTHER workflow library!" - Yeah, we hear you! But being fashionably late means we've learned from everyone else's mistakes and cherry-picked their best ideas, while adding our own secret sauce.
+"Oh no 😵‍💫, not ANOTHER workflow library! " - Yeah, we hear you! But being fashionably late means we've learned from everyone else's mistakes and cherry-picked their best ideas, while adding our own secret sauce.
 
 ## Why Grapheteria?
 
 While agent creation and tool-calling have standards, workflow creation is still a mess. Grapheteria fixes that with a clean framework that gives you what you need while letting you extend things however you want.
 
-### 😵‍💫 Problems with Existing Tools
+### Problems with Existing Tools
 
 **Code-based workflow builders** make your brain hurt:
 - "Wait, what does this wrapper do again?" 
