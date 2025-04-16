@@ -7,7 +7,11 @@
 
 ## What is Grapheteria?
 
-Grapheteria is a no-BS library for creating agentic workflows. Design, visualize, and run complex processes without the headaches.
+Grapheteria: The no-nonsense workflow engine that lets you:
+• Design complex agent processes visually
+• Code with simple, intuitive syntax
+• Debug with time-travel superpowers
+• Deploy without the usual headaches
 
 <div align="center">
   <img src="docs/assets/workflow-concept.png" width="750"/>
@@ -125,3 +129,9 @@ This starts the Grapheteria interface and automatically syncs with your code.
 <div class="d-flex justify-content-center mt-4">
   <a href="Core" class="btn btn-primary btn-sm px-2 py-2 mb-4">Learn Core Concepts →</a>
 </div>
+
+Grapheteria: The no-nonsense workflow engine that lets you:
+• Design complex agent processes visually
+• Code with simple, intuitive syntax
+• Debug with time-travel superpowers
+• Deploy without the usual headaches
