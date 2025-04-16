@@ -4,7 +4,7 @@
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Docs](https://img.shields.io/badge/docs-latest-blue)(https://beubax.github.io/Grapheteria/)
-![Tests](https://github.com/beubax/Grapheteria/actions/workflows/test.yml/badge.svg)(https://beubax.github.com/Grapheteria/tests)
+![Tests](https://github.com/beubax/Grapheteria/actions/workflows/test.yml/badge.svg)(https://github.com/beubax/Grapheteria/tests)
 
 ## What is Grapheteria?
 
