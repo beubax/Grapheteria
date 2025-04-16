@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/assets/grapheteria.png" width="600"/>
+  <img src="docs/assets/grapheteria.png" width="800"/>
 </div>
 
 ## 🤔 What is Grapheteria?
