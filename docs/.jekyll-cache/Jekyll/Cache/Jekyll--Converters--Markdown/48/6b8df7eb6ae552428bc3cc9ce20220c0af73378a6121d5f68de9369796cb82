@@ -1,0 +1,94 @@
+I"�<h1 id="troubleshooting-grapheteria">Troubleshooting Grapheteria</h1>
+
+<h2 id="overview">Overview</h2>
+
+<p>Welcome to the troubleshooting section! As more people try Grapheteria, we’ll keep adding commonly faced issues (and keep trying to fix them, of course!). The golden rule of bug fixing: when things go from bad to worse, a good old server restart fixes most issues. A restart triggers a fresh scan of all workflows and nodes in your directory, ensuring you’re working with the latest data. Not ideal, but effective!</p>
+
+<h2 id="module-loading-errors">Module Loading Errors</h2>
+
+<p>If your Python module containing node definitions has errors, it won’t load properly:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># This broken code will prevent nodes from being registered
+</span><span class="k">class</span> <span class="nc">MyBrokenNode</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">prepared_result</span><span class="p">)</span>  <span class="c1"># Missing colon here!
+</span>        <span class="k">return</span> <span class="sh">"</span><span class="s">This won</span><span class="sh">'</span><span class="s">t work</span><span class="sh">"</span>
+</code></pre></div></div>
+
+<p><strong>Symptoms:</strong></p>
+<ul>
+  <li>Nodes don’t appear in the UI</li>
+  <li>Old versions of nodes show up instead of your updates</li>
+  <li>Deleted nodes stubbornly remain in the UI</li>
+</ul>
+
+<p><strong>Solution:</strong> Check for syntax errors in your Python files. The compiler’s red squiggles are your friends here! Fix any syntax issues and re-save the file.</p>
+
+<h2 id="deleted-node-classes">Deleted Node Classes</h2>
+
+<p>When you delete a node class from your Python code, it may haunt your UI:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># If you delete this from your code...
+</span><span class="k">class</span> <span class="nc">DataProcessorNode</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">prepared_result</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nf">process_data</span><span class="p">(</span><span class="n">prepared_result</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The node will continue to appear in your workflow until you explicitly remove it from the UI or the JSON file.</p>
+
+<p><strong>Why?</strong> This preserves your workflow structure in case you accidentally delete code. Automatic removal would cascade to connected edges and potentially break your workflow.</p>
+
+<p><strong>Solution:</strong> Manually delete unwanted nodes from the UI canvas or edit your workflow JSON file.</p>
+
+<h2 id="file-renaming-adventures">File Renaming Adventures</h2>
+
+<p>Renaming files can lead to unexpected behavior:</p>
+
+<p><strong>What happens:</strong> The server tracks each file and its nodes in a dictionary structure. When you rename a file:</p>
+<ol>
+  <li>The old filename entry remains in the server’s memory</li>
+  <li>A new entry is created for the new filename</li>
+  <li>This causes node duplication in the tracking system</li>
+</ol>
+
+<p>This duplication can lead to unexpected behavior, like nodes appearing twice or importing failures.</p>
+
+<p><strong>Solution:</strong> After renaming files, restart the server to clear its internal file registry and rebuild it from scratch.</p>
+
+<h2 id="duplicate-node-names">Duplicate Node Names</h2>
+
+<p>Having multiple node classes with the same name across different files creates confusion:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># In file1.py
+</span><span class="k">class</span> <span class="nc">ProcessorNode</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="c1"># Does one thing
+</span>
+<span class="c1"># In file2.py
+</span><span class="k">class</span> <span class="nc">ProcessorNode</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>  <span class="c1"># Same name!
+</span>    <span class="c1"># Does something entirely different
+</span></code></pre></div></div>
+
+<p><strong>What happens:</strong> Only one version will appear in the UI - typically the last one scanned. This behavior isn’t deterministic and can lead to unexpected workflow behavior.</p>
+
+<p><strong>Solution:</strong> Use unique, descriptive names for your node classes:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Better naming
+</span><span class="k">class</span> <span class="nc">TextProcessorNode</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span> <span class="bp">...</span>
+<span class="k">class</span> <span class="nc">ImageProcessorNode</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span> <span class="bp">...</span>
+</code></pre></div></div>
+
+<h2 id="the-universal-fix-server-restart">The Universal Fix: Server Restart</h2>
+
+<p>When all else fails, restart your server:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Stop current server (Ctrl+C)</span>
+grapheteria
+</code></pre></div></div>
+
+<p>This ensures all your code is freshly scanned and registered properly.</p>
+
+<h2 id="getting-help">Getting Help</h2>
+
+<p>Encountered an issue not covered here? Please report it on our <a href="https://github.com/grapheteria/issues">GitHub Issues page</a>. Your feedback helps make Grapheteria better for everyone!</p>
+
+<p>Happy graph-building! 🚀</p>
+:ET

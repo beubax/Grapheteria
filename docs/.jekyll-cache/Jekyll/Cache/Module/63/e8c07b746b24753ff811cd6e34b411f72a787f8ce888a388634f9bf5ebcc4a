@@ -1,0 +1,20 @@
+I"C<nav aria-label="Main" id="site-nav" class="site-nav">
+  
+  
+    <ul class="nav-list"><li class="nav-list-item"><a href="/" class="nav-list-link">Home</a></li><li class="nav-list-item"><button class="nav-list-expander btn-reset" aria-label="toggle items in Core category" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#svg-arrow-right"></use></svg>
+      </button><a href="/Core/" class="nav-list-link">Core</a><ul class="nav-list"><li class="nav-list-item"><a href="/Core/Node.html" class="nav-list-link">Node</a></li><li class="nav-list-item"><a href="/Core/Edge.html" class="nav-list-link">Edge</a></li><li class="nav-list-item"><a href="/Core/Shared.html" class="nav-list-link">Communication</a></li><li class="nav-list-item"><a href="/Core/Workflow.html" class="nav-list-link">Workflow Engine</a></li><li class="nav-list-item"><a href="/Core/Logging.html" class="nav-list-link">Logging</a></li><li class="nav-list-item"><button class="nav-list-expander btn-reset" aria-label="toggle items in UI category" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#svg-arrow-right"></use></svg>
+      </button><a href="/Core/UI/" class="nav-list-link">UI</a><ul class="nav-list"><li class="nav-list-item"><a href="/Core/UI/Overview.html" class="nav-list-link">Overview</a></li><li class="nav-list-item"><a href="/Core/UI/Debug.html" class="nav-list-link">Debug Mode</a></li><li class="nav-list-item"><a href="/Core/UI/Logs.html" class="nav-list-link">Logs Page</a></li><li class="nav-list-item"><a href="/Core/UI/Troubleshooting.html" class="nav-list-link">Troubleshooting</a></li></ul></li></ul></li><li class="nav-list-item"><button class="nav-list-expander btn-reset" aria-label="toggle items in Advanced category" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#svg-arrow-right"></use></svg>
+      </button><a href="/Advanced/" class="nav-list-link">Advanced</a><ul class="nav-list"><li class="nav-list-item"><a href="/Advanced/Advanced_Nodes.html" class="nav-list-link">Advanced Nodes</a></li><li class="nav-list-item"><a href="/Advanced/Extending_Logging.html" class="nav-list-link">Extending Logging System</a></li><li class="nav-list-item"><a href="/Advanced/Human_in_the_loop.html" class="nav-list-link">Human-in-the-Loop</a></li><li class="nav-list-item"><a href="/Advanced/Deployment.html" class="nav-list-link">Deploying Workflows</a></li><li class="nav-list-item"><a href="/Advanced/Event_Driven.html" class="nav-list-link">Event-Driven Workflows</a></li></ul></li><li class="nav-list-item"><button class="nav-list-expander btn-reset" aria-label="toggle items in Concepts category" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#svg-arrow-right"></use></svg>
+      </button><a href="/Concepts/" class="nav-list-link">Concepts</a><ul class="nav-list"><li class="nav-list-item"><a href="/Concepts/state_machines.html" class="nav-list-link">State Machines</a></li></ul></li><li class="nav-list-item"><button class="nav-list-expander btn-reset" aria-label="toggle items in Cookbook category" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#svg-arrow-right"></use></svg>
+      </button><a href="/Cookbook/" class="nav-list-link">Cookbook</a><ul class="nav-list"><li class="nav-list-item"><a href="/Cookbook/Human_in_the_loop.html" class="nav-list-link">Human in the loop</a></li><li class="nav-list-item"><a href="/Cookbook/MCP_tool_calling.html" class="nav-list-link">Tool-Calling with MCP</a></li></ul></li></ul>
+  
+</nav>
+
+
+
+:ET

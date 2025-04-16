@@ -377,4 +377,4 @@ As always, run `grapheteria` in your terminal to launch the UI and visualize/run
 
 ![Tool-Calling with MCP (UI View)](assets/mcp.png)
 
-The entire code for this example, along with deployment instructions, is available <a href="https://github.com/beubax/grapheteria/examples" target="_blank">here</a>. This pattern gives you maximum visibility into each stage of the tool-use process, making it perfect for debugging or adding custom logic at any point in the workflow!
+The entire code for this example, along with deployment instructions, is available <a href="https://github.com/beubax/grapheteria/examples/mcp_tool_calling" target="_blank">here</a>. This pattern gives you maximum visibility into each stage of the tool-use process, making it perfect for debugging or adding custom logic at any point in the workflow!

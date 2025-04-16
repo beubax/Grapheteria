@@ -36,6 +36,7 @@ The workflow creates a feedback loop between AI and humans:
 pip install grapheteria openai
 
 # Set your OpenAI API key in the .env file
+echo "OPENAI_API_KEY=your-api-key-here" > .env
 
 # Run the example to test functionality 
 python main.py

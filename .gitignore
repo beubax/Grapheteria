@@ -135,6 +135,8 @@ ENV/
 env.bak/
 venv.bak/
 logs
+Gemfile.lock
+
 
 # Spyder project settings
 .spyderproject
@@ -150,6 +152,7 @@ logs
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
 
 # Pyre type checker
 .pyre/

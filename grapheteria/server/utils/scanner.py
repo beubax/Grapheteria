@@ -7,7 +7,6 @@ import importlib.util
 from grapheteria import Node, _NODE_REGISTRY
 from grapheteria.utils import path_to_id
 import sys
-import time
 
 temp = defaultdict(list)
 
@@ -30,7 +29,6 @@ class SystemScanner:
             """Modified auto-register that properly captures nodes based on module"""
             super(Node, cls).__init_subclass__(**kwargs)
             if not inspect.isabstract(cls):
-                print(f"Registering node: {cls.__name__}")
                 _NODE_REGISTRY[cls.__name__] = cls
                 code = inspect.getsource(cls)
                 temp[cls.__module__].append([cls.__name__, code])
@@ -52,7 +50,7 @@ class SystemScanner:
                 sys.path.insert(0, cwd)
             
             
-            skip_dirs = {'venv', '__pycache__', 'grapheteria', 'logs', '.git', 'tests'}
+            skip_dirs = {'venv', '__pycache__', 'grapheteria', 'logs', '.github', 'tests', 'docs'}
 
             for root, dirs, files in os.walk('.'):
                 # Remove directories to skip from dirs list to prevent recursion into them
@@ -74,7 +72,7 @@ class SystemScanner:
         temp.clear()
         # Skip processing if file is in a directory we want to ignore
         first_dir = file_path.split(os.sep)[1] if os.sep in file_path and file_path.startswith('./') else ''
-        if first_dir in ('venv', '__pycache__', 'grapheteria', 'logs', '.git', 'tests'):
+        if first_dir in ('venv', '__pycache__', 'grapheteria', 'logs', '.github', 'tests', 'docs'):
             return
         
         module_name = path_to_id(file_path)
@@ -90,7 +88,6 @@ class SystemScanner:
                 if cwd not in sys.path and '' not in sys.path:
                     sys.path.insert(0, cwd)
                 SystemScanner._load_module(module_name)
-                print(temp)
                 manager.node_registry[module_name] = temp.get(module_name, [])
             finally:
                 # Restore original path
@@ -103,7 +100,7 @@ class SystemScanner:
         """Scan directory for workflow JSON files"""
         found_workflows = {}
         
-        skip_dirs = {'venv', '__pycache__', 'grapheteria', 'logs', '.git', 'tests'}
+        skip_dirs = {'venv', '__pycache__', 'grapheteria', 'logs', '.github', 'tests', 'docs'}
         
         for root, dirs, files in os.walk('.'):
             # Remove directories to skip from dirs list to prevent recursion into them

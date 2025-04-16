@@ -35,7 +35,7 @@ The workflow creates a complete tool-using AI assistant:
 
 ```bash
 # Install dependencies
-pip install grapheteria fastmcp anthropic mcp python-dotenv
+pip install grapheteria fastmcp anthropic mcp
 
 # Set your Anthropic API key in the .env file
 echo "ANTHROPIC_API_KEY=your-api-key-here" > .env

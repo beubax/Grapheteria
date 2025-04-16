@@ -152,10 +152,8 @@ workflow = WorkflowEngine(
 )
 
 async def run_workflow():
-    user_input = None
-    
     while True:
-        continue_workflow = await workflow.run(user_input)
+        continue_workflow = await workflow.run()
         
         # If workflow is waiting for input
         if workflow.execution_state.awaiting_input:
@@ -235,4 +233,4 @@ As always, run `grapheteria` in your terminal to launch the UI and visualize/run
 
 ![Human in the loop (UI View)](assets/human_in_the_loop.png)
 
-The entire code for this example, along with deployment instructions, is available <a href="https://github.com/beubax/grapheteria/examples" target="_blank">here</a>. This pattern works great for any scenario where you need AI to do the heavy lifting while humans retain final approval authority!
+The entire code for this example, along with deployment instructions, is available <a href="https://github.com/beubax/grapheteria/examples/human_in_the_loop" target="_blank">here</a>. This pattern works great for any scenario where you need AI to do the heavy lifting while humans retain final approval authority!
