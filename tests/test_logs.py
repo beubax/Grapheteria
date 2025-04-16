@@ -218,7 +218,7 @@ async def test_workflow_forking(temp_log_dir, basic_workflow):
     )
 
     #Since this runs very quickly, let's sleep for a second to generate a new run_id
-    await sleep(2)
+    sleep(2)
     
     # Verify it's a new run with forked metadata
     assert forked_engine.run_id != original_run_id
