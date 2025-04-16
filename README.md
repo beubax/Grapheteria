@@ -5,7 +5,7 @@
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 [![Docs](https://img.shields.io/badge/docs-latest-blue)](https://beubax.github.io/Grapheteria/)
 
-<!-- ## What is Grapheteria? -->
+## What is Grapheteria?
 
 A structured agentic workflow framework bringing uniformity to agent orchestration:
 - 🎨 Design complex agent topologies with standardized visual primitives
