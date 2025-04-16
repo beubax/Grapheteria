@@ -19,7 +19,7 @@ A structured agentic workflow framework bringing uniformity to agent orchestrati
   <img src="docs/assets/workflow-concept.png"/>
 </div>
 
-## What's different?
+## How is it different?
 
 While agent creation and tool-calling have standards, workflow creation is still a mess. Grapheteria fixes that with a clean framework that gives you what you need while letting you extend things however you want.
 
