@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
-import copy
-from typing import Dict, Any, Optional, List
-from fastapi.encoders import jsonable_encoder
+from typing import Dict, Optional, List
 import json
 import os
 from contextlib import contextmanager
@@ -99,7 +97,7 @@ class SQLiteStorage(StorageBackend):
         finally:
             conn.close()
     
-    def save_state(self, workflow_id: str, run_id: str, source_data: dict) -> None:
+    def save_state(self, workflow_id: str, run_id: str, save_data: dict) -> None:
         
         with self._get_connection() as conn:
             cursor = conn.cursor()
@@ -108,7 +106,7 @@ class SQLiteStorage(StorageBackend):
                 INSERT OR REPLACE INTO workflow_states (workflow_id, run_id, state_json, updated_at)
                 VALUES (?, ?, ?, CURRENT_TIMESTAMP)
                 ''',
-                (workflow_id, run_id, json.dumps(source_data))
+                (workflow_id, run_id, json.dumps(save_data))
             )
             conn.commit()
     
