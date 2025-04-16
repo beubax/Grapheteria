@@ -3,7 +3,7 @@
 </div>
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-![Docs](https://github.com/beubax/Grapheteria/actions/workflows/pages.yml/badge.svg)(https://beubax.github.io/Grapheteria/)
+![Docs](https://img.shields.io/badge/docs-latest-blue)(https://beubax.github.io/Grapheteria/)
 ![Tests](https://github.com/beubax/Grapheteria/actions/workflows/test.yml/badge.svg)(https://beubax.github.com/Grapheteria/tests)
 
 ## What is Grapheteria?
