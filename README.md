@@ -15,9 +15,9 @@ A structured agentic workflow framework bringing uniformity to agent orchestrati
 
 "Oh no 😵‍💫, not ANOTHER workflow library! " - I hear you. But being fashionably late means we've learned from everyone else's mistakes and cherry-picked their best ideas, while adding our own secret sauce.
 
-<div align="center">
+<!-- <div align="center">
   <img src="docs/assets/workflow-concept.png"/>
-</div>
+</div> -->
 
 ## How is it different?
 
