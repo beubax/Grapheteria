@@ -2,12 +2,15 @@
   <img src="docs/assets/grapheteria.png" width="800"/>
 </div>
 
-## 🤔 What is Grapheteria?
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+[![Docs](https://img.shields.io/badge/docs-latest-blue)](https://beubax.github.io/Grapheteria/)
+
+## What is Grapheteria?
 
 Grapheteria is a no-BS library for creating agentic workflows. Design, visualize, and run complex processes without the headaches.
 
 <div align="center">
-  <img src="docs/assets/workflow-concept.png" width="600"/>
+  <img src="docs/assets/workflow-concept.png" width="750"/>
 </div>
 
 "Oh no, not ANOTHER workflow library!" - Yeah, we hear you! But being fashionably late means we've learned from everyone else's mistakes and cherry-picked their best ideas, while adding our own secret sauce.
