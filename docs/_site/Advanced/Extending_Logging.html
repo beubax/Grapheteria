@@ -8,7 +8,7 @@
 <span class="p">}</span>
 </code></pre></div></div> <p>The <code class="language-plaintext highlighter-rouge">steps</code> list is particularly magical - it captures the complete execution state after each node runs. This is what enables our workflow to pick up exactly where it left off, even if your server decided to take an unplanned vacation.</p> <blockquote class="important"> <p>At the end of every step, the workflow engine calls <code class="language-plaintext highlighter-rouge">self.storage.save_state()</code> with the storage object being whatever custom backend you decide to provide (defaults to local file system)</p> </blockquote> <h2 id="creating-your-own-storage-backend">Creating Your Own Storage Backend</h2> <p>The <code class="language-plaintext highlighter-rouge">StorageBackend</code> abstract class defines the interface any storage implementation must follow:</p> <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">StorageBackend</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">save_state</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tracking_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">save_state</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">save_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
         <span class="sh">"""</span><span class="s">Save the workflow execution state.</span><span class="sh">"""</span>
         <span class="k">pass</span>
     
@@ -17,25 +17,25 @@
         <span class="sh">"""</span><span class="s">Load a workflow execution state.</span><span class="sh">"""</span>
         <span class="k">pass</span>
 
-    <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">list_runs</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="c1">#Optional methods for easier resumeability
+</span>    <span class="k">def</span> <span class="nf">list_runs</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
         <span class="sh">"""</span><span class="s">List all runs for a given workflow.</span><span class="sh">"""</span>
         <span class="k">pass</span>
 
-    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">list_workflows</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
         <span class="sh">"""</span><span class="s">List all workflows.</span><span class="sh">"""</span>
         <span class="k">pass</span>
 </code></pre></div></div> <p>Let’s break down these methods:</p> <ul> <li><code class="language-plaintext highlighter-rouge">save_state</code>: Stores the workflow state with its unique identifiers</li> <li><code class="language-plaintext highlighter-rouge">load_state</code>: Retrieves the state of a specific workflow run</li> <li><code class="language-plaintext highlighter-rouge">list_runs</code>: Gets all runs for a specific workflow (useful for history/debugging)</li> <li><code class="language-plaintext highlighter-rouge">list_workflows</code>: Lists all available workflows in the storage</li> </ul> <h2 id="example-sqlite-storage-implementation">Example: SQLite Storage Implementation</h2> <p>Here’s an example of implementing SQLite storage - observe how it satisfies the same interface:</p> <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">grapheteria.utils</span> <span class="kn">import</span> <span class="n">StorageBackend</span>
 
 <span class="k">class</span> <span class="nc">SQLiteStorage</span><span class="p">(</span><span class="n">StorageBackend</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">SQLite implementation of storage backend.</span><span class="sh">"""</span>
+    
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">db_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="sh">"</span><span class="s">workflows.db</span><span class="sh">"</span><span class="p">):</span>
         <span class="n">self</span><span class="p">.</span><span class="n">db_path</span> <span class="o">=</span> <span class="n">db_path</span>
         <span class="n">self</span><span class="p">.</span><span class="nf">_init_db</span><span class="p">()</span>
         
     <span class="k">def</span> <span class="nf">_init_db</span><span class="p">(</span><span class="n">self</span><span class="p">):</span>
-        <span class="c1"># Creates the database table if it doesn't exist
-</span>        <span class="k">with</span> <span class="n">self</span><span class="p">.</span><span class="nf">_get_connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">self</span><span class="p">.</span><span class="nf">_get_connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
             <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="p">.</span><span class="nf">cursor</span><span class="p">()</span>
             <span class="n">cursor</span><span class="p">.</span><span class="nf">execute</span><span class="p">(</span><span class="sh">'''</span><span class="s">
             CREATE TABLE IF NOT EXISTS workflow_states (
@@ -56,22 +56,21 @@
         <span class="k">finally</span><span class="p">:</span>
             <span class="n">conn</span><span class="p">.</span><span class="nf">close</span><span class="p">()</span>
     
-    <span class="k">def</span> <span class="nf">save_state</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">source_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
-        <span class="c1"># Saves workflow state as JSON in the database
-</span>        <span class="k">with</span> <span class="n">self</span><span class="p">.</span><span class="nf">_get_connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">save_state</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">save_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        
+        <span class="k">with</span> <span class="n">self</span><span class="p">.</span><span class="nf">_get_connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
             <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="p">.</span><span class="nf">cursor</span><span class="p">()</span>
             <span class="n">cursor</span><span class="p">.</span><span class="nf">execute</span><span class="p">(</span>
                 <span class="sh">'''</span><span class="s">
                 INSERT OR REPLACE INTO workflow_states (workflow_id, run_id, state_json, updated_at)
                 VALUES (?, ?, ?, CURRENT_TIMESTAMP)
                 </span><span class="sh">'''</span><span class="p">,</span>
-                <span class="p">(</span><span class="n">workflow_id</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">json</span><span class="p">.</span><span class="nf">dumps</span><span class="p">(</span><span class="n">source_data</span><span class="p">))</span>
+                <span class="p">(</span><span class="n">workflow_id</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">json</span><span class="p">.</span><span class="nf">dumps</span><span class="p">(</span><span class="n">save_data</span><span class="p">))</span>
             <span class="p">)</span>
             <span class="n">conn</span><span class="p">.</span><span class="nf">commit</span><span class="p">()</span>
-            
+    
     <span class="k">def</span> <span class="nf">load_state</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
-        <span class="c1"># Retrieves workflow state from the database
-</span>        <span class="k">with</span> <span class="n">self</span><span class="p">.</span><span class="nf">_get_connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">self</span><span class="p">.</span><span class="nf">_get_connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
             <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="p">.</span><span class="nf">cursor</span><span class="p">()</span>
             <span class="n">cursor</span><span class="p">.</span><span class="nf">execute</span><span class="p">(</span>
                 <span class="sh">"</span><span class="s">SELECT state_json FROM workflow_states WHERE workflow_id = ? AND run_id = ?</span><span class="sh">"</span><span class="p">,</span>
@@ -96,12 +95,12 @@
         <span class="c1"># Connect to your storage service
 </span>        <span class="n">self</span><span class="p">.</span><span class="n">client</span> <span class="o">=</span> <span class="nc">AwesomeStorageClient</span><span class="p">(</span><span class="n">connection_string</span><span class="p">)</span>
     
-    <span class="k">def</span> <span class="nf">save_state</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">source_data</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">save_state</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">workflow_id</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">save_data</span><span class="p">):</span>
         <span class="c1"># Your code to save state
 </span>        <span class="n">self</span><span class="p">.</span><span class="n">client</span><span class="p">.</span><span class="nf">upsert_document</span><span class="p">(</span>
             <span class="n">collection</span><span class="o">=</span><span class="sh">"</span><span class="s">workflows</span><span class="sh">"</span><span class="p">,</span>
             <span class="n">key</span><span class="o">=</span><span class="sa">f</span><span class="sh">"</span><span class="si">{</span><span class="n">workflow_id</span><span class="si">}</span><span class="s">:</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="sh">"</span><span class="p">,</span>
-            <span class="n">data</span><span class="o">=</span><span class="n">source_data</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">save_data</span>
         <span class="p">)</span>
     
     <span class="c1"># Implement the other required methods...

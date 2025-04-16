@@ -101,6 +101,62 @@ Describe what you want, then fine-tune:
 ![LLM Generation](docs/assets/llm_generate.gif)
 <!-- An animated GIF showing a text prompt being turned into a workflow -->
 
+### Powerful Agentic Patterns
+Build sophisticated agent architectures with proven patterns:
+- Chain-of-Thought: Break down complex reasoning into sequential steps
+- Verification Loops: Self-check outputs with critic agents
+- Parallel Processing: Distribute tasks across multiple specialized agents
+- ReAct Framework: Integrate reasoning and action loops seamlessly
+- Human-in-the-Loop: Add supervision exactly where needed
+
+```mermaid
+%%{init: {'theme': 'neutral' }}%%
+graph TD
+    %% Chain of Thought
+    subgraph "Chain of Thought"
+    A1[Task Input] --> B1[Reasoning Step 1]
+    B1 --> C1[Reasoning Step 2]
+    C1 --> D1[Reasoning Step 3]
+    D1 --> E1[Final Output]
+    end
+    
+    %% Verification Loop
+    subgraph "Verification Loop"
+    A2[Input] --> B2[Generator]
+    B2 --> C2[Critic]
+    C2 -->|Pass| D2[Output]
+    C2 -->|Fail| B2
+    end
+    
+    %% Parallel Processing
+    subgraph "Parallel Processing"
+    A3[Task] --> B3[Splitter]
+    B3 --> C3[Agent 1]
+    B3 --> D3[Agent 2]
+    B3 --> E3[Agent 3]
+    C3 & D3 & E3 --> F3[Aggregator]
+    F3 --> G3[Result]
+    end
+    
+    %% ReAct Framework
+    subgraph "ReAct Framework"
+    A4[Problem] --> B4[Reason]
+    B4 --> C4[Act]
+    C4 --> D4[Observe]
+    D4 -->|Repeat| B4
+    D4 -->|Complete| E4[Solution]
+    end
+    
+    %% Human-in-the-Loop
+    subgraph "Human-in-the-Loop"
+    A5[Input] --> B5[Agent Process]
+    B5 -->|Uncertain| C5[Human Review]
+    C5 --> D5[Incorporate Feedback]
+    D5 --> B5
+    B5 -->|Confident| E5[Output]
+    end
+```
+
 ## Ready to Try It?
 
 ### Installation
@@ -123,7 +179,6 @@ Once installed, fire up the UI with:
 ```bash
 grapheteria
 ```
-
 This starts the Grapheteria interface and automatically syncs with your code.
 
 <div class="d-flex justify-content-center mt-4">

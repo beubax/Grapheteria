@@ -28,15 +28,12 @@ Behind the scenes:
 3. A future is created and awaited, pausing execution
 4. When input arrives, the future resolves and execution continues
 
-> Same process resumption is quite tricky to get right. An await operation on the `asyncio.Future` object blocks python's event loop, causing your workflow to become seemingly unresponsive. In reality, it is currently awaiting and this is intended behavior. To design a seamless system, use your workflow in tandem with a [server](Deployment). This way python switches between coroutines and you can provide inputs with ease.
-{: .note}
-
 ## Resumption Behavior
 
 There are two ways execution can resume after requesting input:
 
 ### Same-Process Resumption
-If input arrives while the original process is still running:
+If input is provided while the original process is still running (meaning the workflow hasn't been stopped and resumed with a new WorkflowEngine instance):
 
 ```python
 # In your workflow node
@@ -82,14 +79,16 @@ async def request_input(prompt=None, options=None, input_type="text", request_id
 - `input_type`: Format of input ("text", "select", etc.)
 - `request_id`: Custom identifier for this specific input request
 
-The `request_id` is critical when a node has multiple input requests:
+All of these are optional and do not necessarily have to be used.
+
+The `request_id` is critical when the same node has multiple input requests:
 
 ```python
 name = await request_input(prompt="Name?", request_id="name_field")
 age = await request_input(prompt="Age?", request_id="age_field")
 ```
 
-Without unique `request_id`s, the same input would satisfy both requests!
+Without unique `request_id's`, any input provided with just a `node_id` would satisfy both requests!
 
 ## Providing Input Data
 
@@ -116,73 +115,77 @@ input_data = {
 }
 
 # Resume workflow with inputs
-await workflow.step(input_data)
+await workflow.run(input_data)
 ```
 
 > The key in the dictionary must match either the node ID or the custom request ID. The respective value is the actual input data you wish to provide to the node.
 {: .note}
 
-## Input Consumption Behavior
 
-When a workflow is halted:
+### How do we find out when to provide input?
 
-1. You must call `workflow.step()` or `workflow.run()` with input data to resume
-2. Inputs are consumed when used and won't persist for future requests
-3. If inputs are provided for the wrong halted node, the workflow remains halted
-4. Inputs provided in advance will be lost if not immediately used
+`workflow.run()` continues running until it reaches a halt point. When it stops, we need to figure out why - did it finish, fail, or is it just waiting for your input?
 
+#### Method 1: Check the return value and status (great for terminal use)
 ```python
-# This will NOT work:
-await workflow.step({"future_node_id": "data"})  # Input for a node not yet halted
-# ... later when the node halts ...
-await workflow.step()  # The input is already gone!
+# Running workflow execution loop
+while True:
+    # Run the workflow
+    await workflow.run()
+    
+    # Workflow stopped - check if it needs input
+    if workflow.execution_state.awaiting_input:
+        # Workflow is stuck until we provide input
+        request = workflow.execution_state.awaiting_input
+        
+        print(f"Input needed: {request['prompt']}")
+        if request['input_type'] == 'select':
+            print(f"Options: {request['options']}")
+        
+        # Collect input and feed it to the workflow
+        user_answer = input("Your response: ")
+        await workflow.step({request['request_id']: user_answer})
+        continue
+
+    # Workflow completed or failed
+    break
 ```
 
-## Example of an Agent Requiring Feedback
+#### Method 2: Server-based detection (cleaner approach)
+
+Running your workflow in tandem with a [server](Deployment) lets you run your workflow as a service, checking its status and feeding it input whenever needed - no need to babysit the process!
 
 ```python
-class ContentReviewNode(Node):
-    def prepare(self, shared, request_input):
+from fastapi import FastAPI
+import asyncio
+
+app = FastAPI()
+workflow = None
+
+@app.post("/start-workflow")
+async def start_workflow():
+    global workflow
+    workflow = WorkflowEngine(...)
+    asyncio.create_task(workflow.run())
+    return {"status": "started"}
+
+@app.get("/workflow-status")
+async def get_status():
+    if workflow.execution_state.awaiting_input:
         return {
-            "content": shared.get("draft_content", ""),
-            "request_input": request_input,
-            "llm_client": shared.get("llm_client")
+            "status": "waiting_for_input",
+            "request": workflow.execution_state.awaiting_input
         }
-    
-    async def execute(self, prepared_data):
-        request_input = prepared_data["request_input"]
-        content = prepared_data["content"]
-        llm_client = prepared_data["llm_client"]
-        
-        # First, get LLM suggestions
-        prompt = f"Suggest improvements for this content:\n\n{content}"
-        llm_response = await llm_client.generate(prompt)
-        
-        # Show suggestions to human for approval
-        user_decision = await request_input(
-            prompt="The AI suggests these improvements. Accept?",
-            options=["Accept All", "Accept Some", "Reject All"],
-            input_type="select",
-            request_id="improvement_decision"
-        )
-        
-        if user_decision == "Accept Some":
-            # Request specific edits from human
-            specific_edits = await request_input(
-                prompt="Which specific changes would you like to make?",
-                request_id="specific_edits"
-            )
-            
-            # Second LLM call with human guidance
-            refined_prompt = f"Revise this content:\n\n{content}\n\nWith these specific changes: {specific_edits}"
-            final_content = await llm_client.generate(refined_prompt)
-        elif user_decision == "Accept All":
-            final_content = llm_response
-        else:
-            final_content = content
-            
-        return {"original": content, "final": final_content}
-    
-    def cleanup(self, shared, prepared_data, execution_result):
-        shared["reviewed_content"] = execution_result["final"]
+    return {"status": workflow.execution_state.workflow_status.name}
+
+@app.post("/provide-input")
+async def provide_input(input_data: dict):
+    request_id = workflow.execution_state.awaiting_input["request_id"]
+    await workflow.step({request_id: input_data["value"]})
+    return {"status": "input_provided"}
 ```
+
+Grapheteria comes with a built-in UI that uses this server approach, making it super easy to visualize your workflow, debug it, and provide input when needed. Just run `grapheteria` in your terminal to launch the UI and interact with your workflows visually instead of juggling print statements and keyboard inputs!
+
+## Complete Example
+For an end-to-end example of a human-in-the-loop workflow, check out our [Content Creation Example](../Cookbook/Human_in_the_loop) in the cookbook. It demonstrates a complete implementation with AI-generated content that requires human approval before publication.

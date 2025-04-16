@@ -550,7 +550,6 @@ class WorkflowEngine:
         
     async def run(self, input_data=None):        
         while True:
-            # Call step with no inputs to prevent accidental reuse
             continuing = await self.step(input_data)
             
             # Stop if workflow is completed or waiting for input

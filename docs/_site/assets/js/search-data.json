@@ -295,21 +295,21 @@
   },"42": {
     "doc": "Extending Logging System",
     "title": "Creating Your Own Storage Backend",
-    "content": "The StorageBackend abstract class defines the interface any storage implementation must follow: . class StorageBackend(ABC): @abstractmethod def save_state(self, workflow_id: str, run_id: str, tracking_data: dict) -&gt; None: \"\"\"Save the workflow execution state.\"\"\" pass @abstractmethod def load_state(self, workflow_id: str, run_id: str) -&gt; Optional[Dict]: \"\"\"Load a workflow execution state.\"\"\" pass @abstractmethod def list_runs(self, workflow_id: str) -&gt; List[str]: \"\"\"List all runs for a given workflow.\"\"\" pass @abstractmethod def list_workflows(self) -&gt; List[str]: \"\"\"List all workflows.\"\"\" pass . Let’s break down these methods: . | save_state: Stores the workflow state with its unique identifiers | load_state: Retrieves the state of a specific workflow run | list_runs: Gets all runs for a specific workflow (useful for history/debugging) | list_workflows: Lists all available workflows in the storage | . ",
+    "content": "The StorageBackend abstract class defines the interface any storage implementation must follow: . class StorageBackend(ABC): @abstractmethod def save_state(self, workflow_id: str, run_id: str, save_data: dict) -&gt; None: \"\"\"Save the workflow execution state.\"\"\" pass @abstractmethod def load_state(self, workflow_id: str, run_id: str) -&gt; Optional[Dict]: \"\"\"Load a workflow execution state.\"\"\" pass #Optional methods for easier resumeability def list_runs(self, workflow_id: str) -&gt; List[str]: \"\"\"List all runs for a given workflow.\"\"\" pass def list_workflows(self) -&gt; List[str]: \"\"\"List all workflows.\"\"\" pass . Let’s break down these methods: . | save_state: Stores the workflow state with its unique identifiers | load_state: Retrieves the state of a specific workflow run | list_runs: Gets all runs for a specific workflow (useful for history/debugging) | list_workflows: Lists all available workflows in the storage | . ",
     "url": "/Advanced/Extending_Logging.html#creating-your-own-storage-backend",
     
     "relUrl": "/Advanced/Extending_Logging.html#creating-your-own-storage-backend"
   },"43": {
     "doc": "Extending Logging System",
     "title": "Example: SQLite Storage Implementation",
-    "content": "Here’s an example of implementing SQLite storage - observe how it satisfies the same interface: . from grapheteria.utils import StorageBackend class SQLiteStorage(StorageBackend): def __init__(self, db_path: str = \"workflows.db\"): self.db_path = db_path self._init_db() def _init_db(self): # Creates the database table if it doesn't exist with self._get_connection() as conn: cursor = conn.cursor() cursor.execute(''' CREATE TABLE IF NOT EXISTS workflow_states ( workflow_id TEXT, run_id TEXT, state_json TEXT, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (workflow_id, run_id) ) ''') conn.commit() @contextmanager def _get_connection(self): conn = sqlite3.connect(self.db_path) try: yield conn finally: conn.close() def save_state(self, workflow_id: str, run_id: str, source_data: dict) -&gt; None: # Saves workflow state as JSON in the database with self._get_connection() as conn: cursor = conn.cursor() cursor.execute( ''' INSERT OR REPLACE INTO workflow_states (workflow_id, run_id, state_json, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP) ''', (workflow_id, run_id, json.dumps(source_data)) ) conn.commit() def load_state(self, workflow_id: str, run_id: str) -&gt; Optional[Dict]: # Retrieves workflow state from the database with self._get_connection() as conn: cursor = conn.cursor() cursor.execute( \"SELECT state_json FROM workflow_states WHERE workflow_id = ? AND run_id = ?\", (workflow_id, run_id) ) row = cursor.fetchone() if not row: return None return json.loads(row[0]) . Using the SQLite backend is as simple as: . # Initialize the workflow engine with SQLite storage storage = SQLiteStorage(\"production.db\") engine = WorkflowEngine( workflow_id=\"my.workflow\", storage_backend=storage ) # Now all state is stored in SQLite! . ",
+    "content": "Here’s an example of implementing SQLite storage - observe how it satisfies the same interface: . from grapheteria.utils import StorageBackend class SQLiteStorage(StorageBackend): \"\"\"SQLite implementation of storage backend.\"\"\" def __init__(self, db_path: str = \"workflows.db\"): self.db_path = db_path self._init_db() def _init_db(self): with self._get_connection() as conn: cursor = conn.cursor() cursor.execute(''' CREATE TABLE IF NOT EXISTS workflow_states ( workflow_id TEXT, run_id TEXT, state_json TEXT, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (workflow_id, run_id) ) ''') conn.commit() @contextmanager def _get_connection(self): conn = sqlite3.connect(self.db_path) try: yield conn finally: conn.close() def save_state(self, workflow_id: str, run_id: str, save_data: dict) -&gt; None: with self._get_connection() as conn: cursor = conn.cursor() cursor.execute( ''' INSERT OR REPLACE INTO workflow_states (workflow_id, run_id, state_json, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP) ''', (workflow_id, run_id, json.dumps(save_data)) ) conn.commit() def load_state(self, workflow_id: str, run_id: str) -&gt; Optional[Dict]: with self._get_connection() as conn: cursor = conn.cursor() cursor.execute( \"SELECT state_json FROM workflow_states WHERE workflow_id = ? AND run_id = ?\", (workflow_id, run_id) ) row = cursor.fetchone() if not row: return None return json.loads(row[0]) . Using the SQLite backend is as simple as: . # Initialize the workflow engine with SQLite storage storage = SQLiteStorage(\"production.db\") engine = WorkflowEngine( workflow_id=\"my.workflow\", storage_backend=storage ) # Now all state is stored in SQLite! . ",
     "url": "/Advanced/Extending_Logging.html#example-sqlite-storage-implementation",
     
     "relUrl": "/Advanced/Extending_Logging.html#example-sqlite-storage-implementation"
   },"44": {
     "doc": "Extending Logging System",
     "title": "Creating Your Own Storage",
-    "content": "Want to store workflows in Redis, MongoDB, or your secret underground bunker’s mainframe? Just implement those four methods and you’re good to go! . Here’s a stub for your next storage adventure: . class MyAwesomeStorage(StorageBackend): def __init__(self, connection_string): # Connect to your storage service self.client = AwesomeStorageClient(connection_string) def save_state(self, workflow_id, run_id, source_data): # Your code to save state self.client.upsert_document( collection=\"workflows\", key=f\"{workflow_id}:{run_id}\", data=source_data ) # Implement the other required methods... Now your workflows can live wherever they want - give them the freedom they deserve! . ",
+    "content": "Want to store workflows in Redis, MongoDB, or your secret underground bunker’s mainframe? Just implement those four methods and you’re good to go! . Here’s a stub for your next storage adventure: . class MyAwesomeStorage(StorageBackend): def __init__(self, connection_string): # Connect to your storage service self.client = AwesomeStorageClient(connection_string) def save_state(self, workflow_id, run_id, save_data): # Your code to save state self.client.upsert_document( collection=\"workflows\", key=f\"{workflow_id}:{run_id}\", data=save_data ) # Implement the other required methods... Now your workflows can live wherever they want - give them the freedom they deserve! . ",
     "url": "/Advanced/Extending_Logging.html#creating-your-own-storage",
     
     "relUrl": "/Advanced/Extending_Logging.html#creating-your-own-storage"
@@ -337,683 +337,676 @@
   },"48": {
     "doc": "Human-in-the-Loop",
     "title": "How It Works: Futures and States",
-    "content": "The system uses Python’s asyncio.Future objects to implement halting. When a node requests input: . user_name = await request_input(prompt=\"What's your name?\") print(f\"Hello, {user_name}!\") . Behind the scenes: . | The workflow status changes to WAITING_FOR_INPUT | The current state is saved | A future is created and awaited, pausing execution | When input arrives, the future resolves and execution continues | . Same process resumption is quite tricky to get right. An await operation on the asyncio.Future object blocks python’s event loop, causing your workflow to become seemingly unresponsive. In reality, it is currently awaiting and this is intended behavior. To design a seamless system, use your workflow in tandem with a server. This way python switches between coroutines and you can provide inputs with ease. ",
+    "content": "The system uses Python’s asyncio.Future objects to implement halting. When a node requests input: . user_name = await request_input(prompt=\"What's your name?\") print(f\"Hello, {user_name}!\") . Behind the scenes: . | The workflow status changes to WAITING_FOR_INPUT | The current state is saved | A future is created and awaited, pausing execution | When input arrives, the future resolves and execution continues | . ",
     "url": "/Advanced/Human_in_the_loop.html#how-it-works-futures-and-states",
     
     "relUrl": "/Advanced/Human_in_the_loop.html#how-it-works-futures-and-states"
   },"49": {
     "doc": "Human-in-the-Loop",
     "title": "Resumption Behavior",
-    "content": "There are two ways execution can resume after requesting input: . Same-Process Resumption . If input arrives while the original process is still running: . # In your workflow node data = await request_input(prompt=\"Enter data:\") process_data(data) # Continues from exactly here . Cross-Process Resumption . If the workflow is stopped and later restarted: . # First execution data = await request_input(prompt=\"Enter data:\") # Halts here # Days later, workflow engine restarts data = await request_input(prompt=\"Enter data:\") # Re-executes this line process_data(data) # Then continues . ⚠️ Important: Code before the await will execute twice in cross-process resumption. Avoid side effects before await points: . # BAD: Side effect before await send_notification() # Will run twice if resumed cross-process data = await request_input(prompt=\"Enter data:\") # GOOD: Side effect after await data = await request_input(prompt=\"Enter data:\") send_notification() # Will only run once . ",
+    "content": "There are two ways execution can resume after requesting input: . Same-Process Resumption . If input is provided while the original process is still running (meaning the workflow hasn’t been stopped and resumed with a new WorkflowEngine instance): . # In your workflow node data = await request_input(prompt=\"Enter data:\") process_data(data) # Continues from exactly here . Cross-Process Resumption . If the workflow is stopped and later restarted: . # First execution data = await request_input(prompt=\"Enter data:\") # Halts here # Days later, workflow engine restarts data = await request_input(prompt=\"Enter data:\") # Re-executes this line process_data(data) # Then continues . ⚠️ Important: Code before the await will execute twice in cross-process resumption. Avoid side effects before await points: . # BAD: Side effect before await send_notification() # Will run twice if resumed cross-process data = await request_input(prompt=\"Enter data:\") # GOOD: Side effect after await data = await request_input(prompt=\"Enter data:\") send_notification() # Will only run once . ",
     "url": "/Advanced/Human_in_the_loop.html#resumption-behavior",
     
     "relUrl": "/Advanced/Human_in_the_loop.html#resumption-behavior"
   },"50": {
     "doc": "Human-in-the-Loop",
     "title": "Request Input Parameters",
-    "content": "The request_input function accepts these parameters: . async def request_input(prompt=None, options=None, input_type=\"text\", request_id=None): . | prompt: Text shown to the user (e.g., “What’s your name?”) | options: Available choices for selection inputs | input_type: Format of input (“text”, “select”, etc.) | request_id: Custom identifier for this specific input request | . The request_id is critical when a node has multiple input requests: . name = await request_input(prompt=\"Name?\", request_id=\"name_field\") age = await request_input(prompt=\"Age?\", request_id=\"age_field\") . Without unique request_ids, the same input would satisfy both requests! . ",
+    "content": "The request_input function accepts these parameters: . async def request_input(prompt=None, options=None, input_type=\"text\", request_id=None): . | prompt: Text shown to the user (e.g., “What’s your name?”) | options: Available choices for selection inputs | input_type: Format of input (“text”, “select”, etc.) | request_id: Custom identifier for this specific input request | . All of these are optional and do not necessarily have to be used. The request_id is critical when the same node has multiple input requests: . name = await request_input(prompt=\"Name?\", request_id=\"name_field\") age = await request_input(prompt=\"Age?\", request_id=\"age_field\") . Without unique request_id's, any input provided with just a node_id would satisfy both requests! . ",
     "url": "/Advanced/Human_in_the_loop.html#request-input-parameters",
     
     "relUrl": "/Advanced/Human_in_the_loop.html#request-input-parameters"
   },"51": {
     "doc": "Human-in-the-Loop",
     "title": "Providing Input Data",
-    "content": "To resume a workflow, provide input as a dictionary to either the step() or run() methods of the workflow engine: . # For inputs with default node IDs input_data = { \"TextInputNode_12345\": \"User's response\" } # For inputs with custom request IDs input_data = { \"name_field\": \"Alice\", \"age_field\": 30 } # Complex input data is also supported input_data = { \"form_response\": { \"name\": \"Bob\", \"preferences\": [\"pizza\", \"hiking\"] } } # Resume workflow with inputs await workflow.step(input_data) . The key in the dictionary must match either the node ID or the custom request ID. The respective value is the actual input data you wish to provide to the node. ",
+    "content": "To resume a workflow, provide input as a dictionary to either the step() or run() methods of the workflow engine: . # For inputs with default node IDs input_data = { \"TextInputNode_12345\": \"User's response\" } # For inputs with custom request IDs input_data = { \"name_field\": \"Alice\", \"age_field\": 30 } # Complex input data is also supported input_data = { \"form_response\": { \"name\": \"Bob\", \"preferences\": [\"pizza\", \"hiking\"] } } # Resume workflow with inputs await workflow.run(input_data) . The key in the dictionary must match either the node ID or the custom request ID. The respective value is the actual input data you wish to provide to the node. How do we find out when to provide input? . workflow.run() continues running until it reaches a halt point. When it stops, we need to figure out why - did it finish, fail, or is it just waiting for your input? . Method 1: Check the return value and status (great for terminal use) . # Running workflow execution loop while True: # Run the workflow await workflow.run() # Workflow stopped - check if it needs input if workflow.execution_state.awaiting_input: # Workflow is stuck until we provide input request = workflow.execution_state.awaiting_input print(f\"Input needed: {request['prompt']}\") if request['input_type'] == 'select': print(f\"Options: {request['options']}\") # Collect input and feed it to the workflow user_answer = input(\"Your response: \") await workflow.step({request['request_id']: user_answer}) continue # Workflow completed or failed break . Method 2: Server-based detection (cleaner approach) . Running your workflow in tandem with a server lets you run your workflow as a service, checking its status and feeding it input whenever needed - no need to babysit the process! . from fastapi import FastAPI import asyncio app = FastAPI() workflow = None @app.post(\"/start-workflow\") async def start_workflow(): global workflow workflow = WorkflowEngine(...) asyncio.create_task(workflow.run()) return {\"status\": \"started\"} @app.get(\"/workflow-status\") async def get_status(): if workflow.execution_state.awaiting_input: return { \"status\": \"waiting_for_input\", \"request\": workflow.execution_state.awaiting_input } return {\"status\": workflow.execution_state.workflow_status.name} @app.post(\"/provide-input\") async def provide_input(input_data: dict): request_id = workflow.execution_state.awaiting_input[\"request_id\"] await workflow.step({request_id: input_data[\"value\"]}) return {\"status\": \"input_provided\"} . Grapheteria comes with a built-in UI that uses this server approach, making it super easy to visualize your workflow, debug it, and provide input when needed. Just run grapheteria in your terminal to launch the UI and interact with your workflows visually instead of juggling print statements and keyboard inputs! . ",
     "url": "/Advanced/Human_in_the_loop.html#providing-input-data",
     
     "relUrl": "/Advanced/Human_in_the_loop.html#providing-input-data"
   },"52": {
     "doc": "Human-in-the-Loop",
-    "title": "Input Consumption Behavior",
-    "content": "When a workflow is halted: . | You must call workflow.step() or workflow.run() with input data to resume | Inputs are consumed when used and won’t persist for future requests | If inputs are provided for the wrong halted node, the workflow remains halted | Inputs provided in advance will be lost if not immediately used | . # This will NOT work: await workflow.step({\"future_node_id\": \"data\"}) # Input for a node not yet halted # ... later when the node halts ... await workflow.step() # The input is already gone! . ",
-    "url": "/Advanced/Human_in_the_loop.html#input-consumption-behavior",
+    "title": "Complete Example",
+    "content": "For an end-to-end example of a human-in-the-loop workflow, check out our Content Creation Example in the cookbook. It demonstrates a complete implementation with AI-generated content that requires human approval before publication. ",
+    "url": "/Advanced/Human_in_the_loop.html#complete-example",
     
-    "relUrl": "/Advanced/Human_in_the_loop.html#input-consumption-behavior"
+    "relUrl": "/Advanced/Human_in_the_loop.html#complete-example"
   },"53": {
-    "doc": "Human-in-the-Loop",
-    "title": "Example of an Agent Requiring Feedback",
-    "content": "class ContentReviewNode(Node): def prepare(self, shared, request_input): return { \"content\": shared.get(\"draft_content\", \"\"), \"request_input\": request_input, \"llm_client\": shared.get(\"llm_client\") } async def execute(self, prepared_data): request_input = prepared_data[\"request_input\"] content = prepared_data[\"content\"] llm_client = prepared_data[\"llm_client\"] # First, get LLM suggestions prompt = f\"Suggest improvements for this content:\\n\\n{content}\" llm_response = await llm_client.generate(prompt) # Show suggestions to human for approval user_decision = await request_input( prompt=\"The AI suggests these improvements. Accept?\", options=[\"Accept All\", \"Accept Some\", \"Reject All\"], input_type=\"select\", request_id=\"improvement_decision\" ) if user_decision == \"Accept Some\": # Request specific edits from human specific_edits = await request_input( prompt=\"Which specific changes would you like to make?\", request_id=\"specific_edits\" ) # Second LLM call with human guidance refined_prompt = f\"Revise this content:\\n\\n{content}\\n\\nWith these specific changes: {specific_edits}\" final_content = await llm_client.generate(refined_prompt) elif user_decision == \"Accept All\": final_content = llm_response else: final_content = content return {\"original\": content, \"final\": final_content} def cleanup(self, shared, prepared_data, execution_result): shared[\"reviewed_content\"] = execution_result[\"final\"] . ",
-    "url": "/Advanced/Human_in_the_loop.html#example-of-an-agent-requiring-feedback",
-    
-    "relUrl": "/Advanced/Human_in_the_loop.html#example-of-an-agent-requiring-feedback"
-  },"54": {
     "doc": "Human-in-the-Loop",
     "title": "Human-in-the-Loop",
     "content": " ",
     "url": "/Advanced/Human_in_the_loop.html",
     
     "relUrl": "/Advanced/Human_in_the_loop.html"
-  },"55": {
+  },"54": {
     "doc": "Human in the loop",
     "title": "Human-in-the-Loop Content Creation",
     "content": " ",
     "url": "/Cookbook/Human_in_the_loop.html#human-in-the-loop-content-creation",
     
     "relUrl": "/Cookbook/Human_in_the_loop.html#human-in-the-loop-content-creation"
-  },"56": {
+  },"55": {
     "doc": "Human in the loop",
     "title": "The Problem",
     "content": "Modern AI workflows often need human oversight at critical decision points. For instance, when an AI generates content, a human might need to review it before publication. ",
     "url": "/Cookbook/Human_in_the_loop.html#the-problem",
     
     "relUrl": "/Cookbook/Human_in_the_loop.html#the-problem"
-  },"57": {
+  },"56": {
     "doc": "Human in the loop",
     "title": "Solution with Grapheteria",
     "content": "Grapheteria excels at creating human-in-the-loop workflows with minimal effort. Here’s how we’ll build an elegant content creation system: . | User Input: A user suggests a topic for an article | AI Generation: The system uses AI to generate the article content | Human Review: A human reviewer examines the content before publication | Quality Control: If the content doesn’t meet standards, the reviewer provides specific feedback | Iteration: The system revises and resubmits until the content achieves the desired quality | Publication: Once approved, the content moves to publication | . First, let’s create our LLM utility . # utils.py from functools import lru_cache import os from openai import OpenAI from dotenv import load_dotenv # Load environment variables from .env file load_dotenv() @lru_cache(maxsize=1) def get_llm_client(): return OpenAI(api_key=os.environ.get(\"OPENAI_API_KEY\")) def call_llm(prompt, max_tokens=500): \"\"\"Call OpenAI's API to generate text.\"\"\" llm_client = get_llm_client() try: response = llm_client.chat.completions.create( model=\"gpt-3.5-turbo\", messages=[ {\"role\": \"system\", \"content\": \"You are a helpful article writer.\"}, {\"role\": \"user\", \"content\": prompt} ], max_tokens=max_tokens, temperature=0.7 ) return response.choices[0].message.content except Exception as e: print(f\"Error calling OpenAI API: {e}\") return f\"Failed to generate article about {prompt}\" . Now let’s create our workflow nodes . # nodes.py from grapheteria import Node from utils import call_llm class GenerateContentNode(Node): async def prepare(self, shared, request_input): topic = await request_input( prompt=\"What topic would you like an article about?\", input_type=\"text\" ) shared[\"topic\"] = topic return topic def execute(self, topic): prompt = f\"Write an informative article about {topic}\" article = call_llm(prompt) return article def cleanup(self, shared, prep_result, exec_result): shared[\"article\"] = exec_result class HumanReviewNode(Node): async def prepare(self, shared, request_input): print(f\"Article about '{shared['topic']}':\") print(shared['article'][:150] + \"...\") response = await request_input( prompt=\"Do you approve this content?\", options=[\"approve\", \"reject\"], input_type=\"select\" ) shared[\"human_decision\"] = response class PublishNode(Node): async def prepare(self, shared, _): print(f\"🎉 Publishing '{shared['topic']}' article\") # In a real app, you might save to a database or CMS # await write_to_db(shared['article']) class ReviseNode(Node): async def prepare(self, shared, request_input): print(f\"✏️ Article needs revision\") feedback = await request_input( prompt=\"What needs to be improved?\", input_type=\"text\" ) return { 'topic':shared['topic'], 'content': shared['article'], 'feedback': feedback } async def execute(self, data): new_prompt = f\"Topic: {data['topic']}. Revise this article: {data['content'][:200]}... Based on feedback: {data['feedback']}\" revised = call_llm(new_prompt, max_tokens=700) return revised def cleanup(self, shared, prep_result, exec_result): shared[\"article\"] = exec_result . Define and run the workflow . # main.py from nodes import * from grapheteria import WorkflowEngine import asyncio # Create nodes generate = GenerateContentNode(id=\"generate_content\") review = HumanReviewNode(id=\"human_review\") publish = PublishNode(id=\"publish\") revise = ReviseNode(id=\"revise\") # Connect with conditional paths generate &gt; review review - \"shared['human_decision'] == 'approve'\" &gt; publish review - \"shared['human_decision'] == 'reject'\" &gt; revise revise &gt; review # Loop back for another review # Create the workflow engine workflow = WorkflowEngine( nodes=[generate, review, publish, revise], start=generate ) async def run_workflow(): user_input = None while True: continue_workflow = await workflow.run(user_input) # If workflow is waiting for input if workflow.execution_state.awaiting_input: request = workflow.execution_state.awaiting_input request_id = request['request_id'] prompt = request['prompt'] print(f\"\\n[Input required] {prompt}\") if request['input_type'] == 'select': for i, option in enumerate(request['options']): print(f\"{i+1}. {option}\") choice = input(\"Enter your choice (number): \") user_input = request['options'][int(choice)-1] else: user_input = input(\"Your response: \") await workflow.step({request_id: user_input}) elif not continue_workflow: break if __name__ == \"__main__\": # Run the workflow asyncio.run(run_workflow()) . Workflow JSON Schema . { \"start\": \"generate_content\", \"nodes\": [{ \"id\": \"generate_content\", \"class\": \"GenerateContentNode\" }, { \"id\": \"human_review\", \"class\": \"HumanReviewNode\" }, { \"id\": \"publish\", \"class\": \"PublishNode\" }, { \"id\": \"revise\", \"class\": \"ReviseNode\" }], \"edges\": [{ \"from\": \"generate_content\", \"to\": \"human_review\" }, { \"from\": \"human_review\", \"to\": \"publish\", \"condition\": \"shared['human_decision'] == 'approve'\" }, { \"from\": \"human_review\", \"to\": \"revise\", \"condition\": \"shared['human_decision'] == 'reject'\" }, { \"from\": \"revise\", \"to\": \"human_review\" }] } . ",
     "url": "/Cookbook/Human_in_the_loop.html#solution-with-grapheteria",
     
     "relUrl": "/Cookbook/Human_in_the_loop.html#solution-with-grapheteria"
-  },"58": {
+  },"57": {
     "doc": "Human in the loop",
     "title": "Setup",
     "content": "# Install dependencies pip install grapheteria openai # Set your OpenAI API key in the .env file # Run the example to test functionality python main.py . ",
     "url": "/Cookbook/Human_in_the_loop.html#setup",
     
     "relUrl": "/Cookbook/Human_in_the_loop.html#setup"
-  },"59": {
+  },"58": {
     "doc": "Human in the loop",
     "title": "Key Features Demonstrated",
     "content": ". | User Input - Workflow pauses twice for human input (topic and approval) | AI Integration - Calls external LLM API for content generation | Feedback Loop - Rejected content goes through revision cycle | Decision Points - Human makes the publish/revise decision | State Persistence - All data flows through the shared state | . As always, run grapheteria in your terminal to launch the UI and visualize/run this workflow. The entire code for this example, along with deployment instructions, is available here. This pattern works great for any scenario where you need AI to do the heavy lifting while humans retain final approval authority! . ",
     "url": "/Cookbook/Human_in_the_loop.html#key-features-demonstrated",
     
     "relUrl": "/Cookbook/Human_in_the_loop.html#key-features-demonstrated"
-  },"60": {
+  },"59": {
     "doc": "Human in the loop",
     "title": "Human in the loop",
     "content": " ",
     "url": "/Cookbook/Human_in_the_loop.html",
     
     "relUrl": "/Cookbook/Human_in_the_loop.html"
-  },"61": {
+  },"60": {
     "doc": "Logging",
     "title": "Persistence and Time Travel",
     "content": " ",
     "url": "/Core/Logging.html#persistence-and-time-travel",
     
     "relUrl": "/Core/Logging.html#persistence-and-time-travel"
-  },"62": {
+  },"61": {
     "doc": "Logging",
     "title": "Overview",
     "content": "You’ve already met the building blocks of our workflow engine - nodes, edges, shared variables, and the engine itself. But there’s more to this story! Our workflow engine doesn’t just execute steps and forget them. It’s like a time traveler with a detailed journal - recording every step, allowing you to pause journeys, resume them later, or even create alternate timelines. Let’s see how this magic works. ",
     "url": "/Core/Logging.html#overview",
     
     "relUrl": "/Core/Logging.html#overview"
-  },"63": {
+  },"62": {
     "doc": "Logging",
     "title": "Run IDs: Your Workflow’s Passport",
     "content": "When a workflow starts its journey, it gets a unique passport - a run ID: . engine = WorkflowEngine( nodes=[start_node, process_node, end_node], start=start_node ) # A unique run_id like '20230615_143022_789' is auto-generated print(f\"Remember this ID to resume later: {engine.run_id}\") . This ID is your ticket back to this exact workflow state. Store it somewhere safe if you want to return to this journey later! . By default, logs are stored in the logs directory of your current working directory. You can examine these logs anytime to find historical run_ids. For a more user-friendly experience, all logs are also accessible through the UI where they’re formatted and easier to navigate. ",
     "url": "/Core/Logging.html#run-ids-your-workflows-passport",
     
     "relUrl": "/Core/Logging.html#run-ids-your-workflows-passport"
-  },"64": {
+  },"63": {
     "doc": "Logging",
     "title": "Resuming Workflows: Pick Up Where You Left Off",
     "content": "Life happens. Servers restart. But your workflow can continue right where it paused: . # Resume the workflow from the most recent step resumed_engine = WorkflowEngine( workflow_id=\"my_awesome_workflow\", run_id=\"20230615_143022_789\" ) # Or resume from a specific step resumed_engine = WorkflowEngine( workflow_id=\"my_awesome_workflow\", run_id=\"20230615_143022_789\", resume_from=3 # Resume from step 3 ) . The engine automatically loads the state and prepares to continue execution - whether it was waiting for input or ready to process the next node. ",
     "url": "/Core/Logging.html#resuming-workflows-pick-up-where-you-left-off",
     
     "relUrl": "/Core/Logging.html#resuming-workflows-pick-up-where-you-left-off"
-  },"65": {
+  },"64": {
     "doc": "Logging",
     "title": "Forking Workflows: Creating Alternate Timelines",
     "content": "Want to experiment with different paths without losing your original journey? Fork it! . # Create a new branch from step 3 of a previous run forked_engine = WorkflowEngine( workflow_id=\"my_awesome_workflow\", run_id=\"20230615_143022_789\", resume_from=3, fork=True # This creates a new run_id and preserves the original ) . This creates a parallel universe - your original workflow remains intact while you explore a different path from the same starting point. ",
     "url": "/Core/Logging.html#forking-workflows-creating-alternate-timelines",
     
     "relUrl": "/Core/Logging.html#forking-workflows-creating-alternate-timelines"
-  },"66": {
+  },"65": {
     "doc": "Logging",
     "title": "State Validation: Keeping Your Timeline Consistent",
     "content": "Time travel can be messy. To prevent paradoxes, the engine validates that your current workflow definition is compatible with the saved state: . try: # This will fail if 'critical_node' from step 5 is missing resumed_engine = WorkflowEngine( workflow_id=\"my_awesome_workflow\", run_id=\"20230615_143022_789\", resume_from=5 ) except ValueError as e: print(f\"Can't resume: {e}\") # \"Cannot resume: Node 'critical_node' is missing...\" . You can add new nodes to the future, but you can’t erase the past - nodes that were already processed or waiting must exist in your current workflow. ",
     "url": "/Core/Logging.html#state-validation-keeping-your-timeline-consistent",
     
     "relUrl": "/Core/Logging.html#state-validation-keeping-your-timeline-consistent"
-  },"67": {
+  },"66": {
     "doc": "Logging",
     "title": "Storage Configuration: Beyond Local Files",
     "content": "By default, your workflow’s history is stored in the local filesystem - perfect for development: . # Default storage uses local filesystem engine = WorkflowEngine(nodes=[...]) # For production, configure a different storage backend from storage_backend import PostgresStorage engine = WorkflowEngine( nodes=[...], storage_backend=PostgresStorage(connection_string=\"postgresql://...\") ) . For more robust production environments, check out our Storage Configuration guide for options like database storage, cloud storage, and more. Now you’re ready to build workflows that can pause, resume, and even branch into different timelines. Happy time traveling! . ",
     "url": "/Core/Logging.html#storage-configuration-beyond-local-files",
     
     "relUrl": "/Core/Logging.html#storage-configuration-beyond-local-files"
-  },"68": {
+  },"67": {
     "doc": "Logging",
     "title": "Logging",
     "content": " ",
     "url": "/Core/Logging.html",
     
     "relUrl": "/Core/Logging.html"
-  },"69": {
+  },"68": {
     "doc": "Logs Page",
     "title": "Logs",
     "content": " ",
     "url": "/Core/UI/Logs.html#logs",
     
     "relUrl": "/Core/UI/Logs.html#logs"
-  },"70": {
+  },"69": {
     "doc": "Logs Page",
     "title": "Overview",
     "content": "The logs tab is your time machine for workflows. It lets you peek into the past, present, and alternate timelines of every workflow you’ve created. Here you can track every step, decision, and path your workflows have taken throughout their journey. Currently, logs are stored on your local filesystem (we’re working on fancy database options soon, we promise!). ",
     "url": "/Core/UI/Logs.html#overview",
     
     "relUrl": "/Core/UI/Logs.html#overview"
-  },"71": {
+  },"70": {
     "doc": "Logs Page",
     "title": "Selecting Workflows",
     "content": "Finding the workflow you’re looking for is a breeze. Simply: . | Navigate to the logs tab | Browse the list of available workflows | Click on any workflow that catches your eye | . Each workflow displays its run history - a collection of timestamps that serve as both run IDs and breadcrumbs showing when each execution occurred. ",
     "url": "/Core/UI/Logs.html#selecting-workflows",
     
     "relUrl": "/Core/UI/Logs.html#selecting-workflows"
-  },"72": {
+  },"71": {
     "doc": "Logs Page",
     "title": "Exploring Run Details",
     "content": "Clicked on a run and ready to dive deeper? Each run reveals its secrets: . | Workflow ID | Run ID | Detailed execution steps | Previous node ID | Next node ID | Awaiting nodes | …and much more fascinating data! | . Think of it as a workflow’s diary - recording every thought, action, and decision it made during its execution. ",
     "url": "/Core/UI/Logs.html#exploring-run-details",
     
     "relUrl": "/Core/UI/Logs.html#exploring-run-details"
-  },"73": {
+  },"72": {
     "doc": "Logs Page",
     "title": "Tracking Workflow Evolution",
     "content": "Sometimes workflows branch into new variations - like alternate timelines in a sci-fi movie. When a workflow was forked from a previous run, you’ll see: . | A clickable link to the parent run at the top | Detailed metadata showing exactly where and how the fork happened | . This feature is particularly handy when you’re experimenting with different workflow paths or debugging complex processes. Ready to become a workflow time traveler? The logs tab awaits your exploration! . ",
     "url": "/Core/UI/Logs.html#tracking-workflow-evolution",
     
     "relUrl": "/Core/UI/Logs.html#tracking-workflow-evolution"
-  },"74": {
+  },"73": {
     "doc": "Logs Page",
     "title": "Logs Page",
     "content": " ",
     "url": "/Core/UI/Logs.html",
     
     "relUrl": "/Core/UI/Logs.html"
-  },"75": {
+  },"74": {
     "doc": "Tool-Calling with MCP",
     "title": "Tool-Calling with MCP",
     "content": " ",
     "url": "/Cookbook/MCP_tool_calling.html",
     
     "relUrl": "/Cookbook/MCP_tool_calling.html"
-  },"76": {
+  },"75": {
     "doc": "Tool-Calling with MCP",
     "title": "The Problem",
     "content": "Modern AI applications need to interact with external tools to solve complex problems. Whether it’s performing calculations, accessing databases, or calling APIs, we need a standardized way for LLMs to discover and use these tools. ",
     "url": "/Cookbook/MCP_tool_calling.html#the-problem",
     
     "relUrl": "/Cookbook/MCP_tool_calling.html#the-problem"
-  },"77": {
+  },"76": {
     "doc": "Tool-Calling with MCP",
     "title": "Solution with Grapheteria",
     "content": "Grapheteria makes building tool-using workflows simple with MCP (Model Context Protocol). Here’s what we’ll build: . | User Input: A user asks a question requiring external tools | MCP Connection: System connects to a tool server | LLM Planning: Claude decides which tools to use | Tool Execution: System executes the selected tool via MCP | Response Synthesis: Claude interprets tool results and answers the question | . First, let’s create our MCP server with powerful tools . Let’s set up an MCP server with a few example tools. While these demonstrations are straightforward, you can implement tools with any level of complexity your application requires: . # mcp_server.py from fastmcp import FastMCP # Create a named server mcp = FastMCP(\"Claude Tool Server\") @mcp.tool() def calculate(expression: str) -&gt; float: \"\"\"Evaluate a mathematical expression safely\"\"\" # In a real application, use a safer evaluation method return eval(expression, {\"__builtins__\": {}}, {\"abs\": abs, \"round\": round, \"max\": max, \"min\": min}) @mcp.tool() def get_country_info(country: str) -&gt; dict: \"\"\"Get basic information about a country\"\"\" countries = { \"france\": {\"capital\": \"Paris\", \"population\": \"67 million\", \"language\": \"French\"}, \"japan\": {\"capital\": \"Tokyo\", \"population\": \"126 million\", \"language\": \"Japanese\"}, \"brazil\": {\"capital\": \"Brasília\", \"population\": \"213 million\", \"language\": \"Portuguese\"}, } return countries.get(country.lower(), {\"error\": \"Country not found\"}) @mcp.tool() def convert_units(value: float, from_unit: str, to_unit: str) -&gt; float: \"\"\"Convert between common units\"\"\" conversions = { \"km_to_miles\": 0.621371, \"miles_to_km\": 1.60934, \"kg_to_lb\": 2.20462, \"lb_to_kg\": 0.453592, \"celsius_to_fahrenheit\": lambda x: x * 9/5 + 32, \"fahrenheit_to_celsius\": lambda x: (x - 32) * 5/9, } key = f\"{from_unit.lower()}_to_{to_unit.lower()}\" if key in conversions: converter = conversions[key] if callable(converter): return converter(value) return value * converter return {\"error\": \"Conversion not supported\"} # Start the server if __name__ == \"__main__\": mcp.run() . Let’s create our utility functions . # utils.py from functools import lru_cache from typing import Dict, Any, List from anthropic import Anthropic from dotenv import load_dotenv import os load_dotenv() # load environment variables from .env @lru_cache(maxsize=1) def get_llm_client(): return Anthropic(api_key=os.environ.get(\"ANTHROPIC_API_KEY\")) def call_llm(messages: List[Dict[str, Any]], tools: List[Dict[str, Any]]) -&gt; str: llm_client = get_llm_client() response = llm_client.messages.create( model=\"claude-3-5-sonnet-20241022\", max_tokens=1000, messages=messages, tools=tools ) return response . Now, let’s define our workflow nodes . # nodes.py import asyncio from mcp import ClientSession, StdioServerParameters, stdio_client from utils import call_llm from grapheteria import Node class QuestionNode(Node): async def prepare(self, shared, request_input): question = await request_input( prompt=\"What would you like to know?\", input_type=\"text\" ) shared[\"question\"] = question shared[\"messages\"] = shared.get(\"messages\", []) shared[\"messages\"].append({ \"role\": \"user\", \"content\": question }) class CollectMCPToolsNode(Node): async def prepare(self, shared, _): server_params = StdioServerParameters( command=\"python\", args=[\"examples/mcp_tool_calling/mcp_server.py\"], ) async with stdio_client(server_params) as (read, write): async with ClientSession(read, write) as session: # Initialize the connection await session.initialize() # Get tools response = await session.list_tools() shared[\"tools\"] = [{ \"name\": tool.name, \"description\": tool.description, \"input_schema\": tool.inputSchema } for tool in response.tools] shared[\"collected_tools\"] = True class InitialResponseNode(Node): def prepare(self, shared, request_input): tools = shared[\"tools\"] messages = shared[\"messages\"] return tools, messages def execute(self, prep_result): tools, messages = prep_result response = call_llm(messages, tools) return response def cleanup(self, shared, prep_result, exec_result): tool_calls = [] for content in exec_result.content: if content.type == 'tool_use': tool_call = { \"id\": content.id, \"name\": content.name, \"input\": content.input } tool_calls.append(tool_call) shared[\"tool_calls\"] = tool_calls messages = shared[\"messages\"] messages.append({ \"role\": \"assistant\", \"content\": exec_result.content }) shared[\"messages\"] = messages #Parallel Tool Execution class ToolExecutionNode(Node): def prepare(self, shared, request_input): tool_calls = shared[\"tool_calls\"] return tool_calls async def _execute_with_retry(self, items): # Process all items in parallel tasks = [self._process_item(item) for item in items] results = await asyncio.gather(*tasks, return_exceptions=True) # Check for exceptions for result in results: if isinstance(result, Exception): raise result return results async def execute(self, prep_result): tool_id, tool_name, tool_input = prep_result['id'], prep_result['name'], prep_result['input'] server_params = StdioServerParameters( command=\"python\", args=[\"examples/mcp_tool_calling/mcp_server.py\"], ) async with stdio_client(server_params) as (read, write): async with ClientSession(read, write) as session: # Initialize the connection await session.initialize() # Execute the tool result = await session.call_tool(tool_name, tool_input) return { \"tool_use_id\": tool_id, \"result\": result.content } def cleanup(self, shared, prep_result, exec_result): for result in exec_result: shared[\"messages\"].append({ \"role\": \"user\", \"content\": [ { \"type\": \"tool_result\", \"tool_use_id\": result[\"tool_use_id\"], \"content\": result[\"result\"] } ] }) class FinalResponseNode(Node): def prepare(self, shared, request_input): messages = shared[\"messages\"] tools = shared[\"tools\"] return messages, tools def execute(self, prep_result): messages, tools = prep_result # Get final response from Claude response = call_llm(messages, tools) return response.content[0].text def cleanup(self, shared, prep_result, exec_result): shared[\"final_response\"] = exec_result class FeedbackNode(Node): async def prepare(self, shared, request_input): global _mcp_client print(\"\\n🔍 Response:\\n\") print(f\"Question: {shared['question']}\") print(\"\\nAnswer:\") print(shared['final_response']) feedback = await request_input( prompt=\"Was this answer helpful?\", options=[\"yes\", \"no\"], input_type=\"select\" ) shared[\"feedback\"] = feedback . Finally, let’s define and run our workflow . # main.py from nodes import * from grapheteria import WorkflowEngine import asyncio # Create nodes question = QuestionNode(id=\"question\") collect_mcp_tools = CollectMCPToolsNode(id=\"collect_mcp_tools\") initial_response = InitialResponseNode(id=\"initial_response\") tool_execution = ToolExecutionNode(id=\"tool_execution\") final_response = FinalResponseNode(id=\"final_response\") feedback = FeedbackNode(id=\"feedback\") # Connect nodes to form workflow question &gt; collect_mcp_tools &gt; initial_response &gt; final_response question - \"shared.get('collected_tools', False) == True\" &gt; initial_response initial_response - \"shared.get('tool_calls', False)\" &gt; tool_execution &gt; final_response final_response &gt; feedback feedback - \"shared['feedback'] == 'no'\" &gt; question # Create the workflow engine workflow = WorkflowEngine( workflow_id=\"mcp_tool_calling\", nodes=[question, collect_mcp_tools, initial_response, tool_execution, final_response, feedback], start=question ) async def run_workflow(): user_input = None while True: continue_workflow = await workflow.run(user_input) # If workflow is waiting for input if workflow.execution_state.awaiting_input: request = workflow.execution_state.awaiting_input request_id = request['request_id'] prompt = request['prompt'] print(f\"\\n[Input required] {prompt}\") if request['input_type'] == 'select': for i, option in enumerate(request['options']): print(f\"{i+1}. {option}\") choice = input(\"Enter your choice (number): \") user_input = request['options'][int(choice)-1] else: user_input = input(\"Your response: \") await workflow.step({request_id: user_input}) elif not continue_workflow: break if __name__ == \"__main__\": print(\"🧠 Claude Research Assistant with MCP Tools\") print(\"------------------------------------------\") print(\"Ask me anything! I can use tools to help you.\") # Run the workflow asyncio.run(run_workflow()) . Workflow JSON Schema . { \"start\": \"question\", \"nodes\": [ { \"id\": \"question\", \"class\": \"QuestionNode\" }, { \"id\": \"collect_mcp_tools\", \"class\": \"CollectMCPToolsNode\" }, { \"id\": \"initial_response\", \"class\": \"InitialResponseNode\" }, { \"id\": \"tool_execution\", \"class\": \"ToolExecutionNode\" }, { \"id\": \"final_response\", \"class\": \"FinalResponseNode\" }, { \"id\": \"feedback\", \"class\": \"FeedbackNode\" } ], \"edges\": [ { \"from\": \"question\", \"to\": \"collect_mcp_tools\" }, { \"from\": \"collect_mcp_tools\", \"to\": \"initial_response\" }, { \"from\": \"question\", \"to\": \"initial_response\", \"condition\": \"shared.get('collected_tools', False) == True\" }, { \"from\": \"initial_response\", \"to\": \"final_response\" }, { \"from\": \"initial_response\", \"to\": \"tool_execution\", \"condition\": \"shared.get('tool_calls', False)\" }, { \"from\": \"tool_execution\", \"to\": \"final_response\" }, { \"from\": \"final_response\", \"to\": \"feedback\" }, { \"from\": \"feedback\", \"to\": \"question\", \"condition\": \"shared['feedback'] == 'no'\" } ] } . ",
     "url": "/Cookbook/MCP_tool_calling.html#solution-with-grapheteria",
     
     "relUrl": "/Cookbook/MCP_tool_calling.html#solution-with-grapheteria"
-  },"78": {
+  },"77": {
     "doc": "Tool-Calling with MCP",
     "title": "Setup",
     "content": "# Install dependencies pip install grapheteria fastmcp anthropic mcp python-dotenv # Set your Anthropic API key in the .env file echo \"ANTHROPIC_API_KEY=your-api-key-here\" &gt; .env # Run the workflow python main.py . ",
     "url": "/Cookbook/MCP_tool_calling.html#setup",
     
     "relUrl": "/Cookbook/MCP_tool_calling.html#setup"
-  },"79": {
+  },"78": {
     "doc": "Tool-Calling with MCP",
     "title": "Key Features Demonstrated",
     "content": ". | Granular Steps - Each part of the process has its own dedicated node | MCP Protocol - Standard protocol for model-tool interaction | State Propagation - Tool results and conversation history flow through shared state | Visual Workflow - Entire tool-use cycle visualized in the Grapheteria UI | Claude Integration - Direct access to Claude’s powerful tool-use capabilities | . As always, run grapheteria in your terminal to launch the UI and visualize/run/debug this workflow. The entire code for this example, along with deployment instructions, is available here. This pattern gives you maximum visibility into each stage of the tool-use process, making it perfect for debugging or adding custom logic at any point in the workflow! . ",
     "url": "/Cookbook/MCP_tool_calling.html#key-features-demonstrated",
     
     "relUrl": "/Cookbook/MCP_tool_calling.html#key-features-demonstrated"
-  },"80": {
+  },"79": {
     "doc": "Node",
     "title": "Working with Nodes",
     "content": " ",
     "url": "/Core/Node.html#working-with-nodes",
     
     "relUrl": "/Core/Node.html#working-with-nodes"
-  },"81": {
+  },"80": {
     "doc": "Node",
     "title": "Overview",
     "content": "The Node class is the smallest unit of execution in Grapheteria’s workflow system - think of it as the atom in your workflow molecule. All task-performing classes must extend this class to join the party. Nodes handle individual pieces of work, process data, make decisions, or interact with external systems. from grapheteria import Node class MyCustomNode(Node): def execute(self, prepared_result): # Your execution logic goes here return \"Hello, Grapheteria!\" . ",
     "url": "/Core/Node.html#overview",
     
     "relUrl": "/Core/Node.html#overview"
-  },"82": {
+  },"81": {
     "doc": "Node",
     "title": "The Triple-Phase Model",
-    "content": "Grapheteria nodes follow a clear three-phase execution model inspired by PocketFlow, bringing order to the potentially chaotic world of workflow execution. This separation creates clear boundaries for different responsibilities and improves maintainability. 1. Prepare . The prepare function sets the stage for execution. It receives two parameters: . | shared: The shared state dictionary for cross-node communication | request_input: A function that can request for human input | . # Use this function to read from shared, a db or pre-process data def prepare(self, shared, request_input): # Extract what you need from shared state name = shared.get(\"user_name\", \"friend\") initial_data = shared.get(\"data\", {}) # Return exactly what execute needs - nothing more, nothing less return {\"name\": name, \"greeting\": \"Hello\", \"data\": initial_data} . 2. Execute . The execute function is where the magic happens. It receives only one parameter: . | prepared_result: The output from the prepare phase | . # The main work happens here, using only what prepare provided. Call an API or perform computation. def execute(self, prepared_result): processed_data = do_something_with(prepared_result[\"data\"]) return { \"message\": f\"{prepared_result['greeting']}, {prepared_result['name']}!\", \"processed_data\": processed_data } . Notice how execute doesn’t receive the shared state directly. This is intentional! It: . | Prevents accidental corruption of shared state during critical operations | Enables future parallel execution of multiple nodes (see Parallelism docs) | Forces clean separation of concerns between phases | . Execution comes with built-in resilience: . | max_retries: Number of attempts before giving up (default: 1) | wait: Time to wait between retries in seconds | exec_fallback: Method called when all retries fail | . class ReliableNode(Node): async def execute(self, prepared_result): # Potentially flaky operation await call_external_api() return def exec_fallback(self, prepared_result, exception): # Handle the failure gracefully return {\"status\": \"failed\", \"reason\": str(exception)} # Create instance with retry parameters reliable_node = ReliableNode(id=\"reliable\", max_retries=3, wait=2) . 3. Cleanup . The cleanup function handles post-execution tasks. It receives all three pieces of context: . | shared: The shared state dictionary | prepared_result: The original output from prepare | execution_result: The output from execute | . # Update shared state with our results or write results to a db def cleanup(self, shared, prepared_result, execution_result): shared[\"greeting_message\"] = execution_result[\"message\"] shared[\"processed_data\"] = execution_result[\"processed_data\"] # write_to_db() . ",
+    "content": "Grapheteria nodes follow a clear three-phase execution model inspired by PocketFlow, bringing order to the potentially chaotic world of workflow execution. This separation creates clear boundaries for different responsibilities and improves maintainability. 1. Prepare . The prepare function sets the stage for execution. It receives two parameters: . | shared: The shared state dictionary for cross-node communication | request_input: A function that can request for human input | . # Use this function to read from shared, a db or pre-process data def prepare(self, shared, request_input): # Extract what you need from shared state name = shared.get(\"user_name\", \"friend\") initial_data = shared.get(\"data\", {}) # Return exactly what execute needs - nothing more, nothing less return {\"name\": name, \"greeting\": \"Hello\", \"data\": initial_data} . 2. Execute . The execute function is where the magic happens. It receives only one parameter: . | prepared_result: The output from the prepare phase | . # The main work happens here, using only what prepare provided. Call an API or perform computation. def execute(self, prepared_result): processed_data = do_something_with(prepared_result[\"data\"]) return { \"message\": f\"{prepared_result['greeting']}, {prepared_result['name']}!\", \"processed_data\": processed_data } . Notice how execute doesn’t receive the shared state directly. This is intentional! It: . | Prevents accidental corruption of shared state during critical operations | Enables parallel execution within a node (e.g., map-reduce patterns, concurrent API calls) by isolating execution logic from shared state. (see Parallelism docs) | Forces clean separation of concerns between phases | . Execution comes with built-in resilience: . | max_retries: Number of attempts before giving up (default: 1) | wait: Time to wait between retries in seconds | exec_fallback: Method called when all retries fail | . class ReliableNode(Node): async def execute(self, prepared_result): # Potentially flaky operation await call_external_api() return def exec_fallback(self, prepared_result, exception): # Handle the failure gracefully return {\"status\": \"failed\", \"reason\": str(exception)} # Create instance with retry parameters reliable_node = ReliableNode(id=\"reliable\", max_retries=3, wait=2) . 3. Cleanup . The cleanup function handles post-execution tasks. It receives all three pieces of context: . | shared: The shared state dictionary | prepared_result: The original output from prepare | execution_result: The output from execute | . # Update shared state with our results or write results to a db def cleanup(self, shared, prepared_result, execution_result): shared[\"greeting_message\"] = execution_result[\"message\"] shared[\"processed_data\"] = execution_result[\"processed_data\"] # write_to_db() . ",
     "url": "/Core/Node.html#the-triple-phase-model",
     
     "relUrl": "/Core/Node.html#the-triple-phase-model"
-  },"83": {
+  },"82": {
     "doc": "Node",
     "title": "Custom Node IDs",
     "content": "Always define a custom ID for each node rather than relying on auto-generated IDs: . # Good: Descriptive, unique ID node = MyCustomNode(id=\"validate_user_input_step\") # Bad: Relying on auto-generated ID node = MyCustomNode() # Gets something like \"MyCustomNode_a1b2c3d4\" . Custom IDs are crucial for: . | Logging and debugging - imagine searching logs for “validate_user_input_step” vs “MyCustomNode_a1b2c3d4” | Resuming workflows after interruption - when restarting a workflow, the system needs to know exactly which node to resume from | Providing data to halted nodes requesting human input - when a node is waiting for input, you need a clear ID to send that input to the right place | . Without meaningful IDs, your workflow becomes a mysterious black box. With them, it transforms into a transparent, manageable, and resumable process. ",
     "url": "/Core/Node.html#custom-node-ids",
     
     "relUrl": "/Core/Node.html#custom-node-ids"
-  },"84": {
+  },"83": {
     "doc": "Node",
     "title": "Node Configuration",
     "content": "Nodes can be configured through a config dictionary passed during initialization. This enhances reusability - the same node class can be used for multiple purposes just by changing its configuration. # Create two different LLM agents from the same class customer_service = LLMNode(id = \"customer_service\", config={ \"system_prompt\": \"You are a helpful customer service representative.\", \"temperature\": 0.3, \"max_tokens\": 500 }) creative_writer = LLMNode(id=\"creative_writer\", config={ \"system_prompt\": \"You are a creative storyteller with a flair for drama.\", \"temperature\": 0.9, \"max_tokens\": 2000 }) . Access config values inside your node methods: . def prepare(self, shared, request_input): system_prompt = self.config.get(\"system_prompt\", \"Default system prompt\") temperature = self.config.get(\"temperature\", 0.7) return { \"system_message\": system_prompt, \"prompt\": shared.get(\"user_message\", \"\"), \"temperature\": temperature } . ",
     "url": "/Core/Node.html#node-configuration",
     
     "relUrl": "/Core/Node.html#node-configuration"
-  },"85": {
+  },"84": {
     "doc": "Node",
     "title": "Using request_input",
     "content": "The request_input function allows nodes to request external input during execution - perfect for human-in-the-loop scenarios. The function can be called without any parameters, though additional information helps guide the user: . async def prepare(self, shared, request_input): # Simple confirmation prompt - with helpful parameters user_choice = await request_input( prompt=\"Do you approve this transaction?\", options=[\"Approve\", \"Reject\"], input_type=\"select\" ) # If rejection, ask for reason in the same prepare phase if user_choice == \"Reject\": reason = await request_input( prompt=\"Please provide reason for rejection:\", input_type=\"text\", request_id=\"rejection_reason\" # Different from default node ID ) return {\"status\": \"rejected\", \"reason\": reason} # Store the choice for execute phase return {\"user_approved\": True} . The request_id parameter differentiates between multiple input requests within the same node. Without it, the same input would be reused for all calls (defaulting to the node’s ID). For a more informative lesson on request_input() please check out the Human-in-the-Loop docs. ",
     "url": "/Core/Node.html#using-request_input",
     
     "relUrl": "/Core/Node.html#using-request_input"
-  },"86": {
+  },"85": {
     "doc": "Node",
     "title": "Running Nodes Standalone",
     "content": "For testing and debugging, you can run nodes independently without setting up an entire workflow: . import asyncio async def test_node(): # Create initial shared state shared_state = {\"user_name\": \"Grapheteria Fan\", \"data\": {\"key\": \"value\"}} # Create and run the node node = ProcessingNode(config={\"processing_level\": \"detailed\"}) result = await node.run_standalone(shared_state) print(f\"Updated shared state: {result}\") print(f\"Processed data: {result.get('processed_data')}\") # Run it asyncio.run(test_node()) . Note that request_input functionality won’t work in standalone mode - it’s strictly for testing node logic without human interaction. ",
     "url": "/Core/Node.html#running-nodes-standalone",
     
     "relUrl": "/Core/Node.html#running-nodes-standalone"
-  },"87": {
+  },"86": {
     "doc": "Node",
     "title": "Initializing Nodes in JSON and Code",
     "content": "Grapheteria offers flexibility by letting you define workflows in both Python code and JSON. While your Node class implementation must be in Python, you can instantiate and connect nodes using either approach. In Code (Python) . # Create a processing node with a custom ID and configuration processor = MyCustomNode( id=\"data_processor_1\", config={\"max_items\": 100, \"verbose\": True} ) . In JSON . { \"nodes\": [ { \"id\": \"data_processor_1\", \"class\": \"MyCustomNode\", \"config\": {\"max_items\": 100, \"verbose\": true} } ] } . Why JSON? JSON workflows sync in real-time with the UI, letting devs design and modify workflows visually with an intuitive debugging experience. With these building blocks, you can create nodes that gracefully handle any workflow task your application needs! . ",
     "url": "/Core/Node.html#initializing-nodes-in-json-and-code",
     
     "relUrl": "/Core/Node.html#initializing-nodes-in-json-and-code"
-  },"88": {
+  },"87": {
     "doc": "Node",
     "title": "Node",
     "content": " ",
     "url": "/Core/Node.html",
     
     "relUrl": "/Core/Node.html"
-  },"89": {
+  },"88": {
     "doc": "Overview",
     "title": "The UI: Visual Workflow Manager",
     "content": " ",
     "url": "/Core/UI/Overview.html#the-ui-visual-workflow-manager",
     
     "relUrl": "/Core/UI/Overview.html#the-ui-visual-workflow-manager"
-  },"90": {
+  },"89": {
     "doc": "Overview",
     "title": "Discovering Your Components",
     "content": "When launched, the server automatically scans your working directory for: . | Any nodes you’ve created (classes extending the Node class) | Existing workflows (stored as JSON files) | . Everything is instantly available in your browser - no manual importing needed! . ",
     "url": "/Core/UI/Overview.html#discovering-your-components",
     
     "relUrl": "/Core/UI/Overview.html#discovering-your-components"
-  },"91": {
+  },"90": {
     "doc": "Overview",
     "title": "Canvas: Your Workflow Playground",
     "content": "After selecting or creating a workflow, you’ll see your canvas - the blank slate for your state machine. Need to add nodes? Just right-click anywhere on the canvas to see all available nodes. Each node you add automatically updates your workflow’s JSON schema. The UI automatically assigns a unique ID to each node in the JSON schema. If you wish to modify them, please ensure that they are unique and that the changes are reflected in the edges as well. ",
     "url": "/Core/UI/Overview.html#canvas-your-workflow-playground",
     
     "relUrl": "/Core/UI/Overview.html#canvas-your-workflow-playground"
-  },"92": {
+  },"91": {
     "doc": "Overview",
     "title": "Building Your State Machine",
     "content": "Adding and Configuring Nodes . Add as many nodes as your workflow needs. Right-click on any node to: . | Set it as the start node | Modify its configuration | View its source code | And more! | . Creating Connections . Connect your nodes by dragging from the center of one node to another. An edge appears, linking them together - and yes, your JSON file updates in real-time! . Removing Components . To delete a node or edge: . | Double-click on a node’s handle (the same handle lets you drag nodes around) | Double-click anywhere on an edge to remove it | . Edge Configuration . Edges aren’t just connections - click the button on any edge to add transition conditions. ",
     "url": "/Core/UI/Overview.html#building-your-state-machine",
     
     "relUrl": "/Core/UI/Overview.html#building-your-state-machine"
-  },"93": {
+  },"92": {
     "doc": "Overview",
     "title": "Setting Initial State",
     "content": "Look for the button at the bottom of your canvas to set your workflow’s initial state - crucial for proper execution! . ",
     "url": "/Core/UI/Overview.html#setting-initial-state",
     
     "relUrl": "/Core/UI/Overview.html#setting-initial-state"
-  },"94": {
+  },"93": {
     "doc": "Overview",
     "title": "Real-Time Synchronization",
     "content": "Keep an eye on the connection icon in the top left. Green means you’re connected and changes are syncing to your JSON file. The UI only shows what’s actually in your schema. If something doesn’t appear as expected, check the connection status - your progress is always safe. ",
     "url": "/Core/UI/Overview.html#real-time-synchronization",
     
     "relUrl": "/Core/UI/Overview.html#real-time-synchronization"
-  },"95": {
+  },"94": {
     "doc": "Overview",
     "title": "Ready to Run",
     "content": "Once your workflow looks good, head to the debug/run tab on the middle right of the screen. There you can test your state machine and see it in action! . Learn more about debugging and running workflows . ",
     "url": "/Core/UI/Overview.html#ready-to-run",
     
     "relUrl": "/Core/UI/Overview.html#ready-to-run"
-  },"96": {
+  },"95": {
     "doc": "Overview",
     "title": "Troubleshooting",
     "content": "Having issues? Check out our troubleshooting guide for common problems and solutions. Troubleshooting Guide . ",
     "url": "/Core/UI/Overview.html#troubleshooting",
     
     "relUrl": "/Core/UI/Overview.html#troubleshooting"
-  },"97": {
+  },"96": {
     "doc": "Overview",
     "title": "Overview",
     "content": " ",
     "url": "/Core/UI/Overview.html",
     
     "relUrl": "/Core/UI/Overview.html"
-  },"98": {
+  },"97": {
     "doc": "Communication",
     "title": "Shared: The Communication Protocol",
     "content": " ",
     "url": "/Core/Shared.html#shared-the-communication-protocol",
     
     "relUrl": "/Core/Shared.html#shared-the-communication-protocol"
-  },"99": {
+  },"98": {
     "doc": "Communication",
     "title": "Overview",
     "content": "The shared dictionary is your workflow’s memory bank - the primary way nodes talk to each other. Think of it as a communal whiteboard where any node can read existing information or write new data. It’s simply a Python dictionary accessible to all nodes in your workflow. def prepare(self, shared, request_input): # Read something from shared state previous_result = shared.get('previous_calculation', 0) # Use that data in calculations return previous_result * 2 def cleanup(self, shared, prepared_result, execution_result): # Write back to shared state for other nodes shared['my_calculation'] = execution_result return execution_result . ",
     "url": "/Core/Shared.html#overview",
     
     "relUrl": "/Core/Shared.html#overview"
-  },"100": {
+  },"99": {
     "doc": "Communication",
     "title": "Setting Initial State",
     "content": "By default, the shared dictionary starts empty ({}), but you can pre-load it with initial values that will evolve during workflow execution: . # When creating a workflow from code initial_shared_state={ \"chat_history\": [], \"processing_results\": [], \"retry_count\": 0, \"last_execution_time\": None } . Remember that the shared dictionary is meant for dynamic values that change as your workflow runs. For fixed inputs, use node configuration parameters instead. Setting the same initial state in JSON which can be used with …. yeah yeah the UI, you get it. { \"nodes\": [\"...\"], \"edges\": [\"...\"], \"initial_state\": { \"user_profile\": { \"name\": \"Alice\", \"preferences\": [\"quick\", \"automated\"] } } } . ",
     "url": "/Core/Shared.html#setting-initial-state",
     
     "relUrl": "/Core/Shared.html#setting-initial-state"
-  },"101": {
+  },"100": {
     "doc": "Communication",
-    "title": "Serialization Constraints",
-    "content": "Since workflow states are saved to disk, variables in your shared dictionary must be JSON-serializable by default. This includes: . | Simple types: strings, numbers, booleans, None | Containers: lists, dictionaries | Nested combinations of the above | . # ✅ This works fine shared[\"results\"] = [1, 2, 3] shared[\"config\"] = {\"max_retries\": 3, \"enabled\": True} # ❌ This will cause errors during state saving shared[\"queue\"] = queue.Queue() # Not JSON serializable shared[\"model\"] = sklearn.linear_model.LinearRegression() # Not serializable . Need to store complex Python objects? You’ll need to extend the storage backend to use pickle or another serialization method. See our Extending Storage guide for the full details. ",
-    "url": "/Core/Shared.html#serialization-constraints",
+    "title": "Serialization Superpowers",
+    "content": "Now with the magic of Python pickling (via dill), your shared dictionary can store almost any Python object! Unlike before, you’re no longer limited to JSON-friendly types: . | Complex objects: queues, custom classes, trained ML models | Function references and callables | Basically anything Python can create | . # ✅ Go wild with complex objects from queue import Queue import sklearn.linear_model # Pass messages between nodes with queues shared[\"task_queue\"] = Queue() shared[\"task_queue\"].put({\"priority\": \"high\", \"task\": \"analyze_data\"}) # Share trained ML models between nodes model = sklearn.linear_model.LinearRegression() model.fit([[0], [1], [2]], [0, 1, 2]) # Train it shared[\"prediction_model\"] = model # Store it # ✅ Even store functions for maximum flexibility def calculate_score(data): return sum(data) / len(data) shared[\"scoring_function\"] = calculate_score . This opens up powerful patterns: passing trained models between nodes, creating inter-node communication channels, or even building responsive agent networks that collaborate through shared resources. By default, these serialized states are stored in your local filesystem. Need to persist to a database instead? Check out our Extending Storage guide. ",
+    "url": "/Core/Shared.html#serialization-superpowers",
     
-    "relUrl": "/Core/Shared.html#serialization-constraints"
-  },"102": {
+    "relUrl": "/Core/Shared.html#serialization-superpowers"
+  },"101": {
     "doc": "Communication",
     "title": "Communication",
     "content": " ",
     "url": "/Core/Shared.html",
     
     "relUrl": "/Core/Shared.html"
-  },"103": {
+  },"102": {
     "doc": "Troubleshooting",
     "title": "Troubleshooting Grapheteria",
     "content": " ",
     "url": "/Core/UI/Troubleshooting.html#troubleshooting-grapheteria",
     
     "relUrl": "/Core/UI/Troubleshooting.html#troubleshooting-grapheteria"
-  },"104": {
+  },"103": {
     "doc": "Troubleshooting",
     "title": "Overview",
     "content": "Welcome to the troubleshooting section! As more people try Grapheteria, we’ll keep adding commonly faced issues (and keep trying to fix them, of course!). The golden rule of bug fixing: when things go from bad to worse, a good old server restart fixes most issues. A restart triggers a fresh scan of all workflows and nodes in your directory, ensuring you’re working with the latest data. Not ideal, but effective! . ",
     "url": "/Core/UI/Troubleshooting.html#overview",
     
     "relUrl": "/Core/UI/Troubleshooting.html#overview"
-  },"105": {
+  },"104": {
     "doc": "Troubleshooting",
     "title": "Module Loading Errors",
     "content": "If your Python module containing node definitions has errors, it won’t load properly: . # This broken code will prevent nodes from being registered class MyBrokenNode(Node): def execute(self, prepared_result) # Missing colon here! return \"This won't work\" . Symptoms: . | Nodes don’t appear in the UI | Old versions of nodes show up instead of your updates | Deleted nodes stubbornly remain in the UI | . Solution: Check for syntax errors in your Python files. The compiler’s red squiggles are your friends here! Fix any syntax issues and re-save the file. ",
     "url": "/Core/UI/Troubleshooting.html#module-loading-errors",
     
     "relUrl": "/Core/UI/Troubleshooting.html#module-loading-errors"
-  },"106": {
+  },"105": {
     "doc": "Troubleshooting",
     "title": "Deleted Node Classes",
     "content": "When you delete a node class from your Python code, it may haunt your UI: . # If you delete this from your code... class DataProcessorNode(Node): async def execute(self, prepared_result): return process_data(prepared_result) . The node will continue to appear in your workflow until you explicitly remove it from the UI or the JSON file. Why? This preserves your workflow structure in case you accidentally delete code. Automatic removal would cascade to connected edges and potentially break your workflow. Solution: Manually delete unwanted nodes from the UI canvas or edit your workflow JSON file. ",
     "url": "/Core/UI/Troubleshooting.html#deleted-node-classes",
     
     "relUrl": "/Core/UI/Troubleshooting.html#deleted-node-classes"
-  },"107": {
+  },"106": {
     "doc": "Troubleshooting",
     "title": "File Renaming Adventures",
     "content": "Renaming files can lead to unexpected behavior: . What happens: The server tracks each file and its nodes in a dictionary structure. When you rename a file: . | The old filename entry remains in the server’s memory | A new entry is created for the new filename | This causes node duplication in the tracking system | . This duplication can lead to unexpected behavior, like nodes appearing twice or importing failures. Solution: After renaming files, restart the server to clear its internal file registry and rebuild it from scratch. ",
     "url": "/Core/UI/Troubleshooting.html#file-renaming-adventures",
     
     "relUrl": "/Core/UI/Troubleshooting.html#file-renaming-adventures"
-  },"108": {
+  },"107": {
     "doc": "Troubleshooting",
     "title": "Duplicate Node Names",
     "content": "Having multiple node classes with the same name across different files creates confusion: . # In file1.py class ProcessorNode(Node): # Does one thing # In file2.py class ProcessorNode(Node): # Same name! # Does something entirely different . What happens: Only one version will appear in the UI - typically the last one scanned. This behavior isn’t deterministic and can lead to unexpected workflow behavior. Solution: Use unique, descriptive names for your node classes: . # Better naming class TextProcessorNode(Node): ... class ImageProcessorNode(Node): ... ",
     "url": "/Core/UI/Troubleshooting.html#duplicate-node-names",
     
     "relUrl": "/Core/UI/Troubleshooting.html#duplicate-node-names"
-  },"109": {
+  },"108": {
     "doc": "Troubleshooting",
     "title": "The Universal Fix: Server Restart",
     "content": "When all else fails, restart your server: . # Stop current server (Ctrl+C) grapheteria . This ensures all your code is freshly scanned and registered properly. ",
     "url": "/Core/UI/Troubleshooting.html#the-universal-fix-server-restart",
     
     "relUrl": "/Core/UI/Troubleshooting.html#the-universal-fix-server-restart"
-  },"110": {
+  },"109": {
     "doc": "Troubleshooting",
     "title": "Getting Help",
     "content": "Encountered an issue not covered here? Please report it on our GitHub Issues page. Your feedback helps make Grapheteria better for everyone! . Happy graph-building! 🚀 . ",
     "url": "/Core/UI/Troubleshooting.html#getting-help",
     
     "relUrl": "/Core/UI/Troubleshooting.html#getting-help"
-  },"111": {
+  },"110": {
     "doc": "Troubleshooting",
     "title": "Troubleshooting",
     "content": " ",
     "url": "/Core/UI/Troubleshooting.html",
     
     "relUrl": "/Core/UI/Troubleshooting.html"
-  },"112": {
+  },"111": {
     "doc": "Workflow Engine",
     "title": "Workflow Orchestration",
     "content": " ",
     "url": "/Core/Workflow.html#workflow-orchestration",
     
     "relUrl": "/Core/Workflow.html#workflow-orchestration"
-  },"113": {
+  },"112": {
     "doc": "Workflow Engine",
     "title": "Bringing It All Together: The Workflow Engine",
     "content": "Now that we’ve defined our nodes, edges, and shared variables, it’s time to fire up the engine! The WorkflowEngine class is where all the magic happens - it’s the conductor that orchestrates your workflow from start to finish. from grapheteria import WorkflowEngine from nodes import Node1, Node2, Node3 # Create nodes start_node = Node1(id=\"start\") middle_node = Node2(id=\"process\") end_node = Node3(id=\"finish\") start_node &gt; middle_node &gt; end_node #Connect them shared_initial = {\"counter\": 0} #Initialize the shared variable # Initialize the engine with our nodes engine = WorkflowEngine( nodes=[start_node, middle_node, end_node], start=start_node, initial_shared_state=shared_initial ) . ",
     "url": "/Core/Workflow.html#bringing-it-all-together-the-workflow-engine",
     
     "relUrl": "/Core/Workflow.html#bringing-it-all-together-the-workflow-engine"
-  },"114": {
+  },"113": {
     "doc": "Workflow Engine",
     "title": "JSON or Code? Choose Your Adventure",
-    "content": "The workflow engine is flexible - you can define workflows either through code (as shown above) or via JSON files. Code-Based Workflows . With code-based workflows, you directly pass your node objects as a list: . # Create your node instances node1 = TextProcessorNode(id=\"process_text\") node2 = DatabaseNode(id=\"save_results\") node3 = NotificationNode(id=\"notify_user\") # The workflow_id is optional - a random one will be generated if not provided engine = WorkflowEngine( nodes=[node1, node2, node3], workflow_id=\"my_awesome_workflow\" ) . JSON-Based Workflows . You might have a JSON file with the following format - . { \"nodes\": [\"...\"], \"edges\": [\"...\"], \"initial_state\": {\"...\"}, \"start\": \"...\" } . For JSON-based workflows, you need to import all node classes first, then provide the path or ID . # IMPORTANT: Import all node classes used in your JSON workflow from my_nodes import TextProcessorNode, DatabaseNode, NotificationNode from more_nodes import ValidationNode, TransformationNode # The imports register the nodes with Grapheteria's registry # Now you can load the workflow without initializing any nodes yourself # Using workflow_path engine = WorkflowEngine(workflow_path=\"workflows/data_pipeline.json\") # Or using workflow_id (will look for workflows/data_pipeline.json) engine = WorkflowEngine(workflow_id=\"workflows.data_pipeline\") . This works because Grapheteria automatically registers node classes when they’re imported. The engine then instantiates the right classes based on the JSON definition. The conversion between path and id is simple: dots in IDs become slashes in paths, making workflows.data_pipeline equal to workflows/data_pipeline.json. ",
+    "content": "The workflow engine is flexible - you can define your workflow schema either through code (as shown above) or via JSON files. Code-Based Schema . With code-based schema definitions, you directly pass your node objects as a list: . # Create your node instances node1 = TextProcessorNode(id=\"process_text\") node2 = DatabaseNode(id=\"save_results\") node3 = NotificationNode(id=\"notify_user\") # The workflow_id is optional - a random one will be generated if not provided engine = WorkflowEngine( nodes=[node1, node2, node3], workflow_id=\"my_awesome_workflow\" ) . JSON-Based Schema . You might have a JSON file with the following format - . { \"nodes\": [\"...\"], \"edges\": [\"...\"], \"initial_state\": {\"...\"}, \"start\": \"...\" } . For JSON-based schemas, you need to import all node classes before initializing the WorkflowEngine. # IMPORTANT: Import all node classes used in your JSON workflow from my_nodes import TextProcessorNode, DatabaseNode, NotificationNode from more_nodes import ValidationNode, TransformationNode # The imports register the nodes with Grapheteria's registry # Now you can load the workflow without initializing any nodes yourself # Using workflow_path engine = WorkflowEngine(workflow_path=\"workflows/data_pipeline.json\") # Or using workflow_id (will look for workflows/data_pipeline.json) engine = WorkflowEngine(workflow_id=\"workflows.data_pipeline\") . This works because Grapheteria automatically registers node classes when they’re imported. The engine then instantiates the right classes based on the JSON definition. The conversion between path and id is simple: dots in IDs become slashes in paths, making workflows.data_pipeline equal to workflows/data_pipeline.json. ",
     "url": "/Core/Workflow.html#json-or-code-choose-your-adventure",
     
     "relUrl": "/Core/Workflow.html#json-or-code-choose-your-adventure"
-  },"115": {
+  },"114": {
     "doc": "Workflow Engine",
     "title": "Defining Your Workflow’s Entry Point",
     "content": "Every workflow needs a starting point. If you don’t explicitly set one (not recommended), the engine will default to the first node in your list . # Explicitly setting the start node (recommended) engine = WorkflowEngine( nodes=[node1, node2, node3], start=node2 # We're starting with node2, not node1 ) # Without setting start - will use the first node in the list engine = WorkflowEngine(nodes=[node1, node2, node3]) # Will start with node1 . ",
     "url": "/Core/Workflow.html#defining-your-workflows-entry-point",
     
     "relUrl": "/Core/Workflow.html#defining-your-workflows-entry-point"
-  },"116": {
+  },"115": {
     "doc": "Workflow Engine",
     "title": "Ready, Set, Start!: Baby Steps or Full Speed",
-    "content": "The engine gives you two ways to run your workflow: . Take One Step at a Time . Perfect for debugging or when you need granular control: . # Execute just one node and stop continuing, _ = await engine.step() . Full Speed Ahead . When you’re ready to let it rip: . # Run the entire workflow until completion or until input is required continuing, _ = await engine.run() . For providing inputs when a node awaits request_input(), both the step() and run() functions take in a optional parameter called input_data. Check out Human-in-the-Loop for a more detailed explanation. ",
+    "content": "The engine gives you two ways to run your workflow: . Take One Step at a Time . Perfect for debugging or when you need granular control: . # Execute just one node and stop await engine.step() . Full Speed Ahead . When you’re ready to let it rip: . # Run the entire workflow until completion or until input is required await engine.run() . For providing inputs when a node awaits request_input(), both the step() and run() functions take in a optional parameter called input_data. Check out Human-in-the-Loop for a more detailed explanation. ",
     "url": "/Core/Workflow.html#ready-set-start-baby-steps-or-full-speed",
     
     "relUrl": "/Core/Workflow.html#ready-set-start-baby-steps-or-full-speed"
-  },"117": {
+  },"116": {
     "doc": "Workflow Engine",
     "title": "Monitoring Workflow State",
-    "content": "The heart of the engine is the execution_state, which gives you real-time information about what’s happening in your workflow: . # Check the current status of your workflow workflow_status = engine.execution_state.workflow_status print(f\"Current status: {workflow_status}\") # RUNNING, COMPLETED, WAITING_FOR_INPUT, etc. # See what node is up next next_node = engine.execution_state.next_node_id print(f\"Next node to execute: {next_node}\") # Inspect the shared variables shared_data = engine.execution_state.shared print(f\"Current counter value: {shared_data['counter']}\") # Check if the workflow is waiting for user input if engine.execution_state.workflow_status == WorkflowStatus.WAITING_FOR_INPUT: input_request = engine.execution_state.awaiting_input node_id = input_request['node_id'] prompt = input_request['prompt'] print(f\"Workflow is asking: {prompt}\") # Provide the requested input and continue user_response = input(\"&gt; \") continuing, _ = await engine.step({node_id: user_response}) . The engine also maintains a complete history in tracking_data (we cover this in more detail in the next section), which captures the entire journey of your workflow for analysis and resumability. Enjoy running your workflows! With Grapheteria’s powerful engine, you can orchestrate complex state machines with confidence and control. ",
+    "content": "The heart of the engine is the execution_state, which gives you real-time information about what’s happening in your workflow: . # Check the current status of your workflow workflow_status = engine.execution_state.workflow_status print(f\"Current status: {workflow_status}\") # RUNNING, COMPLETED, WAITING_FOR_INPUT, etc. # See what node is up next next_node = engine.execution_state.next_node_id print(f\"Next node to execute: {next_node}\") # Inspect the shared variables shared_data = engine.execution_state.shared print(f\"Current counter value: {shared_data['counter']}\") # Check if the workflow is waiting for user input if engine.execution_state.workflow_status == WorkflowStatus.WAITING_FOR_INPUT: input_request = engine.execution_state.awaiting_input node_id = input_request['node_id'] prompt = input_request['prompt'] print(f\"Workflow is asking: {prompt}\") # Provide the requested input and continue user_response = input(\"&gt; \") continuing = await engine.run({node_id: user_response}) . The engine also maintains a complete history in tracking_data (we cover this in more detail in the next section), which captures the entire journey of your workflow for analysis and resumability. Enjoy running your workflows! With Grapheteria’s powerful engine, you can orchestrate complex state machines with confidence and control. ",
     "url": "/Core/Workflow.html#monitoring-workflow-state",
     
     "relUrl": "/Core/Workflow.html#monitoring-workflow-state"
-  },"118": {
+  },"117": {
     "doc": "Workflow Engine",
     "title": "Workflow Engine",
     "content": " ",
     "url": "/Core/Workflow.html",
     
     "relUrl": "/Core/Workflow.html"
-  },"119": {
+  },"118": {
     "doc": "Concepts",
     "title": "Welcome to the Concepts Documentation",
     "content": "This section goes over some essential concepts needed to understand Grapheteria and agentic workflows in general. We’ll constantly keep adding to this section to help you become a workflow wizard! . ",
     "url": "/Concepts/#welcome-to-the-concepts-documentation",
     
     "relUrl": "/Concepts/#welcome-to-the-concepts-documentation"
-  },"120": {
+  },"119": {
     "doc": "Concepts",
     "title": "What’s Inside",
     "content": "State Machines . The building blocks of Grapheteria - discover how these simple but powerful structures let you create complex, reliable workflows that mirror real-world processes. ",
     "url": "/Concepts/#whats-inside",
     
     "relUrl": "/Concepts/#whats-inside"
-  },"121": {
+  },"120": {
     "doc": "Concepts",
     "title": "Why These Concepts Matter",
     "content": "Understanding these fundamentals will transform how you think about automation. Instead of writing complex code, you’ll be designing intuitive workflows that handle complexity for you. Thanks for visiting, and happy workflow building! . ",
     "url": "/Concepts/#why-these-concepts-matter",
     
     "relUrl": "/Concepts/#why-these-concepts-matter"
-  },"122": {
+  },"121": {
     "doc": "Concepts",
     "title": "Concepts",
     "content": " ",
     "url": "/Concepts/",
     
     "relUrl": "/Concepts/"
-  },"123": {
+  },"122": {
     "doc": "Advanced",
     "title": "Advanced Features",
     "content": "Welcome to the advanced documentation. This goes over all the advanced concepts to further extend grapheteria’s core features. These set of docs assumes you already understand the basic features and want more! If that’s you, please read along. And once again, thanks for using our library! . ",
     "url": "/Advanced/#advanced-features",
     
     "relUrl": "/Advanced/#advanced-features"
-  },"124": {
+  },"123": {
     "doc": "Advanced",
     "title": "Your Advanced Journey Begins",
     "content": "Ready to supercharge your state machine? You’ve mastered the basics, created some workflows, and now you’re thinking, “What else can this thing do?” Turns out, quite a lot! Think of this section as the secret menu at your favorite restaurant - all the good stuff that the regulars know about. ",
     "url": "/Advanced/#your-advanced-journey-begins",
     
     "relUrl": "/Advanced/#your-advanced-journey-begins"
-  },"125": {
+  },"124": {
     "doc": "Advanced",
     "title": "What’s Inside",
     "content": "Advanced Nodes . Take your state machine to the next level with specialized nodes that handle complex operations. Learn how to create custom nodes that fit your unique workflow needs. Extending Logging . Debug like a pro. Find out how to customize logging to track exactly what you need, store where you need, without drowning in data. Human-in-the-Loop . Sometimes humans need to join the party! Learn how to seamlessly integrate human decision points into your automated workflows. Deployment Strategies . Take your state machine from your laptop to the world. Explore different deployment options and best practices for production environments. Event-Driven Architecture . Make your state machine responsive to the world around it. Discover how to build systems that react to events in real-time without breaking a sweat. ",
     "url": "/Advanced/#whats-inside",
     
     "relUrl": "/Advanced/#whats-inside"
-  },"126": {
+  },"125": {
     "doc": "Advanced",
     "title": "Growing Together",
     "content": "We’re constantly working to add new features and improve grapheteria’s capabilities. Our goal is to make your experience with state machines better, easier, and more powerful with each update. Have an idea for a feature that would make your workflow smoother? Something you wish grapheteria could do? We’d love to hear about it! Please reach out in the GitHub discussions page to share your suggestions. Your feedback directly shapes the future of this library. ",
     "url": "/Advanced/#growing-together",
     
     "relUrl": "/Advanced/#growing-together"
-  },"127": {
+  },"126": {
     "doc": "Advanced",
     "title": "Advanced",
     "content": " ",
     "url": "/Advanced/",
     
     "relUrl": "/Advanced/"
-  },"128": {
+  },"127": {
     "doc": "UI",
     "title": "UI",
     "content": "Welcome to the visual side of Grapheteria! The UI connects to your codebase through websockets, making your workflow design interactive and intuitive. To get started, run this command in your terminal: . grapheteria . This simple command launches both the server and UI. Now you can visually manage all your nodes, create connections, configure them, and debug your workflows with ease! . ",
     "url": "/Core/UI/",
     
     "relUrl": "/Core/UI/"
-  },"129": {
+  },"128": {
     "doc": "Core",
     "title": "Core Concepts: Your Journey Through Grapheteria",
     "content": "Welcome to the heart of Grapheteria! This section covers all the essential concepts you need to build amazing workflows. Grab a coffee, get comfortable, and let’s dive in - we promise it’ll be a smooth ride! . ",
     "url": "/Core/#core-concepts-your-journey-through-grapheteria",
     
     "relUrl": "/Core/#core-concepts-your-journey-through-grapheteria"
-  },"130": {
+  },"129": {
     "doc": "Core",
     "title": "Your Roadmap",
     "content": "This documentation follows a natural progression: . | Nodes - The building blocks of your workflow | Edges - Connecting your nodes together | Communication - Data that flows through your workflow | Workflow Engine - Assembling the complete picture | Logging - Keeping track of what’s happening | UI - Bringing it all to life visually | . ",
     "url": "/Core/#your-roadmap",
     
     "relUrl": "/Core/#your-roadmap"
-  },"131": {
+  },"130": {
     "doc": "Core",
     "title": "Core",
     "content": " ",
     "url": "/Core/",
     
     "relUrl": "/Core/"
-  },"132": {
+  },"131": {
     "doc": "Cookbook",
     "title": "Cookbook",
     "content": " ",
     "url": "/Cookbook/",
     
     "relUrl": "/Cookbook/"
-  },"133": {
+  },"132": {
     "doc": "Home",
     "title": "Welcome to Grapheteria!",
     "content": "Thanks for checking out this project! We’re excited to show you what we’ve built. ",
     "url": "/#welcome-to-grapheteria",
     
     "relUrl": "/#welcome-to-grapheteria"
-  },"134": {
+  },"133": {
     "doc": "Home",
     "title": "What is Grapheteria?",
     "content": "Grapheteria is a no-bs library for creating agentic workflows. It helps you design, visualize, and execute complex processes with minimal fuss. “Oh no, not ANOTHER workflow library!” - I hear you. But being late to the game has its advantages. We’ve learned from others’ mistakes and borrowed their best ideas, while introducing some genuinely new features. ",
     "url": "/#what-is-grapheteria",
     
     "relUrl": "/#what-is-grapheteria"
-  },"135": {
+  },"134": {
     "doc": "Home",
     "title": "Why Grapheteria?",
     "content": "While there are standards for agent creation and tool-calling, workflow creation remains fragmented. Grapheteria aims to change that with a clean, generic framework that provides essential features while remaining infinitely extensible. Problems with Existing Tools . Code-based workflow builders often drown you in abstractions: . | “Wait, what does this wrapper do again?” | “How many layers of inheritance am I dealing with?” | “I just want to see what’s happening!” | . UI-only tools hit a ceiling: . | Limited customization for complex scenarios | Multi-agent setups become impossible | You eventually end up back in code anyway | . ",
     "url": "/#why-grapheteria",
     
     "relUrl": "/#why-grapheteria"
-  },"136": {
+  },"135": {
     "doc": "Home",
     "title": "The Vision: Best of Both Worlds",
     "content": "Grapheteria seamlessly blends code and UI. Freely move between visual design and code customization without compromise. Get the full power of code with the clarity of visual debugging. Grapheteria uses state machines to define workflows - a powerful pattern that makes complex processes manageable and predictable. Learn more about state machines in Grapheteria. ",
     "url": "/#the-vision-best-of-both-worlds",
     
     "relUrl": "/#the-vision-best-of-both-worlds"
-  },"137": {
+  },"136": {
     "doc": "Home",
     "title": "Standout Features",
     "content": "Clean, Simple Code . Write workflows without learning a complex API first: . start_node = InputNode(id=\"get_name\") process_node = ProcessNode(id=\"greet\") output_node = OutputNode(id=\"display\") start_node &gt; process_node &gt; output_node . Visual Workflow Design . Edit your workflows visually or programmatically - they stay in sync! . Time-Travel Debugging . Made a mistake? No problem: . | Step backwards in your workflow | Fix the issue | Step forwards | Continue from exactly where you left off | . Built-in Essentials . | Comprehensive logging | Automatic state persistence | Easy resumption of workflows | . Production-Ready Path . From prototype to production with minimal changes: . | Scale from local to distributed execution | Monitor and track workflow performance | Handle errors gracefully | . Vibe-Coding Compatible . Describe what you want, then refine: . | Generate workflow skeletons with AI | Modify rather than starting from scratch | Rapidly prototype complex workflows | . ",
     "url": "/#standout-features",
     
     "relUrl": "/#standout-features"
-  },"138": {
+  },"137": {
     "doc": "Home",
     "title": "Ready to Try It?",
     "content": "Installation . # Create a virtual environment (recommended) python -m venv venv source venv/bin/activate # On Windows: venv\\Scripts\\activate # Install Grapheteria pip install grapheteria . Note: Grapheteria requires Python 3.6 or higher. Launch the UI . Once installed, launch the UI with: . grapheteria . This will start the Grapheteria interface and automatically sync with your codebase. Learn Core Concepts → ",
     "url": "/#ready-to-try-it",
     
     "relUrl": "/#ready-to-try-it"
-  },"139": {
+  },"138": {
     "doc": "Home",
     "title": "Home",
     "content": " ",
     "url": "/",
     
     "relUrl": "/"
-  },"140": {
+  },"139": {
     "doc": "State Machines",
     "title": "The Magic of State Machines: Building Intelligent Workflows",
     "content": " ",
     "url": "/Concepts/state_machines.html#the-magic-of-state-machines-building-intelligent-workflows",
     
     "relUrl": "/Concepts/state_machines.html#the-magic-of-state-machines-building-intelligent-workflows"
-  },"141": {
+  },"140": {
     "doc": "State Machines",
     "title": "Overview",
     "content": "Grapheteria uses something called “finite state machines” to create workflows that can act on their own (that’s what “agentic” means). Think of it as building a flow chart where each step (node) connects to other steps through paths (edges), creating a system that can make decisions and do tasks automatically. ",
     "url": "/Concepts/state_machines.html#overview",
     
     "relUrl": "/Concepts/state_machines.html#overview"
-  },"142": {
+  },"141": {
     "doc": "State Machines",
     "title": "What’s a State Machine?",
     "content": "Imagine a traffic light. It can only be in one state at a time: red, yellow, or green. After a set time, it changes from one state to another in a specific order. That’s a simple state machine! . Another example is your washing machine: . | It starts in the “off” state | You put in clothes and press start → it moves to the “washing” state | After washing, it automatically moves to the “rinsing” state | Then it goes to the “spinning” state | Finally, it returns to the “off” state | . State machines are all around us - they’re just systems that can be in exactly one state at any time, with clear rules about how they move between states. ",
     "url": "/Concepts/state_machines.html#whats-a-state-machine",
     
     "relUrl": "/Concepts/state_machines.html#whats-a-state-machine"
-  },"143": {
+  },"142": {
     "doc": "State Machines",
     "title": "Grapheteria’s Implementation",
     "content": "In Grapheteria, we build these state machines as workflows: . # Create two simple steps (nodes) check_weather = WeatherNode(id=\"check_weather\") decide_activity = DecisionNode(id=\"decide_activity\") # Connect them (the arrow means \"go from this step to that step\") check_weather &gt; decide_activity # Or make the connection depend on certain conditions check_weather - \"shared['weather'] == 'sunny'\" &gt; go_to_beach check_weather - \"shared['weather'] == 'rainy'\" &gt; stay_indoors . Don’t worry if this syntax looks unfamiliar or if you’re wondering what shared refers to. We’ll cover all that later! This example shows how to create a conditional connection between nodes. The pattern follows: from_node - “condition” &gt; to_node . Nodes as States . A node is just a single step in your workflow. Each node has one job: . | Get the weather forecast | Ask a human for input | Decide what to do next | Generate a response using AI | . Think of each node like a station in an assembly line - it does its specific task, then passes things along to the next station. Edges as Transitions . Edges are the connections between nodes - they’re like the conveyor belts in our assembly line example. What makes them special is they can have conditions: . payment_check - \"payment_successful\" &gt; send_confirmation payment_check - \"payment_failed\" &gt; retry_payment . This means your workflow can take different paths depending on what happens at each step - just like how you might take a different route home if there’s traffic on your usual road. ",
     "url": "/Concepts/state_machines.html#grapheterias-implementation",
     
     "relUrl": "/Concepts/state_machines.html#grapheterias-implementation"
-  },"144": {
+  },"143": {
     "doc": "State Machines",
     "title": "Why a State Machine?",
     "content": "Why do we build workflows this way? Because it makes complicated things simple: . | Easy to Understand: You can draw your workflow on a piece of paper with boxes and arrows. Anyone can understand it without knowing code. | Mirrors Real Life: When you make breakfast, you’re following a workflow: get eggs → crack eggs → cook eggs → serve eggs. Life is full of workflows! . | Reliable: State machines always behave the same way given the same inputs, making them dependable. | Can Pause and Resume: Imagine if your GPS could pause during your road trip and continue exactly where you left off next week. Grapheteria workflows can do that: . | . # Pick up a workflow where you left off engine = WorkflowEngine( workflow_id=\"signup_process\", run_id=\"20230615_103045\" ) # Continue running it is_active, data = await engine.run() . State machines give you a simple way to build powerful systems that can handle complex tasks. They’re like Lego blocks for creating processes that work exactly how you want them to. ",
     "url": "/Concepts/state_machines.html#why-a-state-machine",
     
     "relUrl": "/Concepts/state_machines.html#why-a-state-machine"
-  },"145": {
+  },"144": {
     "doc": "State Machines",
     "title": "State Machines",
     "content": " ",
