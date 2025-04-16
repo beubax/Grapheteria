@@ -2,6 +2,8 @@
   <img src="docs/assets/grapheteria.png" width="800"/>
 </div>
 
+## 🤔 What is Grapheteria?
+
 Grapheteria is a no-BS library for creating agentic workflows. Design, visualize, and run complex processes without the headaches.
 
 <div align="center">
