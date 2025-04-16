@@ -9,7 +9,7 @@
 ## What is Grapheteria?
 
 A structured agentic workflow framework bringing uniformity to agent orchestration:
-- 🎨 Design complex agent topologies with standardized visual primitives and a consistent, inheritance-free API
+- 🎨 Design complex agent topologies with standardized visual primitives and a consistent API
 - ⏰ Debug and deploy with deterministic state tracking and minimal abstraction overhead
 - 🔌 Seamlessly integrate with ecosystem innovations like MCP tool interfaces, Agent2Agent communication, and any foundation model
 
