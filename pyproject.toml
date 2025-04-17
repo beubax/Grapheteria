@@ -26,8 +26,10 @@ classifiers = [
 dependencies = [
     "dill",
     "fastapi",
-    "websockets",
-    "watchdog"
+    "watchdog",
+    "jinja2",
+    "uvicorn[standard]",
+    "libcst"
 ]
 
 [project.optional-dependencies]
@@ -42,7 +44,7 @@ Issues = "https://github.com/beubax/grapheteria/issues"
 Changelog = "https://github.com/beubax/grapheteria/blob/main/CHANGELOG.md"
 
 [project.scripts]
-grapheteria-app = "grapheteria.server.main:run_app"
+grapheteria = "grapheteria.server.main:run_app"
 
 [tool.hatch.build]
 artifacts = [
