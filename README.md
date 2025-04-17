@@ -171,5 +171,5 @@ grapheteria
 This starts the Grapheteria interface and automatically syncs with your code.
 
 <div class="d-flex justify-content-center mt-4">
-  <a href="https://beubax.github.io/grapheteria/Core" class="btn btn-primary btn-sm px-2 py-2 mb-4">Learn Core Concepts →</a>
+  <a href="https://beubax.github.io/Grapheteria/Core/" class="btn btn-primary btn-sm px-2 py-2 mb-4">Learn Core Concepts →</a>
 </div>
