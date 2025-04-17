@@ -13,7 +13,6 @@ temp = defaultdict(list)
 class SystemScanner:
     @staticmethod
     def _load_module(module_path, reload=True):
-        print(f"Loading module: {module_path}")
         """Load/reload a Python module from file system"""
         try:
             module = importlib.import_module(module_path)

@@ -4,15 +4,15 @@ build-backend = "hatchling.build"
 
 [project]
 name = "grapheteria"
-version = "0.4.0"
-description = "A workflow engine with file system monitoring capabilities"
+version = "0.0.0"
+description = "A structured framework bringing uniformity to agent orchestration! "
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.6"
 license = {text = "MIT"}
 authors = [
-    {name = "Your Name", email = "your.email@example.com"},
+    {name = "Tejas Ravishankar", email = "tejas.ravishankar@gmail.com"},
 ]
-keywords = ["workflow", "automation", "file-monitoring"]
+keywords = ["workflow", "automation", "agentic-ai"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -24,15 +24,17 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
 ]
 dependencies = [
+    "dill",
+    "fastapi",
+    "watchdog",
+    "jinja2",
+    "uvicorn[standard]",
+    "libcst"
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0.0",
-    "black>=23.1.0",
-    "isort>=5.12.0",
-    "mypy>=1.0.0",
-    "ruff>=0.0.254",
+    "pytest-asyncio",
 ]
 
 [project.urls]
@@ -42,7 +44,7 @@ Issues = "https://github.com/beubax/grapheteria/issues"
 Changelog = "https://github.com/beubax/grapheteria/blob/main/CHANGELOG.md"
 
 [project.scripts]
-grapheteria-app = "grapheteria.server.main:run_app"
+grapheteria = "grapheteria.server.main:run_app"
 
 [tool.hatch.build]
 artifacts = [
@@ -85,28 +87,6 @@ exclude = [
     "*.egg-info/",
     "grapheteria/**/node_modules",
 ]
-
-[tool.black]
-line-length = 88
-target-version = ["py38"]
-include = '\.pyi?$'
-
-[tool.isort]
-profile = "black"
-line_length = 88
-
-[tool.mypy]
-python_version = "3.8"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-
-[tool.ruff]
-line-length = 88
-target-version = "py38"
-select = ["E", "F", "B", "I"]
-ignore = []
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

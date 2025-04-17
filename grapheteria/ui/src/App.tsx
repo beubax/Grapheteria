@@ -85,7 +85,8 @@ const AppLayout = () => {
       
       if (currentWorkflows[workflowNameToCreate]) {
         // Workflow is available, switch to it
-        useStore.getState().setSelectedWorkflow(workflowNameToCreate);
+        setSelectedWorkflow(workflowNameToCreate);
+        updateFlowStructure();
         return;
       }
       

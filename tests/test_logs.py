@@ -294,7 +294,6 @@ async def test_input_handling_and_resumption(temp_log_dir, workflow_with_input):
     
     # Get the request ID
     request_id = engine.execution_state.awaiting_input["request_id"]
-    print(request_id)
     
     # Resume the workflow in a new instance
     resumed_engine = WorkflowEngine(
@@ -304,7 +303,6 @@ async def test_input_handling_and_resumption(temp_log_dir, workflow_with_input):
         storage_backend=FileSystemStorage(base_dir=temp_log_dir)
     )
     
-    print(resumed_engine.execution_state.awaiting_input)
     # Verify input state was preserved
     assert resumed_engine.execution_state.workflow_status == WorkflowStatus.WAITING_FOR_INPUT
     assert resumed_engine.execution_state.awaiting_input is not None

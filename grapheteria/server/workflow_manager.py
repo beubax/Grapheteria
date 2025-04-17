@@ -143,7 +143,7 @@ class WorkflowManager:
             # If the file doesn't exist, create it with the new class
             if not os.path.exists(source_file):
                 # Add import statement before the class source
-                file_content = "from Grapheteria import Node\n\n" + new_class_source
+                file_content = "from grapheteria import Node\n\n" + new_class_source
                 with open(source_file, 'w') as f:
                     f.write(file_content)
 
