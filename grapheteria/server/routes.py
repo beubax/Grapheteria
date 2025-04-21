@@ -1,7 +1,5 @@
-from grapheteria import WorkflowEngine, WorkflowStatus
-import asyncio
+from grapheteria import WorkflowEngine
 from fastapi import APIRouter, HTTPException, Body
-from pydantic import BaseModel
 from typing import Dict, Any, Optional
 from grapheteria.utils import FileSystemStorage
 
@@ -36,7 +34,7 @@ async def step_workflow(
 
     try:
         await workflow.step(input_data=input_data)
-    except Exception as e:
+    except Exception:
         # Just catch the exception, don't return here
         pass
         
@@ -60,7 +58,7 @@ async def run_workflow(
 
     try:
         await workflow.run(input_data=input_data)
-    except Exception as e:
+    except Exception:
         # Just catch the exception, don't return here
         pass
         

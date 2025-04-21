@@ -1,13 +1,10 @@
 import pytest
 import os
-import json
 import shutil
 import tempfile
 import sqlite3
-from contextlib import contextmanager
-from typing import Dict, List, Optional
 
-from grapheteria.utils import StorageBackend, FileSystemStorage, SQLiteStorage
+from grapheteria.utils import FileSystemStorage, SQLiteStorage
 
 # Test fixtures
 @pytest.fixture
@@ -148,7 +145,7 @@ class TestSQLiteStorage:
     def test_init_creates_table(self, temp_db_path):
         """Test that initialization creates the required table."""
         # Create storage
-        storage = SQLiteStorage(db_path=temp_db_path)
+        _ = SQLiteStorage(db_path=temp_db_path)
         
         # Check if table exists
         with sqlite3.connect(temp_db_path) as conn:

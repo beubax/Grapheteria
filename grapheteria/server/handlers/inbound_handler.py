@@ -3,9 +3,7 @@ import uuid
 
 class InboundHandler:
     @staticmethod
-    async def handle_client_message(manager, websocket, message_data):
-        message_type = message_data.get('type', '')
-            
+    async def handle_client_message(manager, websocket, message_data):            
         # Handle workflow editing messages
         workflow_id = message_data.get('workflow_id')
         if (not workflow_id or workflow_id not in manager.workflows) and not message_data['type'] == 'create_workflow':

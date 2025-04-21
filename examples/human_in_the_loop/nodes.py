@@ -39,7 +39,7 @@ class PublishNode(Node):
 
 class ReviseNode(Node):
     async def prepare(self, shared, request_input):
-        print(f"✏️ Article needs revision")
+        print("✏️ Article needs revision")
 
         feedback = await request_input(
             prompt="What needs to be improved?",

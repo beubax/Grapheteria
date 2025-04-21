@@ -1,13 +1,11 @@
-from collections import defaultdict
 from dataclasses import dataclass, field
-import time
-from typing import Callable, Dict, Any, Optional, List, Type, ClassVar, Set
+from typing import Callable, Dict, Any, Optional, List, Type
 from enum import Enum, auto
 from datetime import datetime
 import copy
 import json
 import asyncio
-from abc import ABC, abstractmethod
+from abc import ABC
 import inspect
 import os
 from uuid import uuid4
@@ -138,14 +136,16 @@ class Node(ABC):
             )
         return node_type(id=data['id'], config=data.get('config', {}))
 
-    async def run(self, state: ExecutionState, request_input: Callable[[str, str, str, str], Any]) -> Any:
+    async def run(self, state: ExecutionState, 
+                 request_input: Callable[[str, str, str, str], Any],
+                 stream_output: Callable[[Any, Any], None] = None) -> Any:
         try:
-            prep_result = self.prepare(state.shared, request_input)
+            prep_result = self.prepare(shared=state.shared, request_input=request_input, stream_output=stream_output)
             prepared_result = await prep_result if inspect.isawaitable(prep_result) else prep_result
             
-            execution_result = await self._execute_with_retry(prepared_result)
+            execution_result = await self._execute_with_retry(prepared_result, stream_output)
             
-            cleanup_result = self.cleanup(state.shared, prepared_result, execution_result)
+            cleanup_result = self.cleanup(shared=state.shared, prepared_result=prepared_result, execution_result=execution_result, stream_output=stream_output)
             _ = await cleanup_result if inspect.isawaitable(cleanup_result) else cleanup_result
             
             state.node_statuses[self.id] = NodeStatus.COMPLETED
@@ -159,11 +159,11 @@ class Node(ABC):
             })
             raise e
             
-    async def _execute_with_retry(self, prepared_result: Any) -> Any:
+    async def _execute_with_retry(self, prepared_result: Any, stream_output: Callable[[Any, Any], None] = None) -> Any:
         """Execute with retry logic, can be extended for batch processing."""
         for self.cur_retry in range(self.max_retries):
             try:
-                return await self._process_item(prepared_result)
+                return await self._process_item(prepared_result, stream_output)
             except Exception as e:
                 if self.cur_retry == self.max_retries - 1:
                     return await self._handle_fallback(prepared_result, e)
@@ -171,27 +171,27 @@ class Node(ABC):
                     await asyncio.sleep(self.wait)
         return None
         
-    async def _process_item(self, item: Any) -> Any:
-        """Process a single item. Override this for custom item processing."""
-        result = self.execute(item)
+    async def _process_item(self, prepared_result: Any, stream_output=None) -> Any:
+        """Process a single item with streaming support."""
+        result = self.execute(prepared_result=prepared_result, stream_output=stream_output)
         return await result if inspect.isawaitable(result) else result
         
     async def _handle_fallback(self, prepared_result: Any, e: Exception) -> Any:
         """Handle execution failure with fallback."""
-        fallback_result = self.exec_fallback(prepared_result, e)
+        fallback_result = self.exec_fallback(prepared_result=prepared_result, exception=e)
         return await fallback_result if inspect.isawaitable(fallback_result) else fallback_result
 
-    def prepare(self, shared: Dict[str, Any], request_input: Any) -> Any:
-        return None
-
-    def execute(self, prepared_result: Any) -> Any:
+    def prepare(self, **kwargs) -> Any:
         pass
 
-    def cleanup(self, shared: Dict[str, Any], prepared_result: Any, execution_result: Any) -> Any:
-        return execution_result
+    def execute(self, **kwargs) -> Any:
+        pass
 
-    def exec_fallback(self, prepared_result: Any, e: Exception) -> Any:
-        raise e
+    def cleanup(self, **kwargs) -> Any:
+        pass
+
+    def exec_fallback(self, **kwargs) -> Any:
+        raise kwargs.get('exception')
 
     async def run_standalone(self, shared_state: Optional[Dict[str, Any]] = None) -> Any:
         current_shared_state = shared_state or {}
@@ -201,12 +201,12 @@ class Node(ABC):
             raise NotImplementedError("request_input is not available in standalone mode.")
 
         try:
-            prep_result = self.prepare(current_shared_state, _dummy_request_input)
+            prep_result = self.prepare(shared=current_shared_state, request_input=_dummy_request_input)
             prepared_data = await prep_result if inspect.isawaitable(prep_result) else prep_result
 
             execution_result = await self._process_item(prepared_data)
 
-            cleanup_result = self.cleanup(current_shared_state, prepared_data, execution_result)
+            cleanup_result = self.cleanup(shared=current_shared_state, prepared_result=prepared_data, execution_result=execution_result)
             _ = await cleanup_result if inspect.isawaitable(cleanup_result) else cleanup_result
 
             return current_shared_state
@@ -262,7 +262,8 @@ class WorkflowEngine:
                  storage_backend: Optional[StorageBackend] = None,
                  initial_shared_state: Optional[Dict[str, Any]] = None,
                  nodes: Optional[List[Node]] = None,
-                 start: Optional[Node] = None):  # Add start_node parameter
+                 start: Optional[Node] = None,
+                 stream_callback: Optional[Callable[[str, Any], None]] = None):
         
         # Initialize storage backend if not provided
         self.storage = storage_backend or FileSystemStorage()
@@ -379,7 +380,7 @@ class WorkflowEngine:
         self.storage.save_state(self.workflow_id, self.run_id, self.tracking_data)
         self._input_futures = {}
         self._current_execute_task = None  # Track the current execute task
-        self.execute_event = asyncio.Event()
+        self.stream_callback = stream_callback
 
     def save_state(self) -> None:
         """Save current execution state to the storage backend"""
@@ -401,8 +402,9 @@ class WorkflowEngine:
         # Save to storage backend
         self.storage.save_state(self.workflow_id, self.run_id, self.tracking_data)
 
-    async def execute_node(self, node: str, input_data: Optional[Dict[str, Any]] = None) -> Optional[str]:
+    async def execute_node(self, node: Node, input_data: Optional[Dict[str, Any]] = None) -> Optional[str]:
         node_id = node.id
+        
         async def request_input(prompt=None, options=None, input_type="text", request_id=None):
             
             actual_request_id = request_id if request_id else node_id
@@ -432,7 +434,11 @@ class WorkflowEngine:
             result = await future
             return result
 
-        await node.run(self.execution_state, request_input)
+        async def stream_output(content, metadata=None):
+            if self.stream_callback:
+                await self.stream_callback(node_id, content, metadata)
+        
+        await node.run(self.execution_state, request_input, stream_output)
         return
         
     async def step(self, input_data=None) -> bool:
@@ -488,7 +494,7 @@ class WorkflowEngine:
                     await event_task
                 except asyncio.CancelledError:
                     pass
-                
+            
             # If execute_task completed, we clear the reference to it
             if self._current_execute_task.done():
                 # Purely for raising exceptions
@@ -513,7 +519,7 @@ class WorkflowEngine:
             
             # Return whether workflow is still active
             return self.execution_state.workflow_status != WorkflowStatus.COMPLETED
-        
+            
         except Exception as e:
             # Handle workflow-level failures
             self.execution_state.workflow_status = WorkflowStatus.FAILED

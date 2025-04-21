@@ -171,13 +171,15 @@ const FlowView = () => {
       )}
       
       <CodeEditor
-        initialCode={`class CustomNode(Node):
-    def __init__(self, config=None):
-        self.config = config or {}
-    
-    async def execute(self, inputs=None):
-        # TODO: Implement your custom node logic here
-        return {"output": "Hello from custom node!"}
+        initialCode={`# TODO: Implement your custom node logic here
+def prepare(self, shared, **kwargs):
+    pass
+
+def execute(self, prepared_result):
+    pass
+
+def cleanup(self, shared, **kwargs):
+    pass
 `}
         onSave={(code) => {
           if (customNodeClassName.trim() === '') {
@@ -185,9 +187,17 @@ const FlowView = () => {
             return;
           }
           
+          if (customNodeClassName.includes(' ')) {
+            alert('Class name cannot contain spaces');
+            return;
+          }
+          
+          // Format the code with proper class definition and indentation
+          const formattedCode = `class ${customNodeClassName}(Node):\n${code.split('\n').map(line => '    ' + line).join('\n')}`;
+          
           // Save the code first
           const modulePath = 'nodes.custom';
-          onSaveNodeCode(modulePath, customNodeClassName, code);
+          onSaveNodeCode(modulePath, customNodeClassName, formattedCode);
           
           // Create a loading indicator or notification here if desired
           
@@ -224,12 +234,11 @@ const FlowView = () => {
         }}
         open={customNodeEditorOpen}
         onOpenChange={setCustomNodeEditorOpen}
-        title="Create Custom Node"
         language="python"
         module="nodes.custom"
-        showClassNameInput={true}
         onClassNameChange={setCustomNodeClassName}
         className={customNodeClassName}
+        classNameEditable={true}
       />
     </>
   );

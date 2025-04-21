@@ -1,11 +1,11 @@
 from fastapi import FastAPI, HTTPException
-from typing import Optional, List, Dict, Any
+from typing import Optional
 from pydantic import BaseModel
 
 # Import our workflow components
 from grapheteria import WorkflowEngine
 # Import nodes to ensure they're registered
-from nodes import *
+from examples.a2a.flow import *
 
 app = FastAPI(title="MCP Tool-Calling API")
 

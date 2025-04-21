@@ -1,5 +1,5 @@
 # main.py
-from nodes import *
+from examples.mcp_tool_calling.nodes import *
 from grapheteria import WorkflowEngine
 import asyncio
 
