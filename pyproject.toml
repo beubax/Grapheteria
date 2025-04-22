@@ -32,11 +32,6 @@ dependencies = [
     "libcst"
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest-asyncio",
-]
-
 [project.urls]
 Homepage = "https://github.com/beubax/grapheteria"
 Documentation = "https://github.com/beubax/grapheteria#readme"
@@ -66,26 +61,6 @@ exclude = [
     "**/package.json",
     "**/package-lock.json",
     "**/tsconfig.json",
-]
-
-[tool.hatch.build.targets.sdist]
-include = [
-    "grapheteria",
-    "LICENSE",
-    "README.md",
-    "CHANGELOG.md",
-    "pyproject.toml",
-]
-exclude = [
-    "*.pyc",
-    "__pycache__",
-    "*.so",
-    "*.dylib",
-    ".git/",
-    ".github/",
-    "venv/",
-    "*.egg-info/",
-    "grapheteria/**/node_modules",
 ]
 
 [tool.pytest.ini_options]
