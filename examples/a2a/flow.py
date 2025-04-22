@@ -1,49 +1,70 @@
 from grapheteria import Node, WorkflowEngine
-import asyncio
+from utils import call_llm
 
-class FirstNode(Node):
-    def prepare(self, shared, _, stream_output=None):
-        return "Hey how are you?"
-    
-    def cleanup(self, shared, prepared_result, execution_result, stream_output=None):
-        shared["message"] = prepared_result
-        print(shared)
+class GenerateContentNode(Node):
+    async def prepare(self, shared, request_input):
+        topic = await request_input(
+            prompt="What topic would you like an article about?",
+            input_type="text",
+            request_id="generate_content"
+        )
+        shared["topic"] = topic 
+        return topic
 
-class SecondNode(Node):
-    def prepare(self, shared, _, stream_output=None):
-        return "Hey I am second node"
+    def execute(self, topic):
+        prompt = f"Write an informative article about {topic}"
+        article = call_llm(prompt)
+        return article
 
-    def cleanup(self, shared, prepared_result, execution_result, stream_output=None):
-        shared["message"] = prepared_result
-        print(shared)
+    def cleanup(self, shared, prep_result, exec_result):
+        shared["article"] = exec_result
 
-class ThirdNode(Node):
-    def prepare(self, shared, _, stream_output=None):
-        return "Hey I am third node"
+class HumanReviewNode(Node):
+    async def prepare(self, shared, request_input):
+        print(f"Article about '{shared['topic']}':")
+        print(shared['article'][:150] + "...")
+        
+        response = await request_input(
+            prompt="Do you approve this content?",
+            options=["approve", "reject"],
+            input_type="select"
+        )
+        
+        shared["human_decision"] = response
 
-    def cleanup(self, shared, prepared_result, execution_result, stream_output=None):
-        shared["message"] = prepared_result
-        print(shared)
+class PublishNode(Node):
+    async def prepare(self, shared, _):
+        print(f"🎉 Publishing '{shared['topic']}' article")
+        # In a real app, you might save to a database or CMS
+        # await write_to_db(shared['article'])
+
+class ReviseNode(Node):
+    async def prepare(self, shared, request_input):
+        print("✏️ Article needs revision")
+
+        feedback = await request_input(
+            prompt="What needs to be improved?",
+            input_type="text"
+        )
+        return {
+            'topic':shared['topic'],
+            'content': shared['article'],
+            'feedback': feedback
+            }
+
+    async def execute(self, data):           
+        new_prompt = f"Topic: {data['topic']}. Revise this article: {data['content'][:200]}... Based on feedback: {data['feedback']}"
+        revised = call_llm(new_prompt, max_tokens=700)
+        return revised
+
+    def cleanup(self, shared, prep_result, exec_result):
+        shared["article"] = exec_result
 
 
 def create_workflow():
-    first_node = FirstNode()
-    second_node = SecondNode()
-    third_node = ThirdNode()
-
-    first_node > second_node > third_node
-
-    workflow = WorkflowEngine(nodes=[first_node, second_node, third_node], start=first_node)
+    workflow = WorkflowEngine(workflow_path="examples/a2a/workflow.json")
     return workflow
 
-async def main():
-    workflow = create_workflow()
-    async for item in workflow.run():
-        print(item)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
 
 
 

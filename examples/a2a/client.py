@@ -5,8 +5,8 @@ import os
 import urllib
 from uuid import uuid4
 
-from examples.a2a.common.client import A2AClient, A2ACardResolver
-from examples.a2a.common.types import TaskState
+from common.client import A2AClient, A2ACardResolver
+from common.types import TaskState
 
 
 @click.command()

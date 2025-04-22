@@ -77,17 +77,6 @@ class ExecutionState:
             metadata=data.get("metadata", {}),
         )
 
-
-class InputRequest:
-    """Represents a request for human input"""
-
-    def __init__(self, node_id, request_type, prompt=None, options=None):
-        self.node_id = node_id
-        self.request_type = request_type
-        self.prompt = prompt
-        self.options = options
-
-
 class ConditionSetter:
     def __init__(self, from_node: "Node", condition: str):
         self.from_node = from_node
@@ -629,7 +618,10 @@ class WorkflowEngine:
 
     async def run(self, input_data=None):
         while True:
-            continuing = await self.step(input_data)
+            if input_data:
+                await self.step(input_data)
+
+            continuing = await self.step()
 
             # Stop if workflow is completed or waiting for input
             if not continuing:

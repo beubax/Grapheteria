@@ -5,7 +5,7 @@ from pydantic import BaseModel
 # Import our workflow components
 from grapheteria import WorkflowEngine
 # Do not forget to import your nodes since we are utilizing the JSON schema!
-import examples.human_in_the_loop.nodes
+import nodes
 # Create FastAPI app
 app = FastAPI(title="AI Content Creation API")
 

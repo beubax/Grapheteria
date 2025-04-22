@@ -5,7 +5,7 @@ from pydantic import BaseModel
 # Import our workflow components
 from grapheteria import WorkflowEngine
 # Import nodes to ensure they're registered
-from examples.a2a.flow import *
+import nodes
 
 app = FastAPI(title="MCP Tool-Calling API")
 

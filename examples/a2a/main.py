@@ -1,10 +1,11 @@
-from examples.a2a.common.server import A2AServer
-from examples.a2a.common.types import AgentCard, AgentCapabilities, AgentSkill, MissingAPIKeyError
-# from examples.a2a.common.utils.push_notification_auth import PushNotificationSenderAuth
-from examples.a2a.task_manager import AgentTaskManager
-from examples.a2a.flow import create_workflow
+from common.server import A2AServer
+from common.types import AgentCard, AgentCapabilities, AgentSkill, MissingAPIKeyError
+from common.utils.push_notification_auth import PushNotificationSenderAuth
+from task_manager import AgentTaskManager
+from flow import create_workflow
 import click
 import logging
+import os
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,22 +17,22 @@ logger = logging.getLogger(__name__)
 @click.option("--host", "host", default="localhost")
 @click.option("--port", "port", default=10000)
 def main(host, port):
-    """Starts the Currency Agent server."""
+    """Starts the Content Generation Agent server."""
     try:
-        # if not os.getenv("GOOGLE_API_KEY"):
-        #     raise MissingAPIKeyError("GOOGLE_API_KEY environment variable not set.")
+        if not os.getenv("OPENAI_API_KEY"):
+            raise MissingAPIKeyError("OPENAI_API_KEY environment variable not set.")
 
         capabilities = AgentCapabilities(streaming=True, pushNotifications=True)
         skill = AgentSkill(
-            id="convert_currency",
-            name="Currency Exchange Rates Tool",
-            description="Helps with exchange values between various currencies",
-            tags=["currency conversion", "currency exchange"],
-            examples=["What is exchange rate between USD and GBP?"],
+            id="generate_content",
+            name="Content Generation",
+            description="Generates content for a given topic",
+            tags=["content generation", "content writing"],
+            examples=["Write an informative article about {topic}"],
         )
         agent_card = AgentCard(
-            name="Currency Agent",
-            description="Helps with exchange rates for currencies",
+            name="Content Generation Agent",
+            description="Helps with content generation",
             url=f"http://{host}:{port}/",
             version="1.0.0",
             defaultInputModes=["text", "text/plain"],
@@ -40,13 +41,17 @@ def main(host, port):
             skills=[skill],
         )
         workflow = create_workflow()
-        # notification_sender_auth = PushNotificationSenderAuth()
-        # notification_sender_auth.generate_jwk()
+        notification_sender_auth = PushNotificationSenderAuth()
+        notification_sender_auth.generate_jwk()
         server = A2AServer(
             agent_card=agent_card,
-            task_manager=AgentTaskManager(workflow=workflow),
+            task_manager=AgentTaskManager(workflow=workflow, notification_sender_auth=notification_sender_auth),
             host=host,
             port=port,
+        )
+
+        server.app.add_route(
+            "/.well-known/jwks.json", notification_sender_auth.handle_jwks_endpoint, methods=["GET"]
         )
 
         logger.info(f"Starting server on {host}:{port}")

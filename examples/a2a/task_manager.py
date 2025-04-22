@@ -1,6 +1,7 @@
 from typing import AsyncIterable
-from examples.a2a.common.types import (
+from common.types import (
     SendTaskRequest,
+    Task,
     TaskSendParams,
     Message,
     TaskStatus,
@@ -18,47 +19,51 @@ from examples.a2a.common.types import (
     PushNotificationConfig,
     InvalidParamsError,
 )
-from examples.a2a.common.server.task_manager import InMemoryTaskManager
-import examples.a2a.common.server.utils as utils
+from common.server.task_manager import InMemoryTaskManager
+from common.utils.push_notification_auth import PushNotificationSenderAuth
+import common.server.utils as utils
 from typing import Union
 import asyncio
 import logging
-import traceback
-
+import traceback 
 from grapheteria import ExecutionState, WorkflowEngine, WorkflowStatus
 
 logger = logging.getLogger(__name__)
 
 
 class AgentTaskManager(InMemoryTaskManager):
-    def __init__(self, workflow: WorkflowEngine):
+    def __init__(self, workflow: WorkflowEngine, notification_sender_auth: PushNotificationSenderAuth):
         super().__init__()
         self.workflow = workflow
+        self.notification_sender_auth = notification_sender_auth
 
     async def _run_streaming_agent(self, request: SendTaskStreamingRequest):
         task_send_params: TaskSendParams = request.params
         query = self._get_user_query(task_send_params)
+        input_data = {"generate_content": query}
+        if self.workflow.execution_state.awaiting_input:
+            request_id = self.workflow.execution_state.awaiting_input["request_id"]
+            input_data = {request_id: query}
 
         try:
             while True:
-                continue_execution = await self.workflow.step()
+                continue_execution = await self.workflow.step(input_data)
                 is_task_complete = self.workflow.execution_state.workflow_status == WorkflowStatus.COMPLETED
                 require_user_input = self.workflow.execution_state.workflow_status == WorkflowStatus.WAITING_FOR_INPUT
                 artifact = None
                 message = None
-                parts = [{"type": "text", "text": self.workflow.execution_state.shared["message"]}]
                 end_stream = False
 
                 if not is_task_complete and not require_user_input:
                     task_state = TaskState.WORKING
-                    message = Message(role="agent", parts=parts)
+                    message = Message(role="agent", parts=[{"type": "text", "text": self.workflow.execution_state.shared["article"]}])
                 elif require_user_input:
                     task_state = TaskState.INPUT_REQUIRED
-                    message = {"type": "Input Required", "message": self.workflow.execution_state.shared["message"]}
+                    message = Message(role="agent", parts=[{"type": "text", "text": self.workflow.execution_state.shared["article"]}, {"type": "data", "data": self.workflow.execution_state.awaiting_input}])
                     end_stream = True
                 else:
                     task_state = TaskState.COMPLETED
-                    artifact = Artifact(parts=parts, index=0, append=False)
+                    artifact = Artifact(parts=[{"type": "text", "text": self.workflow.execution_state.shared["article"]}], index=0, append=False)
                     end_stream = True
 
                 task_status = TaskStatus(state=task_state, message=message)
@@ -180,17 +185,16 @@ class AgentTaskManager(InMemoryTaskManager):
         task_id = task_send_params.id
         history_length = task_send_params.historyLength
         task_status = None
-
-        parts = [{"type": "text", "text": execution_state.shared["message"]}]
         artifact = None
+
         if execution_state.awaiting_input:
             task_status = TaskStatus(
                 state=TaskState.INPUT_REQUIRED,
-                message=Message(role="agent", parts=parts),
+                message=Message(role="agent", parts=[{"type": "text", "text": self.workflow.execution_state.shared["article"]}, {"type": "data", "data": self.workflow.execution_state.awaiting_input}]),
             )
         else:
             task_status = TaskStatus(state=TaskState.COMPLETED)
-            artifact = Artifact(parts=parts)
+            artifact = Artifact(parts=[{"type": "text", "text": self.workflow.execution_state.shared["article"]}], index=0, append=False)
         task = await self.update_store(
             task_id, task_status, None if artifact is None else [artifact]
         )
@@ -203,6 +207,18 @@ class AgentTaskManager(InMemoryTaskManager):
         if not isinstance(part, TextPart):
             raise ValueError("Only text parts are supported")
         return part.text
+    
+    async def send_task_notification(self, task: Task):
+        if not await self.has_push_notification_info(task.id):
+            logger.info(f"No push notification info found for task {task.id}")
+            return
+        push_info = await self.get_push_notification_info(task.id)
+
+        logger.info(f"Notifying for task {task.id} => {task.status.state}")
+        await self.notification_sender_auth.send_push_notification(
+            push_info.url,
+            data=task.model_dump(exclude_none=True)
+        )
 
     async def on_resubscribe_to_task(
         self, request
