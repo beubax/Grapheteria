@@ -169,7 +169,7 @@ class TestBatchNode:
                 return f"processed-{item}-attempt-{self.attempt_counts[item]}"
         
         node = RetryBatchNode()
-        state = await run_node_with_state(node, {"batch_size": 2, "test_items": ["item-normal", "item-retry"]})
+        _ = await run_node_with_state(node, {"batch_size": 2, "test_items": ["item-normal", "item-retry"]})
         
         # Second item should have required 2 attempts
         assert node.attempt_counts["item-normal"] == 1

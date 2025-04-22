@@ -3,12 +3,9 @@ import pytest
 import os
 import tempfile
 import shutil
-from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 from grapheteria import (
-    Node, WorkflowEngine, WorkflowStatus, NodeStatus, 
-    ExecutionState
+    Node, WorkflowEngine, WorkflowStatus
 )
 from grapheteria.utils import FileSystemStorage, SQLiteStorage
 
@@ -376,7 +373,7 @@ async def test_resume_from_invalid_step(temp_log_dir, basic_workflow):
     workflow_id = engine.workflow_id
     
     # Run the workflow to completion
-    continuing = await engine.run()
+    _ = await engine.run()
     
     # Try resuming from a non-existent step
     with pytest.raises(ValueError, match="Step .* not found"):

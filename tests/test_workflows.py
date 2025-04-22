@@ -1,14 +1,12 @@
 import pytest
-import asyncio
 import os
 import json
 import tempfile
 from unittest.mock import patch, MagicMock
-from datetime import datetime
 
 from grapheteria import (
     WorkflowEngine, Node, WorkflowStatus, NodeStatus, 
-    ExecutionState, StorageBackend, FileSystemStorage
+    StorageBackend
 )
 
 # Custom Node classes for testing
@@ -310,10 +308,10 @@ class TestInputHandling:
         engine = WorkflowEngine(nodes=nodes_with_input)
         
         # Run until we hit the input node
-        continuing = await engine.run()
+        await engine.run()
         
         # Now provide the requested input
-        continuing = await engine.step({"input": "Alice"})
+        await engine.step({"input": "Alice"})
         
         # Input should be processed and workflow should continue
         assert engine.execution_state.shared.get("user_name") == "Alice"
@@ -438,7 +436,7 @@ class TestEdgeCases:
         engine = WorkflowEngine(nodes=nodes)
         
         # Provide input when none is needed
-        continuing = await engine.step({"input": "Should be ignored"})
+        await engine.step({"input": "Should be ignored"})
         
         # Workflow should continue normally
         assert engine.execution_state.next_node_id == "process"
@@ -449,10 +447,10 @@ class TestEdgeCases:
         engine = WorkflowEngine(nodes=nodes_with_input)
         
         # Run until input is needed
-        continuing = await engine.run()
+        await engine.run()
         
         # Provide input with wrong key
-        continuing = await engine.step({"wrong_key": "Alice"})
+        await engine.step({"wrong_key": "Alice"})
         
         # Should still be waiting for input
         assert engine.execution_state.workflow_status == WorkflowStatus.WAITING_FOR_INPUT

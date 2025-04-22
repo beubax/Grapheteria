@@ -190,7 +190,7 @@ export default function CustomNode({ id, data }: CustomNodeProps) {
         </div>
 
         {debugMode && data.status && (
-          <div className="absolute -top-2 -right-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-white border shadow-sm">
+          <div className="absolute -top-5 -right-10 text-xs font-semibold px-2 py-0.5 rounded-full bg-white border shadow-sm">
             {data.status}
           </div>
         )}
@@ -290,17 +290,24 @@ export default function CustomNode({ id, data }: CustomNodeProps) {
       {data.code !== undefined && (
         <CodeEditor
           key={data.code}
-          initialCode={data.code}
+          initialCode={data.code
+            .split('\n')
+            .slice(1) // Remove the first line (class definition)
+            .map(line => line.startsWith('    ') ? line.substring(4) : line) // Remove one level of indentation
+            .join('\n')}
           onSave={(updatedCode) => {
             if (data.module && updatedCode.trim() !== '') {
-              onUpdateNodeCode(data.module, data.class, updatedCode);
+              // Restore class definition and proper indentation
+              const formattedCode = `class ${data.class}(Node):\n${updatedCode.split('\n').map(line => '    ' + line).join('\n')}`;
+              onUpdateNodeCode(data.module, data.class, formattedCode);
             }
           }}
           open={codeEditorOpen}
           onOpenChange={setCodeEditorOpen}
-          title={`${data.class}`}
-          language={data.module ? data.module.split('.').pop() || 'python' : 'python'}
+          language="python"
           module={data.module}
+          className={data.class}
+          classNameEditable={false}
         />
       )}
     </>

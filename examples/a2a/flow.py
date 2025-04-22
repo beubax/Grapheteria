@@ -1,11 +1,12 @@
-from grapheteria import Node
+from grapheteria import Node, WorkflowEngine
 from utils import call_llm
 
 class GenerateContentNode(Node):
     async def prepare(self, shared, request_input):
         topic = await request_input(
             prompt="What topic would you like an article about?",
-            input_type="text"
+            input_type="text",
+            request_id="generate_content"
         )
         shared["topic"] = topic 
         return topic
@@ -58,3 +59,12 @@ class ReviseNode(Node):
 
     def cleanup(self, shared, prep_result, exec_result):
         shared["article"] = exec_result
+
+
+def create_workflow():
+    workflow = WorkflowEngine(workflow_path="examples/a2a/workflow.json")
+    return workflow
+
+
+
+

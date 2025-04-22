@@ -1,4 +1,4 @@
-from examples.human_in_the_loop.nodes import *
+from nodes import *
 from grapheteria import WorkflowEngine
 import asyncio
 
@@ -21,10 +21,10 @@ workflow = WorkflowEngine(
 )
 
 async def run_workflow():
-    user_input = None
+    formatted_input = None
     
     while True:
-        continue_workflow = await workflow.run(user_input)
+        await workflow.run(formatted_input)
         
         # If workflow is waiting for input
         if workflow.execution_state.awaiting_input:
@@ -42,9 +42,10 @@ async def run_workflow():
             else:
                 user_input = input("Your response: ")
             
-            await workflow.step({request_id: user_input})
-        elif not continue_workflow:
-            break
+            formatted_input = {request_id: user_input}
+            continue
+
+        break
             
             
 if __name__ == "__main__":

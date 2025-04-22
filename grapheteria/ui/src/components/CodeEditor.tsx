@@ -3,7 +3,6 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle,
   DialogFooter,
 } from './ui/dialog';
 import { Button } from './ui/button';
@@ -14,12 +13,11 @@ interface CodeEditorProps {
   onSave: (code: string) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  title: string;
   language?: string;
   module?: string;
-  showClassNameInput?: boolean;
   onClassNameChange?: (className: string) => void;
   className?: string;
+  classNameEditable?: boolean;
 }
 
 export function CodeEditor({
@@ -27,12 +25,11 @@ export function CodeEditor({
   onSave,
   open,
   onOpenChange,
-  title,
   language = 'python',
   module,
-  showClassNameInput = false,
   onClassNameChange,
-  className = ''
+  className = '',
+  classNameEditable = true
 }: CodeEditorProps) {
   const [code, setCode] = useState(initialCode);
   const [nodeClassName, setNodeClassName] = useState(className);
@@ -62,7 +59,6 @@ export function CodeEditor({
       >
         <DialogHeader className="pb-0">
           <div className="flex flex-col">
-            {showClassNameInput ? (
               <div className="mb-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Class Name
@@ -76,13 +72,11 @@ export function CodeEditor({
                       onClassNameChange(e.target.value);
                     }
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  disabled={!classNameEditable}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${!classNameEditable ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   placeholder="YourCustomNodeName"
                 />
               </div>
-            ) : (
-              <DialogTitle>{title}</DialogTitle>
-            )}
             {module && (
               <div className="text-sm text-gray-600 mt-1">
                 Located in <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">{module}</code>

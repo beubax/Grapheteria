@@ -1,11 +1,7 @@
 import pytest
-import asyncio
-import json
-import os
 import tempfile
-from unittest.mock import MagicMock, patch
 
-from grapheteria import Node, WorkflowEngine, ExecutionState, WorkflowStatus
+from grapheteria import Node, WorkflowEngine
 
 
 # Test Node implementations
@@ -230,7 +226,7 @@ class TestSharedDictionary:
         )
         
         # Run the workflow
-        continuing = await workflow.run()
+        _ = await workflow.run()
         
         # Grab the run_id
         run_id = workflow.tracking_data['run_id']

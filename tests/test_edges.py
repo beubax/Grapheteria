@@ -1,6 +1,5 @@
 import pytest
-import asyncio
-from grapheteria import Node, Edge, ExecutionState, WorkflowStatus, NodeStatus
+from grapheteria import Node, ExecutionState, WorkflowStatus
 
 class SimpleNode(Node):
     """A simple test node implementation"""
