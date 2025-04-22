@@ -172,13 +172,13 @@ const FlowView = () => {
       
       <CodeEditor
         initialCode={`# TODO: Implement your custom node logic here
-def prepare(self, shared, **kwargs):
+def prepare(self, shared, request_input):
     pass
 
 def execute(self, prepared_result):
     pass
 
-def cleanup(self, shared, **kwargs):
+def cleanup(self, shared, prepared_result, execution_result):
     pass
 `}
         onSave={(code) => {
