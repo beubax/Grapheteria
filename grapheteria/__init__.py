@@ -623,7 +623,7 @@ class WorkflowEngine:
 
             continuing = await self.step()
 
-            # Stop if workflow is completed or waiting for input
+            # Stop if workflow is completed/waiting for input or failed
             if not continuing:
                 break
 
