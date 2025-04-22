@@ -104,12 +104,25 @@ def run_server():
 
 def run_app():
     """Run the complete application with backend and UI"""
-    # Set environment variable to indicate we're running the full app
+        # Set environment variable to indicate we're running the full app
     os.environ["WORKFLOW_APP_MODE"] = "full"
+    
+    # Auto-launch the UI in the default web browser
+    import webbrowser
+    import threading
+    import time
+    
+    def open_browser():
+        time.sleep(1.5)  # Small delay to let the server start
+        url = f"http://{os.environ.get('HOST', '127.0.0.1')}:{os.environ.get('PORT', 8000)}/ui/"
+        webbrowser.open(url)
+    
+    # Launch browser in a separate thread to avoid blocking server startup
+    threading.Thread(target=open_browser, daemon=True).start()
 
     # We're using the same function, but might add additional setup in the future
     run_server()
 
 
 if __name__ == "__main__":
-    run_server()
+    run_app()
