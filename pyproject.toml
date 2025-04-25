@@ -40,6 +40,7 @@ Changelog = "https://github.com/beubax/grapheteria/blob/main/CHANGELOG.md"
 
 [project.scripts]
 grapheteria = "grapheteria.server.main:run_app"
+grapheteria-prod = "grapheteria.server.main:run_production"
 
 [tool.hatch.build]
 artifacts = [

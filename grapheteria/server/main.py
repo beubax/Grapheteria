@@ -95,10 +95,8 @@ async def websocket_endpoint(websocket: WebSocket):
         await workflow_manager.unregister(websocket)
 
 
-def run_server():
+def run_server(host="127.0.0.1", port=8000):
     """Run just the backend server"""
-    host = os.environ.get("HOST", "127.0.0.1")
-    port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host=host, port=port)
 
 
@@ -124,5 +122,26 @@ def run_app():
     run_server()
 
 
+def run_production():
+    """Run the application in production mode
+    
+    Binds to all network interfaces (0.0.0.0) and doesn't launch a browser.
+    """
+    # Set environment variables for production
+    os.environ["WORKFLOW_APP_MODE"] = "production"
+    os.environ["HOST"] = "0.0.0.0"  # Bind to all interfaces
+    
+    # Use PORT from environment or default to 8000
+    port = int(os.environ.get("PORT", 8080))
+    
+    print(f"Starting production server on http://0.0.0.0:{port}")
+    run_server(host="0.0.0.0", port=port)
+
+
 if __name__ == "__main__":
-    run_app()
+    import sys
+    
+    if len(sys.argv) > 1 and sys.argv[1] == "--production":
+        run_production()
+    else:
+        run_app()
