@@ -1,0 +1,10 @@
+{
+  "GITHUB": {
+    "authenticated": true,
+    "connection_id": "4bdb2121-3482-4dce-8ce0-7b5178552c8a"
+  },
+  "SLACK": {
+    "authenticated": false,
+    "connection_id": null
+  }
+}

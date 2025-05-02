@@ -1,8 +1,8 @@
 import os
 import json
 from typing import Dict, Any, List, Optional, Type, Set
-
-from orchestrator.tools.composio_tools import ComposioTool, GmailTool, SlackTool
+from composio import ComposioToolSet
+from orchestrator.tools.tool_enums import get_tool_enums
 
 
 class ToolManager:
@@ -18,23 +18,14 @@ class ToolManager:
         Args:
             config_path: Path to the tool configuration file
         """
-        self.config_path = config_path or os.path.expanduser("~/.orchestrator/tools.json")
+        self.tool_config_path = config_path or os.path.join(os.path.dirname(__file__), "tools.json")
         
         # Ensure config directory exists
-        os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
-        
-        # Initialize tool registry with built-in tools
-        self.tool_registry = {
-            "gmail": GmailTool(),
-            "slack": SlackTool()
-        }
+        os.makedirs(os.path.dirname(self.tool_config_path), exist_ok=True)
         
         # Load saved configurations
-        self.tool_configs = self._load_configs()
-        
-        # Apply configurations to tools
-        self._apply_configs()
-    
+        self.tools = self._load_configs()
+
     def _load_configs(self) -> Dict[str, Any]:
         """
         Load tool configurations from the config file.
@@ -42,11 +33,11 @@ class ToolManager:
         Returns:
             Dictionary of tool configurations
         """
-        if not os.path.exists(self.config_path):
+        if not os.path.exists(self.tool_config_path):
             return {}
         
         try:
-            with open(self.config_path, "r") as f:
+            with open(self.tool_config_path, "r") as f:
                 return json.load(f)
         except (json.JSONDecodeError, IOError):
             return {}
@@ -54,31 +45,10 @@ class ToolManager:
     def _save_configs(self) -> None:
         """Save tool configurations to the config file."""
         try:
-            with open(self.config_path, "w") as f:
-                json.dump(self.tool_configs, f, indent=2)
+            with open(self.tool_config_path, "w") as f:
+                json.dump(self.tools, f, indent=2)
         except IOError as e:
             print(f"Warning: Failed to save tool configurations: {e}")
-    
-    def _apply_configs(self) -> None:
-        """Apply saved configurations to registered tools."""
-        for tool_name, config in self.tool_configs.items():
-            if tool_name in self.tool_registry:
-                tool = self.tool_registry[tool_name]
-                # Apply configuration
-                if "connection_id" in config:
-                    tool.connection_id = config.get("connection_id")
-                if "authenticated" in config:
-                    tool.authenticated = config.get("authenticated", False)
-    
-    def register_tool(self, tool_name: str, tool: ComposioTool) -> None:
-        """
-        Register a new tool.
-        
-        Args:
-            tool_name: Name of the tool
-            tool: Tool instance
-        """
-        self.tool_registry[tool_name] = tool
     
     def list_available_tools(self) -> List[str]:
         """
@@ -87,7 +57,7 @@ class ToolManager:
         Returns:
             List of tool names
         """
-        return list(self.tool_registry.keys())
+        return list(self.tools.keys())
     
     def get_tool(self, tool_name: str) -> Optional[ComposioTool]:
         """
@@ -99,7 +69,7 @@ class ToolManager:
         Returns:
             Tool instance if found, None otherwise
         """
-        return self.tool_registry.get(tool_name)
+        return self.tools.get(tool_name)
     
     def get_tool_details(self, tool_name: str) -> Dict[str, Any]:
         """
@@ -116,11 +86,7 @@ class ToolManager:
             return {"error": f"Tool '{tool_name}' not found"}
         
         return {
-            "name": tool_name,
-            "description": tool.description,
-            "authenticated": tool.authenticated,
-            "connection_id": tool.connection_id,
-            "auth_required": tool.auth_required
+            "authenticated": self.tools[tool_name].get("authenticated"),
         }
     
     def authenticate_tool(self, tool_name: str, credentials: Dict[str, Any] = None) -> bool:
@@ -134,26 +100,59 @@ class ToolManager:
         Returns:
             True if authentication was successful, False otherwise
         """
-        tool = self.get_tool(tool_name)
-        if not tool:
+        tool_enum = get_tool_enums(tool_name)
+        if not tool_enum:
             return False
         
+        toolset = ComposioToolSet()
+
+        entity = toolset.get_entity(id="default")
+
         # Perform authentication
-        result = tool.authenticate(credentials)
-        
-        # Update and save configuration
-        if result:
-            if tool_name not in self.tool_configs:
-                self.tool_configs[tool_name] = {}
+        connection_request = entity.initiate_connection(
+            app_name=tool_enum
+        )
+
+        # Composio returns a redirect URL for OAuth flows
+
+        if connection_request.redirectUrl:
+            print(f"Please visit: {connection_request.redirectUrl} to authenticate with {tool_name}")
+
+        # Wait for the user to complete the OAuth flow in their browser
+
+        print("Waiting for connection to become active...")
+
+        try:
+
+            # This polls until the connection status is ACTIVE or timeout occurs
+
+            active_connection = connection_request.wait_until_active(
+
+                client=toolset.client, # Pass the underlying client
+
+                timeout=120 # Wait for up to 2 minutes
+
+            )
+
+            print(f"Connection successful! ID: {active_connection.id}")
+
+            if tool_name not in self.tools:
+                self.tools[tool_name] = {}
             
-            self.tool_configs[tool_name].update({
+            self.tools[tool_name].update({
                 "authenticated": True,
-                "connection_id": tool.connection_id
+                "connection_id": active_connection.id
             })
-            
+
             self._save_configs()
-        
-        return result
+
+            return True
+
+        except Exception as e:
+
+            print(f"Connection timed out or failed: {e}")
+
+            return False
     
     def get_authenticated_tools(self) -> List[str]:
         """
@@ -162,4 +161,4 @@ class ToolManager:
         Returns:
             List of authenticated tool names
         """
-        return [name for name, tool in self.tool_registry.items() if tool.authenticated] 
+        return [name for name in self.tools.keys() if self.tools[name].get("authenticated")] 

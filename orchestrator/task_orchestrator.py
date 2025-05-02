@@ -11,6 +11,9 @@ from grapheteria.utils import FileSystemStorage, path_to_id
 
 from orchestrator.generators.workflow_generator import WorkflowGenerator
 from orchestrator.tools.tool_manager import ToolManager
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class TaskOrchestrator:

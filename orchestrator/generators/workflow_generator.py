@@ -204,9 +204,12 @@ class WorkflowGenerator:
         ## Instructions:
         1. Create a complete nodes.py file with appropriate Node classes needed for this workflow
         2. Create a workflow schema JSON that defines the nodes, edges, and initial state
-        3. If tools are available, make sure to use them in your nodes as needed
-        4. When accessing tools, use them from the shared state: `shared['tools']['{tool_name}'].function_name(params)`
-        5. Tools may need asynchronous calls, use `await` when calling tool functions
+        3. For any LLM calls, make sure to use the OPENAI api and load the api key from the environment variable OPENAI_API_KEY (make sure to use dot_env)
+        4. If tools are available, make sure to use them in your nodes as needed
+        5. Pass in the appropriate tools to the LLM call as well. They are already formatted according to the composio format.
+        6. If you think the LLM might want to execute a tool, make sure to call 
+        5. When accessing tools, use them from the shared state: `shared['tools']['{tool_name}'].function_name(params)`
+        6. Tools may need asynchronous calls, use `await` when calling tool functions
         
         You must respond in the following format:
         
