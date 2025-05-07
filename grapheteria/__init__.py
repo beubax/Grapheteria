@@ -1,16 +1,20 @@
+import os
+import json
+import shutil
+import importlib.util
+import sys
 from dataclasses import dataclass, field
-from typing import Callable, Dict, Any, Optional, List, Type
+from typing import Callable, Dict, Any, Optional, List, Type, Union, Set
 from enum import Enum, auto
 from datetime import datetime
 import copy
-import json
 import asyncio
 from abc import ABC
 import inspect
-import os
 from uuid import uuid4
-from grapheteria.utils import StorageBackend, FileSystemStorage, path_to_id, id_to_path
-
+from grapheteria.utils import StorageBackend, FileSystemStorage, _load_workflow_nodes, path_to_id
+from grapheteria.generator.tool_manager import ToolManager
+from grapheteria.generator.workflow_generator import generator_create_workflow, generator_update_workflow
 # At the top of machine.py, before the class definitions
 _NODE_REGISTRY: Dict[str, Type["Node"]] = {}
 
@@ -303,7 +307,9 @@ class WorkflowEngine:
         initial_shared_state: Optional[Dict[str, Any]] = None,
         nodes: Optional[List[Node]] = None,
         start: Optional[Node] = None,
-    ):
+        workflows_dir: str = ".",
+    ):      
+        self.workflows_dir = workflows_dir
         # Initialize storage backend if not provided
         self.storage = storage_backend or FileSystemStorage()
 
@@ -323,12 +329,15 @@ class WorkflowEngine:
                 workflow_id = path_to_id(workflow_path)
             else:
                 # Convert ID to path - convert dots to appropriate path separators
-                workflow_path = id_to_path(workflow_id)
+                workflow_path = os.path.join(workflows_dir, workflow_id, "schema.json")
 
             if not os.path.exists(workflow_path):
                 raise FileNotFoundError(f"No JSON file found at {workflow_path}")
 
             self.workflow_id = workflow_id
+            
+            # Load nodes.py module if it exists
+            _load_workflow_nodes(self.workflows_dir, self.workflow_id)
 
             with open(workflow_path, "r") as f:
                 data = json.load(f)
@@ -428,6 +437,44 @@ class WorkflowEngine:
         self.storage.save_state(self.workflow_id, self.run_id, self.tracking_data)
         self._input_futures = {}
         self._current_execute_task = None  # Track the current execute task
+
+    @classmethod
+    def create_workflow(cls, 
+                       workflow_id: str, 
+                       task_description: str = None,
+                       tools: Optional[List[str]] = None,
+                       tool_manager: Optional[ToolManager] = None,
+                       workflows_dir: str = ".",
+                       overwrite: bool = False) -> "WorkflowEngine":
+        """
+        Create a new workflow based on the task description.
+        """
+        return generator_create_workflow(
+            workflow_id=workflow_id,
+            task_description=task_description,
+            tools=tools,
+            tool_manager=tool_manager,
+            workflows_dir=workflows_dir,
+            overwrite=overwrite
+        )
+
+    @classmethod
+    def update_workflow(cls, 
+                      workflow_id: str, 
+                      update_description: str,
+                      tools: Optional[List[str]] = None,
+                      tool_manager: Optional[ToolManager] = None,
+                      workflows_dir: str = ".") -> "WorkflowEngine":
+        """
+        Update an existing workflow based on the update description.
+        """
+        return generator_update_workflow(
+            workflow_id=workflow_id,
+            update_description=update_description,
+            tools=tools,
+            tool_manager=tool_manager,
+            workflows_dir=workflows_dir
+        )
 
     def save_state(self) -> None:
         """Save current execution state to the storage backend"""

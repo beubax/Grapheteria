@@ -61,8 +61,12 @@ export function useGraphActions() {
       sendWebSocketMessage('save_node_code', { module: module, class: class_name, code: code });
     }, [sendWebSocketMessage]),
     
-    onCreateWorkflow: useCallback((workflowId: string) => {
-      sendWebSocketMessage('create_workflow', { workflowId: workflowId }, true);
+    onCreateWorkflow: useCallback((workflowId: string, workflowDescription: string, selectedIntegrations: string[]) => {
+      sendWebSocketMessage('create_workflow', { workflowId: workflowId, workflowDescription: workflowDescription, selectedIntegrations: selectedIntegrations }, true);
+    }, [sendWebSocketMessage]),
+
+    onUpdateWorkflow: useCallback((workflowId: string, updatePrompt: string, selectedIntegrations: string[]) => {
+      sendWebSocketMessage('update_workflow', { workflowId: workflowId, updatePrompt: updatePrompt, selectedIntegrations: selectedIntegrations }, true);
     }, [sendWebSocketMessage]),
   }
 }

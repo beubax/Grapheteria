@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+import importlib
+import sys
 from typing import Dict, Optional, List
 import json
 import os
@@ -142,3 +144,22 @@ def id_to_path(workflow_id, json=True):
         return os.path.normpath(workflow_id.replace(".", "/") + ".json")
     else:
         return os.path.normpath(workflow_id.replace(".", "/") + ".py")
+
+
+def _load_workflow_nodes(workflows_dir: str, workflow_id: str) -> None:
+    """
+    Dynamically load the workflow nodes module.
+
+    Args:
+        workflow_id: ID of the workflow
+    """
+    nodes_path = os.path.join(workflows_dir, workflow_id, "nodes.py")
+
+    if not os.path.exists(nodes_path):
+        return  # No nodes.py file, skip loading
+        
+    # Load the module
+    spec = importlib.util.spec_from_file_location(f"workflow_{workflow_id}_nodes", nodes_path)
+    nodes_module = importlib.util.module_from_spec(spec)
+    sys.modules[f"workflow_{workflow_id}_nodes"] = nodes_module
+    spec.loader.exec_module(nodes_module)

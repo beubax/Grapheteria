@@ -32,8 +32,7 @@ async def lifespan(app: FastAPI):
     observer.start()
     workflow_manager.setup_node_registry()
 
-    workflow_manager.scan_nodes()
-    workflow_manager.scan_workflows()
+    workflow_manager.scan_system()
 
     yield
 

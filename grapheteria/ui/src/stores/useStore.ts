@@ -37,6 +37,12 @@ export interface StoreState {
   goToPreviousDebugState: () => void;
   goToLastDebugState: () => void;
   updateFlowStatus: () => void;
+  tools: string[];
+  authenticatedTools: string[];
+  setTools: (tools: string[]) => void;
+  setAuthenticatedTools: (tools: string[]) => void;
+  notificationFlag: boolean;
+  setNotificationFlag: (flag: boolean) => void;
 }
 
 const useStore = create<StoreState>((set, get) => ({
@@ -152,8 +158,8 @@ const useStore = create<StoreState>((set, get) => ({
         class: node.class,
         isStartNode: node.id === workflow.start,
         config: node.config,
-        code: availableNodes[node.class] ? availableNodes[node.class][1] : null,
-        module: availableNodes[node.class] ? availableNodes[node.class][0] : null,
+        code: availableNodes[selectedWorkflow][node.class] ? availableNodes[selectedWorkflow][node.class][0] : null,
+        module: availableNodes[selectedWorkflow][node.class] ? availableNodes[selectedWorkflow][node.class][1] : null,
       }
     })) : [];
 
@@ -280,6 +286,14 @@ const useStore = create<StoreState>((set, get) => ({
     set({ currentDebugStateIndex: get().debugStates.length - 1 });
     get().updateFlowStatus();
   },
+
+  // Tools State
+  tools: [],
+  authenticatedTools: [],
+  setTools: (tools) => set({ tools }),
+  setAuthenticatedTools: (tools) => set({ authenticatedTools: tools }),
+  notificationFlag: false,
+  setNotificationFlag: (flag) => set({ notificationFlag: flag }),
 }));
 
 export default useStore;

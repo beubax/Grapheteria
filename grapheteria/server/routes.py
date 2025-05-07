@@ -1,6 +1,7 @@
 from grapheteria import WorkflowEngine
 from fastapi import APIRouter, HTTPException, Body
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List, Optional
+from grapheteria.composio import ToolManager
 from grapheteria.utils import FileSystemStorage
 
 router = APIRouter()
@@ -69,7 +70,6 @@ async def run_workflow(
 
     return {"message": "Workflow run", "execution_data": workflow.tracking_data}
 
-
 @router.get("/logs")
 async def get_logs():
     return FileSystemStorage().list_workflows()
@@ -83,3 +83,9 @@ async def get_workflow_logs(workflow_id: str):
 @router.get("/logs/{workflow_id}/{run_id}")
 async def get_run_logs(workflow_id: str, run_id: str):
     return FileSystemStorage().load_state(workflow_id, run_id)
+
+
+@router.get("/authenticate/{tool_name}")
+async def authenticate_tool(tool_name: str):
+    tool_manager = ToolManager()
+    return tool_manager.authenticate_tool(tool_name)

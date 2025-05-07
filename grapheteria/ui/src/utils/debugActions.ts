@@ -102,3 +102,22 @@ export async function runWorkflow(inputData: any): Promise<{error?: string}> {
     return { error: 'Failed to run workflow' };
   }
 }
+
+export async function authenticateIntegration(integration: string): Promise<{data?: any, error?: string}> {
+  try {
+    const response = await axios({
+      method: 'get',
+      url: `${API_BASE_URL}/authenticate/${integration}`,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      }
+    });
+    
+    const data = response.data;
+    return { data };
+
+  } catch (error: unknown) {
+    return { error: 'Failed to authenticate integration' };
+  }
+}

@@ -13,7 +13,7 @@ class FileChangeHandler(FileSystemEventHandler):
         self.extension = extension
 
     def on_modified(self, event):
-        """Handle file modification events with 1-second debounce"""
+        """Handle file modification events with 0.1-second debounce"""
         if event.src_path.endswith(self.extension):
             current_time = time.time()
             if current_time - self.last_scan > 0.1:
@@ -22,13 +22,13 @@ class FileChangeHandler(FileSystemEventHandler):
                 self.trigger_update()
 
     def on_deleted(self, event):
-        """Handle file deletion events with debounce"""
+        """Handle file deletion events with 0.1-second debounce"""
         if event.src_path.endswith(self.extension):
             current_time = time.time()
             if current_time - self.last_scan > 0.1:
                 self.last_scan = current_time
                 self.last_modified_path = event.src_path
-                self.trigger_update(deletion=True)
+                self.trigger_update()
 
 
 class NodeChangeHandler(FileChangeHandler):
@@ -37,9 +37,9 @@ class NodeChangeHandler(FileChangeHandler):
     def __init__(self, manager):
         super().__init__(manager, ".py")
 
-    def trigger_update(self, deletion=False):
+    def trigger_update(self):
         asyncio.run_coroutine_threadsafe(
-            self.manager.scan_node_file(self.last_modified_path, deletion), self.loop
+            self.manager.scan_workflow(self.last_modified_path), self.loop
         )
 
 
@@ -49,8 +49,7 @@ class WorkflowChangeHandler(FileChangeHandler):
     def __init__(self, manager):
         super().__init__(manager, ".json")
 
-    def trigger_update(self, deletion=False):
+    def trigger_update(self):
         asyncio.run_coroutine_threadsafe(
-            self.manager.scan_workflow_file(self.last_modified_path, deletion),
-            self.loop,
+            self.manager.scan_workflow(self.last_modified_path), self.loop
         )

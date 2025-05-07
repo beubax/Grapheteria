@@ -1,6 +1,6 @@
 import json
 from fastapi import WebSocket
-from typing import Set, Dict, Any
+from typing import Set, Dict, Any, List
 
 
 class OutboundHandler:
@@ -17,40 +17,28 @@ class OutboundHandler:
 
     @staticmethod
     async def send_initial_state(
-        websocket: WebSocket, node_registry: Dict, workflows: Dict
+        websocket: WebSocket, node_registry: Dict, workflows: Dict, tools: List[str], authenticated_tools: List[str]
     ):
         """Send initial application state to a new client"""
         await OutboundHandler.send_to_websocket(
             websocket,
             {
                 "type": "init",
-                "nodes": {
-                    class_info[0]: [module_name, class_info[1]]
-                    for module_name, class_list in node_registry.items()
-                    for class_info in class_list
-                },
+                "nodes": node_registry,
                 "workflows": workflows,
+                "tools": tools,
+                "authenticated_tools": list(set(authenticated_tools)),
             },
         )
 
     @staticmethod
-    async def broadcast_nodes(clients: Set[WebSocket], node_registry: Dict):
+    async def broadcast_state(clients: Set[WebSocket], node_registry: Dict, workflows: Dict):
         """Broadcast node registry to all clients"""
         await OutboundHandler.send_to_all(
             clients,
             {
-                "type": "available_nodes",
-                "nodes": {
-                    class_info[0]: [module_name, class_info[1]]
-                    for module_name, class_list in node_registry.items()
-                    for class_info in class_list
-                },
+                "type": "updated_state", 
+                "nodes": node_registry,
+                "workflows": workflows
             },
-        )
-
-    @staticmethod
-    async def broadcast_workflows(clients: Set[WebSocket], workflows: Dict):
-        """Broadcast workflows to all clients"""
-        await OutboundHandler.send_to_all(
-            clients, {"type": "available_workflows", "workflows": workflows}
         )

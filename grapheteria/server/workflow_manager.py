@@ -1,3 +1,4 @@
+from grapheteria.composio import ToolManager
 from grapheteria.utils import id_to_path
 import json
 import os
@@ -5,27 +6,26 @@ from fastapi import WebSocket
 from grapheteria.server.handlers.inbound_handler import InboundHandler
 from grapheteria.server.handlers.outbound_handler import OutboundHandler
 from grapheteria.server.utils.scanner import SystemScanner
+from grapheteria import WorkflowEngine
 
 
 class WorkflowManager:
     def __init__(self):
         self.clients = set()
-        self.node_registry = {}
-        self.workflows = {}
+        self.node_registry = {} # {folder_name: {node_class_name: [code, module]}}
+        self.workflows = {} # {folder_name: workflow_data}
+        self.tool_manager = ToolManager()
 
     def setup_node_registry(self):
         SystemScanner.setup_node_registry()
 
-    def scan_nodes(self):
-        SystemScanner.scan_nodes(self)
-
-    def scan_workflows(self):
-        SystemScanner.scan_workflows(self)
+    def scan_system(self):
+        SystemScanner.scan_system(self)
 
     async def register(self, websocket: WebSocket):
         self.clients.add(websocket)
         await OutboundHandler.send_initial_state(
-            websocket, self.node_registry, self.workflows
+            websocket, self.node_registry, self.workflows, self.tool_manager.list_all_tools(), self.tool_manager.get_authenticated_tools()
         )
 
     async def unregister(self, websocket: WebSocket):
@@ -35,17 +35,11 @@ class WorkflowManager:
         data = json.loads(message)
         await InboundHandler.handle_client_message(self, websocket, data)
 
-    async def broadcast_nodes(self):
-        await OutboundHandler.broadcast_nodes(self.clients, self.node_registry)
+    async def broadcast_state(self):
+        await OutboundHandler.broadcast_state(self.clients, self.node_registry, self.workflows)
 
-    async def broadcast_workflows(self):
-        await OutboundHandler.broadcast_workflows(self.clients, self.workflows)
-
-    async def scan_node_file(self, file_path, deletion):
-        await SystemScanner.scan_node_file(self, file_path, deletion)
-
-    async def scan_workflow_file(self, file_path, deletion):
-        await SystemScanner.scan_workflow_file(self, file_path, deletion)
+    async def scan_workflow(self, file_path):
+        await SystemScanner.scan_workflow(self, file_path)
 
     async def save_workflow(self, workflow_id):
         """Save workflow to original file"""
@@ -53,26 +47,37 @@ class WorkflowManager:
             return
 
         workflow = self.workflows[workflow_id]
-        file_path = id_to_path(workflow_id)
+        file_path = os.path.normpath(workflow_id.replace(".", "/") + "/schema.json")
         with open(file_path, "w") as f:
             json.dump(workflow, f, indent=2)
 
-    async def create_workflow(self, workflow_id: str):
+    async def create_workflow(self, workflow_id: str, workflow_description: str, selected_integrations: list):
         if workflow_id in self.workflows:
             return
+        
+        if workflow_description == "":
+            workflow_description = None
 
-        workflow = {
-            "nodes": [],
-        }
-        file_path = id_to_path(workflow_id)
-        with open(file_path, "w") as f:
-            json.dump(workflow, f, indent=2)
+        tool_manager = self.tool_manager if selected_integrations not in [None, []] else None
+
+        WorkflowEngine.create_workflow(workflow_id, workflow_description, selected_integrations, tool_manager)
+
+
+    async def update_workflow(self, workflow_id: str, update_prompt: str, selected_integrations: list):
+        if workflow_id not in self.workflows:
+            return
+
+        if update_prompt == "":
+            update_prompt = None
+
+        tool_manager = self.tool_manager if selected_integrations not in [None, []] else None
+        WorkflowEngine.update_workflow(workflow_id, update_prompt, selected_integrations, tool_manager)
 
     async def update_node_source(
         self, module: str, node_class_name: str, new_class_source: str
     ) -> bool:
         """Update the source code for a node class without affecting other code in the file"""
-        if module not in self.node_registry:
+        if module.split(".")[0] not in self.node_registry:
             return False
 
         source_file = id_to_path(module, json=False)

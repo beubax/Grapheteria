@@ -18,7 +18,15 @@ export interface Node {
   }
   
   export interface AvailableNode {
-    [className: string]: [string, string]; // [module, code]
+    [folderName: string]: {
+      [nodeClassName: string]: [string, string]; // [code, module]
+    };
+  }
+  
+  export interface Tool {
+    name: string;
+    icon?: string; // URL to the icon image (if available)
+    color: string; // Background color for the avatar/initials circle
   }
   
   export interface ContextMenu {

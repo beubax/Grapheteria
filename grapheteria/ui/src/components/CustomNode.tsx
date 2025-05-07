@@ -291,7 +291,7 @@ export default function CustomNode({ id, data }: CustomNodeProps) {
         <CodeEditor
           key={data.code}
           initialCode={data.code
-            .split('\n')
+            ?.split('\n')
             .slice(1) // Remove the first line (class definition)
             .map(line => line.startsWith('    ') ? line.substring(4) : line) // Remove one level of indentation
             .join('\n')}

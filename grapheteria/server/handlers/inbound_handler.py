@@ -59,6 +59,10 @@ class InboundHandler:
                 await InboundHandler._handle_create_workflow(
                     manager, workflow, workflow_id, message_data
                 )
+            case "update_workflow":
+                await InboundHandler._handle_update_workflow(
+                    manager, workflow, workflow_id, message_data
+                )
 
     @staticmethod
     async def _handle_node_created(manager, workflow, workflow_id, data):
@@ -179,5 +183,12 @@ class InboundHandler:
 
     @staticmethod
     async def _handle_create_workflow(manager, workflow, workflow_id, data):
-        workflow_id = data["workflowId"]
-        await manager.create_workflow(workflow_id)
+        workflow_description = data["workflowDescription"]
+        selected_integrations = data["selectedIntegrations"]
+        await manager.create_workflow(workflow_id, workflow_description, selected_integrations)
+
+    @staticmethod
+    async def _handle_update_workflow(manager, workflow, workflow_id, data):
+        update_prompt = data["updatePrompt"]
+        selected_integrations = data["selectedIntegrations"]
+        await manager.update_workflow(workflow_id, update_prompt, selected_integrations)
