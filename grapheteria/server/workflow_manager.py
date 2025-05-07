@@ -25,7 +25,7 @@ class WorkflowManager:
     async def register(self, websocket: WebSocket):
         self.clients.add(websocket)
         await OutboundHandler.send_initial_state(
-            websocket, self.node_registry, self.workflows, self.tool_manager.list_all_tools(), self.tool_manager.get_authenticated_tools()
+            websocket, self.node_registry, self.workflows, self.tool_manager.get_all_tools(), self.tool_manager.get_authenticated_tools()
         )
 
     async def unregister(self, websocket: WebSocket):

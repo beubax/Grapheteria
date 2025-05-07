@@ -17,7 +17,7 @@ class OutboundHandler:
 
     @staticmethod
     async def send_initial_state(
-        websocket: WebSocket, node_registry: Dict, workflows: Dict, tools: List[str], authenticated_tools: List[str]
+        websocket: WebSocket, node_registry: Dict, workflows: Dict, tools: List[Dict[str, str]], authenticated_tools: List[str]
     ):
         """Send initial application state to a new client"""
         await OutboundHandler.send_to_websocket(
@@ -26,7 +26,7 @@ class OutboundHandler:
                 "type": "init",
                 "nodes": node_registry,
                 "workflows": workflows,
-                "tools": tools,
+                "tools": [tool for tool, auth in tools.items() if auth == "OAUTH2" or auth == "NO_AUTH"],
                 "authenticated_tools": list(set(authenticated_tools)),
             },
         )

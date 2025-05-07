@@ -1,7 +1,8 @@
+from functools import lru_cache
+import json
 from typing import List
 import webbrowser
-from composio_openai import ComposioToolSet
-from grapheteria.composio.tool_enums import get_tool_enums, get_tool_enums_list
+from composio_openai import ComposioToolSet, App
 from grapheteria.generator.tool_manager import ToolManager as BaseToolManager
 
 
@@ -18,16 +19,21 @@ class ToolManager(BaseToolManager):
         Args:
             config_path: Path to the tool configuration file
         """
-        self.toolset = ComposioToolSet()
-    
-    def list_all_tools(self) -> List[str]:
+        self.toolset = ComposioToolSet()    
+        self.tools = self.get_all_tools()
+
+    #Quick lookup for all tools
+    @lru_cache(maxsize=1)
+    def get_all_tools(self) -> List[str]:
         """
         List all available tools.
         
         Returns:
             List of tool names
         """
-        return get_tool_enums_list()
+        with open("tools.json", "r") as f:
+            tools = json.load(f)
+        return tools
     
     def authenticate_tool(self, tool_name: str) -> bool:
         """
@@ -40,24 +46,28 @@ class ToolManager(BaseToolManager):
         Returns:
             True if authentication was successful, False otherwise
         """
-        tool_details = get_tool_enums(tool_name)
-        if not tool_details:
-            return False
+        if tool_name not in self.tools:
+            raise ValueError(f"Tool {tool_name} not found")
         
-        auth_scheme = tool_details["auth_scheme"]  
-        if auth_scheme == "API_KEY":
+        auth_scheme = self.tools[tool_name]["auth_scheme"]
+
+        if auth_scheme == "NO_AUTH":
+            return True
+        
+        if auth_scheme != "OAUTH2":
             print("Please complete this integration in the Composio dashboard")
             return False
 
         entity = self.toolset.get_entity(id="default")
 
+        tool_enum = getattr(App, tool_name.upper())
+
         # Perform authentication
         connection_request = entity.initiate_connection(
-            app_name=tool_details["app"]
+            app_name=tool_enum
         )
 
         # Composio returns a redirect URL for OAuth flows
-
         if connection_request.redirectUrl:
             print(f"Please visit: {connection_request.redirectUrl} to authenticate with {tool_name}")
             try:
@@ -102,31 +112,22 @@ class ToolManager(BaseToolManager):
         connected_accounts = self.toolset.get_connected_accounts()
 
         return [account.appName for account in connected_accounts if account.status == "ACTIVE"]
-    
-    def get_tool_enums(self, app_name: str) -> dict:
-        """        
-        Args:
-            app_name: Name of the app to get tool enums for
-            
-        Returns:
-            Dictionary of tool enums
-        """
-        return get_tool_enums(app_name)
 
-    def get_tool_info(self, app_name: str) -> dict:
+    def get_tool_info(self, tool_name: str) -> dict:
         """
         Get information about a tool.
         
         Args:
-            app_name: Name of the app to get tool info for
+            tool_name: Name of the tool to get info for
             
         Returns:
             Dictionary of tool info
         """
-        return self.toolset.get_tools(apps=[app_name])
+        tool_enum = getattr(App, tool_name.upper())
+        return self.toolset.get_tools(apps=[tool_enum])
     
     def list_available_tools(self):
-        all_tools = self.list_all_tools()
+        all_tools = self.tools
         authenticated_tools = self.get_authenticated_tools()
         print("Available tools:")
         for tool_name in all_tools:

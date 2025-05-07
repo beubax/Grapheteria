@@ -1,42 +1,34 @@
-from functools import lru_cache
 import os
 import json
 import httpx
 from typing import Dict, Any, Tuple, Optional, List
 import re
-from anthropic import Anthropic
 from dotenv import load_dotenv
 from grapheteria.generator.tool_manager import ToolManager
+from litellm import completion
 
 load_dotenv()
 
 class WorkflowGenerator:
     """
-    Generates workflow code and schema using Claude 3.7 Sonnet.
+    Generates workflow code and schema using Litellm.
     """
     
     def __init__(self, tool_manager: ToolManager):
         """
         Initialize the workflow generator.
-        
-        Args:
-            api_key: Claude API key (if not provided, will look for CLAUDE_API_KEY env var)
         """
         # Load grapheteria guidelines
         self.grapheteria_guide = self._load_grapheteria_guidelines()
         self.tool_manager = tool_manager
-    @lru_cache(maxsize=1)
-    def get_llm_client(self):
-        return Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
     
-    def call_llm(self, prompt: str) -> str:
-        llm_client = self.get_llm_client()
-        response = llm_client.messages.create(
-                model="claude-3-5-sonnet-20241022",
+    def call_llm(self, prompt: str, llm_model: str) -> str:
+        response = completion(
+                model=llm_model,
                 max_tokens=8000,
                 messages=[{"role": "user", "content": prompt}]
             )
-        return response.content[0].text
+        return response.choices[0].message.content
     
     def _load_grapheteria_guidelines(self) -> str:
         """
@@ -66,19 +58,19 @@ class WorkflowGenerator:
         if not self.tool_manager:
             raise ValueError("ToolManager not available!")
         
+        all_tools = self.tool_manager.get_all_tools()
         authenticated_tools = self.tool_manager.get_authenticated_tools()
 
         sections = ["## Available Tools"]
         
         for tool_name in tools:
-            tool_details = self.tool_manager.get_tool_enums(tool_name)
-            if not tool_details:
+            if tool_name not in all_tools:
                 raise ValueError(f"Tool '{tool_name}' is not available")
             
             if tool_name not in authenticated_tools:
                 raise ValueError(f"Tool '{tool_name}' is not authenticated")
             
-            tool = self.tool_manager.get_tool_info(tool_details["app"])
+            tool = self.tool_manager.get_tool_info(tool_name)
             
             sections.append(f"### {tool_name.capitalize()} Tool")
             sections.append("Available functions:")
@@ -93,13 +85,14 @@ class WorkflowGenerator:
         
         return "\n".join(sections)
     
-    def generate_workflow(self, workflow_id: str, task_description: str, tools: List[str] = None) -> Tuple[str, Dict[str, Any]]:
+    def generate_workflow(self, workflow_id: str, task_description: str, llm_model: str, tools: List[str] = None) -> Tuple[str, Dict[str, Any]]:
         """
         Generate workflow code and schema based on task description.
         
         Args:
             workflow_id: ID of the workflow to generate
             task_description: Description of the task to be accomplished
+            llm_model: LLM model to use
             tools: List of tool names to include in the workflow
             
         Returns:
@@ -125,7 +118,7 @@ class WorkflowGenerator:
         ## Instructions:
         1. Create a complete nodes.py file with appropriate Node classes needed for this workflow
         2. Create a workflow schema JSON that defines the nodes, edges, and initial state
-        3. For any LLM calls, make sure to use the claude api and load the api key from the environment variable CLAUDE_API_KEY (make sure to use dot_env)
+        3. For any LLM calls, make sure to use litellm using the {llm_model} model and load the api key from the environment variable (make sure to use dot_env).
         4. If tools are available, make sure to use them in your nodes as needed
         5. If the node calls an awaitable function, make sure to use the async keyword in the function definition
         
@@ -146,7 +139,7 @@ class WorkflowGenerator:
         """
         
         # Synchronously run the async function
-        response = self.call_llm(prompt)
+        response = self.call_llm(prompt, llm_model)
         
         # Extract nodes.py content
         nodes_code_match = re.search(r'```python\s*(.*?)\s*```', response, re.DOTALL)
@@ -177,7 +170,9 @@ class WorkflowGenerator:
                       existing_nodes_code: str,
                       existing_schema: Dict[str, Any],
                       update_description: str,
-                      tools: List[str] = None) -> Tuple[str, Dict[str, Any]]:
+                      llm_model: str,
+                      tools: List[str] = None,
+                      ) -> Tuple[str, Dict[str, Any]]:
         """
         Update an existing workflow based on the update description.
         
@@ -186,6 +181,7 @@ class WorkflowGenerator:
             existing_nodes_code: Existing nodes.py content
             existing_schema: Existing workflow schema
             update_description: Description of the updates to be made
+            llm_model: LLM model to use
             tools: Dictionary of tool objects to include in the workflow
             
         Returns:
@@ -222,7 +218,7 @@ class WorkflowGenerator:
         ## Instructions:
         1. Create a complete nodes.py file with appropriate Node classes needed for this workflow
         2. Create a workflow schema JSON that defines the nodes, edges, and initial state
-        3. For any LLM calls, make sure to use the claude api and load the api key from the environment variable CLAUDE_API_KEY (make sure to use dot_env)
+        3. For any LLM calls, make sure to use litellm using the {llm_model} model and load the api key from the environment variable (make sure to use dot_env).
         4. If tools are available, make sure to use them in your nodes as needed
         
         You must respond in the following format:
@@ -242,7 +238,7 @@ class WorkflowGenerator:
         """
 
         # Synchronously run the async function
-        response = self.call_llm(prompt)
+        response = self.call_llm(prompt, llm_model)
         # Extract updated nodes.py content
         nodes_code_match = re.search(r'```python\s*(.*?)\s*```', response, re.DOTALL)
         updated_nodes_code = nodes_code_match.group(1) if nodes_code_match else existing_nodes_code
@@ -268,7 +264,8 @@ def generator_create_workflow(
     tools: Optional[List[str]] = None,
     tool_manager: Optional[ToolManager] = None,
     workflows_dir: str = ".",
-    overwrite: bool = False
+    overwrite: bool = False,
+    llm_model: str = "claude-3-5-sonnet-20240620"
 ):
     """
     Create a new workflow based on the task description.
@@ -294,6 +291,7 @@ def generator_create_workflow(
         workflow_id=workflow_id,
         task_description=task_description,
         tools=tools,
+        llm_model=llm_model
     )
 
     # Save nodes.py
@@ -316,7 +314,8 @@ def generator_update_workflow(
     update_description: str,
     tools: Optional[List[str]] = None,
     tool_manager: Optional[ToolManager] = None,
-    workflows_dir: str = "."
+    workflows_dir: str = ".",
+    llm_model: str = "claude-3-5-sonnet-20240620"
 ):
     """
     Update an existing workflow based on the update description.
@@ -349,7 +348,8 @@ def generator_update_workflow(
         existing_nodes_code=existing_nodes_code,
         existing_schema=existing_schema,
         update_description=update_description,
-        tools=tools
+        tools=tools,
+        llm_model=llm_model
     )
 
     # Create backup

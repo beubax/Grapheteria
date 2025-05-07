@@ -445,17 +445,17 @@ class WorkflowEngine:
                        tools: Optional[List[str]] = None,
                        tool_manager: Optional[ToolManager] = None,
                        workflows_dir: str = ".",
-                       overwrite: bool = False) -> "WorkflowEngine":
-        """
-        Create a new workflow based on the task description.
-        """
+                       overwrite: bool = False,
+                       llm_model: str = "claude-3-5-sonnet-20240620") -> "WorkflowEngine":
+        
         return generator_create_workflow(
             workflow_id=workflow_id,
             task_description=task_description,
             tools=tools,
             tool_manager=tool_manager,
             workflows_dir=workflows_dir,
-            overwrite=overwrite
+            overwrite=overwrite,
+            llm_model=llm_model
         )
 
     @classmethod
@@ -464,16 +464,16 @@ class WorkflowEngine:
                       update_description: str,
                       tools: Optional[List[str]] = None,
                       tool_manager: Optional[ToolManager] = None,
-                      workflows_dir: str = ".") -> "WorkflowEngine":
-        """
-        Update an existing workflow based on the update description.
-        """
+                      workflows_dir: str = ".",
+                      llm_model: str = "claude-3-5-sonnet-20240620") -> "WorkflowEngine":
+        
         return generator_update_workflow(
             workflow_id=workflow_id,
             update_description=update_description,
             tools=tools,
             tool_manager=tool_manager,
-            workflows_dir=workflows_dir
+            workflows_dir=workflows_dir,
+            llm_model=llm_model
         )
 
     def save_state(self) -> None:
