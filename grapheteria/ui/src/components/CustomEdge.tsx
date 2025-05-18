@@ -177,7 +177,7 @@ const CustomEdge = ({ id, source, target, style, data }: CustomEdgeProps) => {
           }}
           title={condition ? `Condition: ${condition}` : "Add condition"}
         >
-          {condition ? "✓" : "+"}
+          {condition ? "+" : "+"}
         </div>
       </foreignObject>
 

@@ -14,13 +14,10 @@ import CustomEdge from '../components/CustomEdge';
 import DebugDrawer from '../components/DebugDrawer';
 import { JSONDrawer } from '../components/JSONDrawer';
 import { Button } from '../components/ui/button';
-import { Settings, Loader2, Sparkles } from 'lucide-react';
+import { Settings, Loader2, Sparkles, Play, Square } from 'lucide-react';
 import { CodeEditor } from '../components/CodeEditor';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
-import { Textarea } from '../components/ui/textarea';
-import { Label } from '../components/ui/label';
-import { getToolsData, capitalizeToolName } from '@/utils/toolUtils';
-import IconWrapper from '@/components/ui/IconWrapper';
+import AIUpdateDrawer from '../components/AIUpdateDrawer';
+import { startDebugSessionApi } from '../utils/debugActions';
 // Node types registration
 const nodeTypes = {
   customNode: CustomNode,
@@ -45,8 +42,7 @@ const FlowView = () => {
     setContextMenu,
     toggleDebugMode,
     updateFlowStructure,
-    authenticatedTools,
-    setNotificationFlag,
+    debugMode,
   } = useStore();
 
   const {
@@ -56,59 +52,14 @@ const FlowView = () => {
     onNodeCreate,
     onSetInitialState,
     onSaveNodeCode,
-    onUpdateWorkflow,
   } = useGraphActions();
 
   const [jsonDrawerOpen, setJsonDrawerOpen] = useState(false);
   const [customNodeEditorOpen, setCustomNodeEditorOpen] = useState(false);
   const [customNodeClassName, setCustomNodeClassName] = useState('');
   const [isLoadingWorkflow, setIsLoadingWorkflow] = useState(false);
-  const [aiUpdateDialogOpen, setAiUpdateDialogOpen] = useState(false);
-  const [aiUpdatePrompt, setAiUpdatePrompt] = useState('');
-  const [selectedIntegrations, setSelectedIntegrations] = useState<string[]>([]);
-  const [isUpdatingWorkflow, setIsUpdatingWorkflow] = useState(false);
-
-  const toggleIntegration = (integrationId: string) => {
-    setSelectedIntegrations(prev => 
-      prev.includes(integrationId) 
-        ? prev.filter(id => id !== integrationId)
-        : [...prev, integrationId]
-    );
-  };
-  const handleAiUpdateSubmit = () => {
-    if (selectedWorkflow && aiUpdatePrompt) {
-      setIsUpdatingWorkflow(true);
-      setNotificationFlag(false);
-      
-      // Call workflow update
-      onUpdateWorkflow(selectedWorkflow, aiUpdatePrompt, selectedIntegrations);
-      
-      // Start a timeout to check for notification
-      const startTime = Date.now();
-      const checkInterval = 200; // Check every 200ms
-      const maxWaitTime = 10000; // Wait for max 10 seconds
-      
-      const checkNotification = () => {
-        // If notification received or timeout reached
-        if (useStore.getState().notificationFlag || Date.now() - startTime >= maxWaitTime) {
-          setIsUpdatingWorkflow(false);
-          setAiUpdateDialogOpen(false);
-          setAiUpdatePrompt('');
-          setSelectedIntegrations([]);
-        } else {
-          // Continue checking
-          setTimeout(checkNotification, checkInterval);
-        }
-      };
-      
-      // Start checking
-      setTimeout(checkNotification, checkInterval);
-    } else {
-      setAiUpdateDialogOpen(false);
-      setAiUpdatePrompt('');
-      setSelectedIntegrations([]);
-    }
-  };
+  const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
+  const [debugError, setDebugError] = useState<string | null>(null);
 
   // Set the selected workflow from URL params
   useEffect(() => {
@@ -116,7 +67,7 @@ const FlowView = () => {
       // Set up polling to check for workflow creation
       setIsLoadingWorkflow(true);
       const checkInterval = 500; // Check every 500ms
-      const maxWaitTime = 15000; // Wait for max 15 seconds
+      const maxWaitTime = 60000; // Wait for max 60 seconds
       let elapsedTime = 0;
       const waitForWorkflowCreation = () => {
         // Get the latest workflows from the store
@@ -162,9 +113,32 @@ const FlowView = () => {
     });
   };
 
+  const handleDebugButton = async () => {
+    if (debugMode) {
+      toggleDebugMode(false);
+      setDebugError(null);
+    } else {
+      // Try to start debug session
+      const result = await startDebugSessionApi();
+      if (result.error) {
+        setDebugError(result.error);
+      } else {
+        setDebugError(null);
+        toggleDebugMode(true);
+      }
+    }
+  };
+
   return (
     <>
-      <div style={{ width: '100%', height: '100%', paddingTop: '64px' }}>
+      {/* Left Debug Drawer */}
+      {selectedWorkflow && debugMode && <DebugDrawer debugError={debugError} />}
+
+      {/* Right AI Update Drawer */}
+      <AIUpdateDrawer open={aiDrawerOpen} onOpenChange={setAiDrawerOpen} workflowId={selectedWorkflow || ''} />
+
+      {/* Main Flow Area (with drawers on both sides) */}
+      <div style={{ width: '100%', height: '100%', paddingTop: '64px', position: 'relative' }}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -183,7 +157,6 @@ const FlowView = () => {
         >
           <Background />
           <Controls />
-      
           {contextMenu && (
             <div
               style={{
@@ -199,7 +172,7 @@ const FlowView = () => {
                 overflowY: 'auto'
               }}
             >
-              {Object.keys(availableNodes[selectedWorkflow || '']).map((className) => (
+              {Object.keys(availableNodes[selectedWorkflow || ''] || {}).map((className) => (
                 <div
                   key={className}
                   onClick={() => {
@@ -238,6 +211,47 @@ const FlowView = () => {
             </div>
           )}
         </ReactFlow>
+        {/* Fixed bottom bar for main actions */}
+        {selectedWorkflow && (
+          <div className="fixed bottom-6 left-0 right-0 flex justify-center gap-3 z-50">
+            <Button
+              onClick={() => setJsonDrawerOpen(true)}
+              className="rounded-md shadow-md hover:shadow-lg transition-all duration-300 bg-black hover:bg-gray-800 text-white px-6 py-2"
+              size="sm"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Initial State
+            </Button>
+            <Button
+              onClick={handleDebugButton}
+              className={`rounded-md shadow-md hover:shadow-lg transition-all duration-300 ${debugMode ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} text-white px-6 py-2 flex items-center`}
+              size="sm"
+            >
+              {debugMode ? (
+                <>
+                  <Square className="h-4 w-4 mr-2" />
+                  End Run
+                </>
+              ) : (
+                <>
+                  <Play className="h-4 w-4 mr-2" />
+                  Run Workflow
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={() => {
+                // if (debugMode) toggleDebugMode(false);
+                setAiDrawerOpen(true);
+              }}
+              className="rounded-md shadow-md hover:shadow-lg transition-all duration-300 bg-purple-600 hover:bg-purple-700 text-white px-6 py-2"
+              size="sm"
+            >
+              <Sparkles className="h-4 w-4 mr-2" />
+              AI Update
+            </Button>
+          </div>
+        )}
       </div>
       
       {/* Loading spinner overlay */}
@@ -247,29 +261,6 @@ const FlowView = () => {
             <Loader2 className="h-24 w-24 animate-spin text-white" />
             <div className="text-xl font-medium text-white">Loading workflow...</div>
           </div>
-        </div>
-      )}
-      
-      {selectedWorkflow && <DebugDrawer />}
-      {selectedWorkflow && (
-        <div className="fixed bottom-6 left-0 right-0 flex justify-center gap-3 z-50">
-          <Button
-            onClick={() => setJsonDrawerOpen(true)}
-            className="rounded-md shadow-md hover:shadow-lg transition-all duration-300 bg-black hover:bg-gray-800 text-white px-6 py-2"
-            size="sm"
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            Initial State
-          </Button>
-          
-          <Button
-            onClick={() => setAiUpdateDialogOpen(true)}
-            className="rounded-md shadow-md hover:shadow-lg transition-all duration-300 bg-purple-600 hover:bg-purple-700 text-white px-6 py-2"
-            size="sm"
-          >
-            <Sparkles className="h-4 w-4 mr-2" />
-            AI Update
-          </Button>
         </div>
       )}
       
@@ -284,101 +275,6 @@ const FlowView = () => {
           variant="workflow"
         />
       )}
-      
-      <Dialog open={aiUpdateDialogOpen} onOpenChange={(open) => !isUpdatingWorkflow && setAiUpdateDialogOpen(open)}>
-        <DialogContent className="bg-white max-w-xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl">
-              {isUpdatingWorkflow ? 'Updating workflow...' : 'Update Workflow with AI'}
-            </DialogTitle>
-          </DialogHeader>
-          
-          {isUpdatingWorkflow ? (
-            <div className="flex flex-col items-center justify-center py-6">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-600 mb-4"></div>
-              <p className="text-gray-600">Updating your workflow...</p>
-            </div>
-          ) : (
-            <div className="py-4">
-              <div className="space-y-6">
-                <div>
-                  <Label htmlFor="ai-prompt" className="text-base font-medium block mb-2">How do you want to change your workflow?</Label>
-                  <Textarea
-                    id="ai-prompt"
-                    value={aiUpdatePrompt}
-                    onChange={(e) => setAiUpdatePrompt(e.target.value)}
-                    placeholder="Add a Slack integration that sends a message when a new email arrives..."
-                    className="min-h-[120px]"
-                  />
-                  <p className="text-sm text-gray-500 mt-2">
-                    Describe in natural language how you'd like to modify or extend this workflow.
-                  </p>
-                </div>
-
-                <div>
-                  <Label className="text-base font-medium block mb-2">Available Integrations</Label>
-                  <div className="grid grid-cols-2 gap-3 mt-2">
-                    {authenticatedTools.map((integrationId) => {
-                      const isSelected = selectedIntegrations.includes(integrationId);
-                      const toolData = getToolsData([integrationId])[0];
-                      const displayName = capitalizeToolName(integrationId);
-                      
-                      return (
-                        <div 
-                          key={integrationId}
-                          onClick={() => toggleIntegration(integrationId)}
-                          className={`
-                            flex items-center p-3 rounded-md border cursor-pointer
-                            border-gray-300 hover:border-purple-500
-                            ${isSelected ? 'border-purple-500 bg-purple-50' : ''}
-                          `}
-                        >
-                          <div className="mr-2">
-                            <IconWrapper 
-                              name={integrationId}
-                              icon={toolData.icon}
-                              color={toolData.color}
-                              size="sm"
-                            />
-                          </div>
-                          <div>
-                            <div className="font-medium">{displayName}</div>
-                            <div className="text-xs text-gray-500">Connected</div>
-                          </div>
-                          {isSelected && (
-                            <div className="ml-auto text-purple-500">✓</div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <p className="text-sm text-gray-500 mt-2">
-                    Select integrations you want to use in this workflow update.
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex justify-end gap-3 mt-6">
-                <Button 
-                  variant="outline"
-                  onClick={() => setAiUpdateDialogOpen(false)}
-                  className="hover:bg-gray-100"
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleAiUpdateSubmit}
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
-                  disabled={!aiUpdatePrompt.trim()}
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Generate Update
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
       
       <CodeEditor
         initialCode={`# TODO: Implement your custom node logic here

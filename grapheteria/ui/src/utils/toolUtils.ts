@@ -22,11 +22,13 @@ const DEFAULT_COLOR = '#6366F1';
  * @returns Array of Tool objects with name, color, and initial
  */
 export const getToolsData = (toolNames: string[]): Tool[] => {
-  return toolNames.map(name => ({
-    name,
-    color: TOOL_COLORS[name.toLowerCase()] || DEFAULT_COLOR,
-    icon: `/icons/${name.toLowerCase()}.svg`,
-  }));
+  return (toolNames || [])
+    .filter((name): name is string => !!name)
+    .map(name => ({
+      name,
+      color: TOOL_COLORS[name.toLowerCase()] || DEFAULT_COLOR,
+      icon: `/icons/${name.toLowerCase()}.svg`,
+    }));
 };
 
 /**

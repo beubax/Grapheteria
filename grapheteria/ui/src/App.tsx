@@ -70,13 +70,14 @@ const AppLayout = () => {
               </Button>
             </>
           ) : (
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/')}
-              className="flex items-center gap-2 border-gray-300 hover:bg-gray-100"
-            >
-              Back to Home
-            </Button>
+            // <Button 
+            //   variant="outline" 
+            //   onClick={() => navigate('/')}
+            //   className="flex items-center gap-2 border-gray-300 hover:bg-gray-100"
+            // >
+            //   Back to Home
+            // </Button>
+            <>  </>
           )}
         </div>
         

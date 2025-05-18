@@ -52,7 +52,7 @@ path = "grapheteria/build_hooks.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["grapheteria"]
-include = ["grapheteria/server/static/ui"]
+include = ["grapheteria/server/static/ui", "grapheteria/server/static/ui/icons"]
 exclude = [
     "grapheteria/ui/**",
     "grapheteria/**/node_modules",

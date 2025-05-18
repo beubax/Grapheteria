@@ -11,20 +11,25 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  publicDir: "public",
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    copyPublicDir: true,
   },
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:8080',
         changeOrigin: true,
       },
       '/ws': {
-        target: 'ws://localhost:8000',
+        target: 'ws://localhost:8080',
         ws: true,
       }
-    }
+    },
+    allowedHosts: [
+      "352e-2601-2c7-8f00-2e7-89b-daa5-260d-ffd1.ngrok-free.app"
+    ],
   }
 })

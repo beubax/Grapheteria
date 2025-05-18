@@ -89,3 +89,39 @@ async def get_run_logs(workflow_id: str, run_id: str):
 async def authenticate_tool(tool_name: str):
     tool_manager = ToolManager()
     return tool_manager.authenticate_tool(tool_name)
+
+
+@router.post("/workflows/update/{workflow_id}")
+async def update_workflow(
+    workflow_id: str, 
+    data: Dict[str, Any] = Body(...)
+):
+    try:
+        # Extract parameters from the request body
+        update_prompt = data.get("update_prompt")
+        selected_integrations = data.get("selected_integrations", [])
+        print(update_prompt, selected_integrations)
+        
+        # Validate required parameters
+        if not update_prompt:
+            return {"message": "Enter a prompt to update the workflow"}
+            
+        # Create tool manager if integrations are selected
+        tool_manager = ToolManager() if selected_integrations not in [None, []] else None
+        
+        # Update the workflow
+        _ = WorkflowEngine.update_workflow(
+            workflow_id=workflow_id,
+            update_description=update_prompt,
+            tools=selected_integrations,
+            tool_manager=tool_manager
+        )
+        
+        return {"message": "I have successfully updated the workflow!"}
+    except Exception as e:
+        print(f"Error updating workflow: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update workflow: {str(e)}"
+        )
+

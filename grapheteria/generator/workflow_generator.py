@@ -121,6 +121,7 @@ class WorkflowGenerator:
         3. For any LLM calls, make sure to use litellm using the {llm_model} model and load the api key from the environment variable (make sure to use dot_env).
         4. If tools are available, make sure to use them in your nodes as needed
         5. If the node calls an awaitable function, make sure to use the async keyword in the function definition
+        6. Do not use any tools except for the ones provided in the tool documentation
         
         You must respond in the following format:
         
@@ -304,6 +305,15 @@ def generator_create_workflow(
     with open(schema_path, "w") as f:
         json.dump(workflow_schema, f, indent=2)
 
+    #Save tool information
+    if tools:
+        tool_info = {
+            "tools": tools
+        }
+        tools_path = os.path.join(workflow_dir, "tools.json")
+        with open(tools_path, "w") as f:
+            json.dump(tool_info, f, indent=2)
+
     if not workflow_schema.get("nodes"):
         return None
     return WorkflowEngine(workflow_id=workflow_id, workflows_dir=workflows_dir)
@@ -374,6 +384,15 @@ def generator_update_workflow(
     # Save updated workflow schema
     with open(schema_path, "w") as f:
         json.dump(updated_schema, f, indent=2)
+
+    #Save tool information
+    if tools:
+        tool_info = {
+            "tools": tools
+        }
+        tools_path = os.path.join(workflow_dir, "tools.json")
+        with open(tools_path, "w") as f:
+            json.dump(tool_info, f, indent=2)
 
     print(f"Updated workflow '{workflow_id}' at {workflow_dir}")
     return WorkflowEngine(workflow_id=workflow_id, workflows_dir=workflows_dir) 

@@ -99,7 +99,7 @@ const useStore = create<StoreState>((set, get) => ({
     }
     const WS_BASE = process.env.NODE_ENV === 'production'
     ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`
-    : 'ws://localhost:8000/ws';
+    : 'ws://localhost:8080/ws';
     const socket = new WebSocket(WS_BASE);
     const handleMessage = createMessageHandlers();
 

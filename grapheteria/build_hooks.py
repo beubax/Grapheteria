@@ -33,6 +33,16 @@ class UIBuildHook(BuildHookInterface):
 
             # Copy built UI files
             shutil.copytree(ui_build_dir, ui_dest_dir)
+            
+            # Specifically copy the icons directory from public to the static/ui directory
+            icons_src_dir = ui_dir / "public" / "icons"
+            icons_dest_dir = ui_dest_dir / "icons"
+            
+            if icons_src_dir.exists():
+                print(f"Copying icons from {icons_src_dir} to {icons_dest_dir}")
+                if not icons_dest_dir.exists():
+                    icons_dest_dir.mkdir(exist_ok=True, parents=True)
+                shutil.copytree(icons_src_dir, icons_dest_dir, dirs_exist_ok=True)
 
             print(f"UI built and copied to {ui_dest_dir}")
 

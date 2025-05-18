@@ -26,7 +26,7 @@ class OutboundHandler:
                 "type": "init",
                 "nodes": node_registry,
                 "workflows": workflows,
-                "tools": [tool for tool, auth in tools.items() if auth == "OAUTH2" or auth == "NO_AUTH"],
+                "tools": [tool for tool, auth in tools.items()],
                 "authenticated_tools": list(set(authenticated_tools)),
             },
         )

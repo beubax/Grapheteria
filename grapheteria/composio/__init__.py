@@ -1,6 +1,7 @@
 from functools import lru_cache
 import json
 from typing import List
+import os
 import webbrowser
 from composio_openai import ComposioToolSet, App
 from grapheteria.generator.tool_manager import ToolManager as BaseToolManager
@@ -31,7 +32,8 @@ class ToolManager(BaseToolManager):
         Returns:
             List of tool names
         """
-        with open("tools.json", "r") as f:
+        tools_path = os.path.join(os.path.dirname(__file__), "tools.json")
+        with open(tools_path, "r") as f:
             tools = json.load(f)
         return tools
     
@@ -49,7 +51,7 @@ class ToolManager(BaseToolManager):
         if tool_name not in self.tools:
             raise ValueError(f"Tool {tool_name} not found")
         
-        auth_scheme = self.tools[tool_name]["auth_scheme"]
+        auth_scheme = self.tools[tool_name]
 
         if auth_scheme == "NO_AUTH":
             return True
@@ -111,7 +113,15 @@ class ToolManager(BaseToolManager):
         """
         connected_accounts = self.toolset.get_connected_accounts()
 
-        return [account.appName for account in connected_accounts if account.status == "ACTIVE"]
+        # Return tools that are either ACTIVE or don't require authentication (NO_AUTH)
+        authenticated_tools = [account.appName for account in connected_accounts if account.status == "ACTIVE"]
+
+        print(authenticated_tools)
+        
+        # Add tools that don't require authentication from self.tools dictionary
+        no_auth_tools = [tool_name for tool_name, auth_type in self.tools.items() if auth_type == "NO_AUTH"]
+        
+        return authenticated_tools + no_auth_tools
 
     def get_tool_info(self, tool_name: str) -> dict:
         """

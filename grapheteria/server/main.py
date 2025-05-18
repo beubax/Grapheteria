@@ -69,6 +69,26 @@ async def get_asset(file_path: str):
     return FileResponse(file_path)
 
 
+# Serve icons from the icons directory
+@app.get("/icons/{file_path:path}")
+async def get_icon(file_path: str):
+    icons_dir = os.path.join(static_dir, "icons")
+    file_path = os.path.join(icons_dir, file_path)
+    
+    if os.path.exists(file_path):
+        # Set appropriate MIME type for SVG files
+        if file_path.endswith(".svg"):
+            return FileResponse(file_path, media_type="image/svg+xml")
+        return FileResponse(file_path)
+    
+    # Return 404 if file doesn't exist
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=404, 
+        content={"error": f"Icon not found: {file_path}"}
+    )
+
+
 # Redirect from root to /ui/
 @app.get("/")
 async def redirect_to_ui():
@@ -94,7 +114,7 @@ async def websocket_endpoint(websocket: WebSocket):
         await workflow_manager.unregister(websocket)
 
 
-def run_server(host="127.0.0.1", port=8000):
+def run_server(host="127.0.0.1", port=8080):
     """Run just the backend server"""
     uvicorn.run(app, host=host, port=port)
 
@@ -111,7 +131,7 @@ def run_app():
     
     def open_browser():
         time.sleep(1.5)  # Small delay to let the server start
-        url = f"http://{os.environ.get('HOST', '127.0.0.1')}:{os.environ.get('PORT', 8000)}/ui/"
+        url = f"http://{os.environ.get('HOST', '127.0.0.1')}:{os.environ.get('PORT', 8080)}/ui/"
         webbrowser.open(url)
     
     # Launch browser in a separate thread to avoid blocking server startup

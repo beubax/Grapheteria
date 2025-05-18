@@ -15,6 +15,7 @@ export interface Node {
     nodes: Node[];
     edges: Edge[];
     start: string;
+    tools: string[];
   }
   
   export interface AvailableNode {
@@ -26,7 +27,7 @@ export interface Node {
   export interface Tool {
     name: string;
     icon?: string; // URL to the icon image (if available)
-    color: string; // Background color for the avatar/initials circle
+    color?: string; // Background color for the avatar/initials circle
   }
   
   export interface ContextMenu {

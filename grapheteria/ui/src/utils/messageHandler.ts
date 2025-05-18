@@ -3,6 +3,7 @@ import useStore from "../stores/useStore";
 export function createMessageHandlers() {
   const messageHandlers = {
     init: (message: any) => {
+      console.log("workflows", message.workflows);
       useStore.getState().setWorkflows(message.workflows);
       useStore.getState().setAvailableNodes(message.nodes);
       useStore.getState().setTools(message.tools);
@@ -10,6 +11,7 @@ export function createMessageHandlers() {
     },
 
     updated_state: (message: any) => {
+      console.log("workflows", message.workflows);
       useStore.getState().setNotificationFlag(true);
       useStore.getState().setWorkflows(message.workflows);
       useStore.getState().setAvailableNodes(message.nodes);

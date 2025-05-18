@@ -83,6 +83,8 @@ class SystemScanner:
                 if not top_dir:
                     continue
 
+                tools = None
+
                 for file in files:
                     file_path = os.path.join(root, file)
                     
@@ -97,14 +99,26 @@ class SystemScanner:
                             with open(file_path, "r") as f:
                                 workflow_data = json.load(f)
                             if workflow_data and "nodes" in workflow_data:
+                                if tools:
+                                    workflow_data["tools"] = tools
                                 # Use top directory name as key
                                 found_workflows[top_dir] = workflow_data
                         except Exception as e:
                             print(f"Error loading workflow {file_path}: {e}")
 
+                    elif file == "tools.json":
+                        try:
+                            with open(file_path, "r") as f:
+                                tools_data = json.load(f)
+                                tools = tools_data.get("tools", [])
+                                if top_dir in found_workflows:
+                                    found_workflows[top_dir]["tools"] = tools
+                        except Exception as e:
+                            print(f"Error loading tools {file_path}: {e}")
+
             # Update manager with found nodes and workflows
             manager.node_registry = copy.deepcopy(temp)
-            manager.workflows = found_workflows
+            manager.workflows = copy.deepcopy(found_workflows)
         finally:
             # Always restore original path
             sys.path = original_path
@@ -119,6 +133,8 @@ class SystemScanner:
         # Skip if directory is the root directory
         if directory_path == "" or directory_path == "." or directory_path == "./":
             return
+        
+        print(f"Scanning workflow {directory_path}")
         
         # List of directories to skip
         skip_dirs = {
@@ -161,14 +177,14 @@ class SystemScanner:
         # Save original path
         original_path = sys.path.copy()
         temp.clear()
+        tools = None
+        workflow_data = None
 
         try:
             # Add current directory to path if not already there
             cwd = os.getcwd()
             if cwd not in sys.path and "" not in sys.path:
                 sys.path.insert(0, cwd)
-                
-            workflow_data = None
                 
             # Walk through all files in the directory
             for root, dirs, files in os.walk(top_dir):
@@ -189,6 +205,13 @@ class SystemScanner:
                                 workflow_data = json.load(f)
                         except Exception as e:
                             print(f"Error loading workflow {file_path}: {e}")
+                    elif file == "tools.json":
+                        try:
+                            with open(file_path, "r") as f:
+                                tools_data = json.load(f)
+                                tools = tools_data.get("tools", [])
+                        except Exception as e:
+                            print(f"Error loading tools {file_path}: {e}")
             
             # Update the manager's node registry with the new nodes from this directory
             if top_dir in temp:
@@ -196,14 +219,14 @@ class SystemScanner:
             elif top_dir in manager.node_registry:
                 # No nodes found but directory exists, clear previous nodes
                 manager.node_registry[top_dir] = {}
-
             # Update workflow data if found
             if workflow_data and "nodes" in workflow_data:
+                if tools:
+                    workflow_data["tools"] = tools
                 manager.workflows[top_dir] = workflow_data
             elif top_dir in manager.workflows:
                 # No workflow found but directory exists, remove previous workflow
                 del manager.workflows[top_dir]
-                
             # Broadcast updates
             await manager.broadcast_state()
         finally:

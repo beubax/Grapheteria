@@ -121,3 +121,34 @@ export async function authenticateIntegration(integration: string): Promise<{dat
     return { error: 'Failed to authenticate integration' };
   }
 }
+
+export async function updateWorkflow(workflowId: string, updatePrompt: string, selectedIntegrations: string[]): Promise<{data?: any, error?: string}> {
+  try {
+    const response = await axios({
+      method: 'post',
+      url: `${API_BASE_URL}/workflows/update/${workflowId}`,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      data: {
+        update_prompt: updatePrompt,
+        selected_integrations: selectedIntegrations
+      }
+    });
+
+    const data = response.data;
+    return { data };
+
+  } catch (error: unknown) {
+    console.error('Update workflow error:', error);
+    // Provide more detailed error information 
+    if (axios.isAxiosError(error) && error.response) {
+      return { 
+        error: `Error ${error.response.status}: ${error.response.data?.detail || 'Failed to update workflow'}`
+      };
+    }
+    return { error: 'Failed to update workflow' };
+  }
+}
+

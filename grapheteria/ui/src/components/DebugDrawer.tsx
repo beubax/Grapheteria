@@ -1,20 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import useStore from '../stores/useStore';
-import { stepWorkflow, startDebugSessionApi, runWorkflow } from '../utils/debugActions';
+import { stepWorkflow, runWorkflow } from '../utils/debugActions';
 import { JSONDrawer } from './JSONDrawer';
 import { Database, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
 
-const DebugDrawer: React.FC = () => {
+interface DebugDrawerProps {
+  debugError?: string | null;
+}
+
+const DebugDrawer: React.FC<DebugDrawerProps> = ({ debugError }) => {
   const { 
-    toggleDebugMode,
     debugRunId,
     debugStates,
     currentDebugStateIndex,
     goToNextDebugState,
     goToPreviousDebugState,
     debugMode,
-    selectedWorkflow,
   } = useStore();
   
   const [expanded, setExpanded] = useState<boolean>(false);
@@ -49,42 +51,6 @@ const DebugDrawer: React.FC = () => {
       };
     }
     return inputData;
-  };
-  
-  // Handle toggle debug mode
-  const handleToggleDebug = async () => {
-    if (!debugMode) {
-      // Start debug session when turning on debug mode
-      await startDebugSession();
-    } else {
-      // Just toggle off when turning off debug mode
-      toggleDebugMode(false);
-    }
-  };
-  
-  // Start debug session with error handling
-  const startDebugSession = async () => {
-    if (!selectedWorkflow) {
-      setError('No workflow selected');
-      return;
-    }
-    
-    setError(null);
-    
-    try {
-      // First set debug mode to true to expand the drawer
-      toggleDebugMode(true);
-      
-      // Then initiate the debug session with the API
-      const result = await startDebugSessionApi();
-      if (result?.error) {
-        setError(result.error);
-        // Don't turn off debug mode, just show the error
-      }
-    } catch (err) {
-      setError('An unexpected error occurred while starting debug session');
-      console.error(err);
-    }
   };
 
   // Handle step button click
@@ -163,7 +129,7 @@ const DebugDrawer: React.FC = () => {
   }, [isResizing]);
 
   // Determine the error message to display, combining API errors and state errors
-  let displayError: string | null = error; // Start with potential API error
+  let displayError: string | null = debugError || error; // Show session start error if present, else local error
   const stateErrors = currentState?.metadata?.error;
   let formattedStateErrors: string | null = null;
 
@@ -205,10 +171,10 @@ const DebugDrawer: React.FC = () => {
 
         <div
           className="absolute -left-8 top-1/2 -translate-y-1/2 w-8 h-24 bg-[#021640] rounded-l-lg flex items-center justify-center cursor-pointer shadow-[-2px_0_5px_rgba(0,0,0,0.2)]"
-          onClick={handleToggleDebug}
+          onClick={() => setExpanded((prev) => !prev)}
         >
           <span className="[writing-mode:vertical-rl] [text-orientation:mixed] text-xs text-[#cdd6f4] font-medium">
-            DEBUG / RUN
+            {expanded ? 'Collapse' : 'Expand'}
           </span>
         </div>
         
