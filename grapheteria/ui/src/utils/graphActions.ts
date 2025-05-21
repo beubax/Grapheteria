@@ -68,5 +68,22 @@ export function useGraphActions() {
     onUpdateWorkflow: useCallback((workflowId: string, updatePrompt: string, selectedIntegrations: string[]) => {
       sendWebSocketMessage('update_workflow', { workflowId: workflowId, updatePrompt: updatePrompt, selectedIntegrations: selectedIntegrations }, true);
     }, [sendWebSocketMessage]),
+
+    onMCPAdd: useCallback((mcpName: string, mcpUrl: string) => {
+      sendWebSocketMessage('mcp_add', { mcpName: mcpName, mcpUrl: mcpUrl }, true);
+    }, [sendWebSocketMessage]),
+
+    onMCPRemove: useCallback((mcpName: string) => {
+      sendWebSocketMessage('mcp_remove', { mcpName: mcpName }, true);
+    }, [sendWebSocketMessage]),
+
+    onMCPUpdateURL: useCallback((mcpName: string, mcpUrl: string) => {
+      sendWebSocketMessage('mcp_update_url', { mcpName: mcpName, mcpUrl: mcpUrl }, true);
+    }, [sendWebSocketMessage]),
+
+    onMCPRefresh: useCallback((mcpName: string) => {
+      sendWebSocketMessage('mcp_refresh', { mcpName: mcpName }, true);
+    }, [sendWebSocketMessage]),
+    
   }
 }

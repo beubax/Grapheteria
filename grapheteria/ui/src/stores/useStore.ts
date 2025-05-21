@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Workflow, AvailableNode, ContextMenu } from '../types/types';
+import { Workflow, AvailableNode, ContextMenu, MCP } from '../types/types';
 import { NodeChange, EdgeChange, applyNodeChanges, applyEdgeChanges, Node, Edge } from '@xyflow/react';
 import { getLayoutedElements } from '../utils/layoutUtils';
 import { createMessageHandlers } from '../utils/messageHandler';
@@ -11,6 +11,7 @@ export interface StoreState {
   workflows: Record<string, Workflow>;
   selectedWorkflow: string | null;
   availableNodes: AvailableNode;
+  mcpTools: MCP;
   contextMenu: ContextMenu | null;
   connected: boolean;
   ws: WebSocket | null;
@@ -21,6 +22,7 @@ export interface StoreState {
   setWorkflows: (workflows: Record<string, Workflow>) => void;
   setSelectedWorkflow: (workflowId: string | null) => void;
   setAvailableNodes: (nodes: AvailableNode) => void;
+  setMCPTools: (mcpTools: MCP) => void;
   setContextMenu: (menu: ContextMenu | null) => void;
   setConnected: (status: boolean) => void;
   updateFlowStructure: () => void;
@@ -71,6 +73,10 @@ const useStore = create<StoreState>((set, get) => ({
   // Available Nodes State
   availableNodes: {},
   setAvailableNodes: (nodes) => set({ availableNodes: nodes }),
+
+  // MCP Tools State
+  mcpTools: {},
+  setMCPTools: (mcpTools) => set({ mcpTools }),
 
   // Context Menu State
   contextMenu: null,

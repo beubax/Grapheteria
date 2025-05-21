@@ -11,7 +11,7 @@ from grapheteria.server.handlers.file_handlers import (
     NodeChangeHandler,
     WorkflowChangeHandler,
 )
-from grapheteria.server.routes import router as api_router
+from grapheteria.server.routes import get_router
 
 # Create WorkflowManager instance
 workflow_manager = WorkflowManager()
@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
     observer.start()
     workflow_manager.setup_node_registry()
 
-    workflow_manager.scan_system()
+    await workflow_manager.scan_system()
 
     yield
 
@@ -44,7 +44,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Workflow Server", lifespan=lifespan)
 
 # API routes
-app.include_router(api_router, prefix="/api")
+app.include_router(get_router(workflow_manager), prefix="/api")
 
 # Set up templates
 package_dir = os.path.dirname(os.path.abspath(__file__))
@@ -67,26 +67,6 @@ async def get_asset(file_path: str):
     if os.path.exists(file_path) and file_path.endswith(".js"):
         return FileResponse(file_path, media_type="application/javascript")
     return FileResponse(file_path)
-
-
-# Serve icons from the icons directory
-@app.get("/icons/{file_path:path}")
-async def get_icon(file_path: str):
-    icons_dir = os.path.join(static_dir, "icons")
-    file_path = os.path.join(icons_dir, file_path)
-    
-    if os.path.exists(file_path):
-        # Set appropriate MIME type for SVG files
-        if file_path.endswith(".svg"):
-            return FileResponse(file_path, media_type="image/svg+xml")
-        return FileResponse(file_path)
-    
-    # Return 404 if file doesn't exist
-    from fastapi.responses import JSONResponse
-    return JSONResponse(
-        status_code=404, 
-        content={"error": f"Icon not found: {file_path}"}
-    )
 
 
 # Redirect from root to /ui/

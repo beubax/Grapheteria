@@ -13,8 +13,8 @@ Base class for all workflow nodes. Each node should:
 
 Node methods:
 ```python
-def prepare(self, shared, request_input):
-    """Prepare data for execution, can request user input if needed."""
+def prepare(self, shared, request_input, registry):
+    """Prepare data for execution, can request user input if needed. Can access tools or execute tools from the registry."""
     # Access data from shared state
     # Return data to be passed to execute
     return prepared_data
@@ -25,7 +25,7 @@ def execute(self, prepared_data):
     # Return results
     return execution_result
     
-def cleanup(self, shared, prepared_data, execution_result):
+def cleanup(self, shared, prepared_data, execution_result, registry):
     """Store results in shared state and clean up."""
     # Update shared state with results
     shared["some_key"] = execution_result
@@ -57,7 +57,7 @@ from grapheteria import Node
 2. Define your custom node class:
 ```python
 class MyCustomNode(Node):
-    def prepare(self, shared, request_input):
+    async def prepare(self, shared, request_input, registry):
         # Access data from shared state
         input_data = shared.get("input_data", {})
         
@@ -68,6 +68,10 @@ class MyCustomNode(Node):
                 input_type="text"
             )
             shared["user_input"] = user_input
+
+        #Optionally execute a tool from the registry
+        add_tool = registry.get_tool("add")
+        result = await add_tool.arun({"a": 5, "b": 6})
         
         return input_data
     

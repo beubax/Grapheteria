@@ -56,3 +56,7 @@ export interface Node {
       error?: string;
     };
   }
+  
+  export interface MCP {
+    [mcp_name: string]: [string, string[]]; // [url, tools]
+  }

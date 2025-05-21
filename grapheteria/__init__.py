@@ -13,7 +13,7 @@ from abc import ABC
 import inspect
 from uuid import uuid4
 from grapheteria.utils import StorageBackend, FileSystemStorage, _load_workflow_nodes, path_to_id
-from grapheteria.generator.tool_manager import ToolManager
+from toolregistry import ToolRegistry
 from grapheteria.generator.workflow_generator import generator_create_workflow, generator_update_workflow
 # At the top of machine.py, before the class definitions
 _NODE_REGISTRY: Dict[str, Type["Node"]] = {}
@@ -47,6 +47,7 @@ class ExecutionState:
     awaiting_input: Optional[Dict[str, Any]] = None
     previous_node_id: Optional[str] = None
     metadata: Dict[str, Any] = field(default_factory=dict)  # Add metadata field
+    tool_registry: Optional[ToolRegistry] = None
 
     def to_dict(self) -> dict:
         result = {
@@ -152,6 +153,7 @@ class Node(ABC):
             prep_result = self.prepare(
                 state.shared,
                 request_input,
+                state.tool_registry
             )
             prepared_result = (
                 await prep_result if inspect.isawaitable(prep_result) else prep_result
@@ -165,6 +167,7 @@ class Node(ABC):
                 state.shared,
                 prepared_result,
                 execution_result,
+                state.tool_registry
             )
             _ = (
                 await cleanup_result
@@ -226,7 +229,7 @@ class Node(ABC):
         raise args[1]
 
     async def run_standalone(
-        self, shared_state: Optional[Dict[str, Any]] = None
+        self, shared_state: Optional[Dict[str, Any]] = None, tool_registry: Optional[ToolRegistry] = None
     ) -> Any:
         current_shared_state = shared_state or {}
 
@@ -238,7 +241,7 @@ class Node(ABC):
 
         try:
             prep_result = self.prepare(
-                current_shared_state, _dummy_request_input
+                current_shared_state, tool_registry, _dummy_request_input
             )
             prepared_data = (
                 await prep_result if inspect.isawaitable(prep_result) else prep_result
@@ -248,6 +251,7 @@ class Node(ABC):
 
             cleanup_result = self.cleanup(
                 current_shared_state,
+                tool_registry,
                 prepared_data,
                 execution_result,
             )
@@ -308,6 +312,7 @@ class WorkflowEngine:
         nodes: Optional[List[Node]] = None,
         start: Optional[Node] = None,
         workflows_dir: str = ".",
+        tool_registry: Optional[ToolRegistry] = None,
     ):      
         self.workflows_dir = workflows_dir
         # Initialize storage backend if not provided
@@ -437,22 +442,21 @@ class WorkflowEngine:
         self.storage.save_state(self.workflow_id, self.run_id, self.tracking_data)
         self._input_futures = {}
         self._current_execute_task = None  # Track the current execute task
+        self.execution_state.tool_registry = tool_registry
 
     @classmethod
     def create_workflow(cls, 
                        workflow_id: str, 
-                       task_description: str = None,
-                       tools: Optional[List[str]] = None,
-                       tool_manager: Optional[ToolManager] = None,
+                       create_description: str = None,
+                       tool_registry: Optional[ToolRegistry] = None,
                        workflows_dir: str = ".",
                        overwrite: bool = False,
                        llm_model: str = "claude-3-5-sonnet-20240620") -> "WorkflowEngine":
         
         return generator_create_workflow(
             workflow_id=workflow_id,
-            task_description=task_description,
-            tools=tools,
-            tool_manager=tool_manager,
+            create_description=create_description,
+            tool_registry=tool_registry,
             workflows_dir=workflows_dir,
             overwrite=overwrite,
             llm_model=llm_model
@@ -462,16 +466,14 @@ class WorkflowEngine:
     def update_workflow(cls, 
                       workflow_id: str, 
                       update_description: str,
-                      tools: Optional[List[str]] = None,
-                      tool_manager: Optional[ToolManager] = None,
+                      tool_registry: Optional[ToolRegistry] = None,
                       workflows_dir: str = ".",
                       llm_model: str = "claude-3-5-sonnet-20240620") -> "WorkflowEngine":
         
         return generator_update_workflow(
             workflow_id=workflow_id,
             update_description=update_description,
-            tools=tools,
-            tool_manager=tool_manager,
+            tool_registry=tool_registry,
             workflows_dir=workflows_dir,
             llm_model=llm_model
         )

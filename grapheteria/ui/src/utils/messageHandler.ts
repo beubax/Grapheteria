@@ -3,18 +3,21 @@ import useStore from "../stores/useStore";
 export function createMessageHandlers() {
   const messageHandlers = {
     init: (message: any) => {
-      console.log("workflows", message.workflows);
+      console.log("init", message);
       useStore.getState().setWorkflows(message.workflows);
       useStore.getState().setAvailableNodes(message.nodes);
+      useStore.getState().setMCPTools(message.tool_registry);
       useStore.getState().setTools(message.tools);
       useStore.getState().setAuthenticatedTools(message.authenticated_tools);
+      
     },
 
     updated_state: (message: any) => {
-      console.log("workflows", message.workflows);
+      console.log("updated_state", message);
       useStore.getState().setNotificationFlag(true);
       useStore.getState().setWorkflows(message.workflows);
       useStore.getState().setAvailableNodes(message.nodes);
+      useStore.getState().setMCPTools(message.tool_registry);
       useStore.getState().updateFlowStructure();
       useStore.getState().updateFlowStatus();
     },

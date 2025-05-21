@@ -1,7 +1,6 @@
 import json
 import uuid
 
-
 class InboundHandler:
     @staticmethod
     async def handle_client_message(manager, websocket, message_data):
@@ -9,7 +8,7 @@ class InboundHandler:
         workflow_id = message_data.get("workflow_id")
         if (
             not workflow_id or workflow_id not in manager.workflows
-        ) and not message_data["type"] == "create_workflow":
+        ) or (not message_data.get("type").startswith("mcp")):
             return
 
         workflow = manager.workflows.get(workflow_id, None)
@@ -55,12 +54,20 @@ class InboundHandler:
                 await InboundHandler._handle_save_node_code(
                     manager, workflow, workflow_id, message_data
                 )
-            case "create_workflow":
-                await InboundHandler._handle_create_workflow(
+            case "mcp_add":
+                await InboundHandler._handle_mcp_add(
                     manager, workflow, workflow_id, message_data
                 )
-            case "update_workflow":
-                await InboundHandler._handle_update_workflow(
+            case "mcp_remove":
+                await InboundHandler._handle_mcp_remove(
+                    manager, workflow, workflow_id, message_data
+                )
+            case "mcp_update_url":
+                await InboundHandler._handle_mcp_update_url(
+                    manager, workflow, workflow_id, message_data
+                )
+            case "mcp_refresh":
+                await InboundHandler._handle_mcp_refresh(
                     manager, workflow, workflow_id, message_data
                 )
 
@@ -182,13 +189,18 @@ class InboundHandler:
         await manager.save_node_source(data["module"], data["class"], data["code"])
 
     @staticmethod
-    async def _handle_create_workflow(manager, workflow, workflow_id, data):
-        workflow_description = data["workflowDescription"]
-        selected_integrations = data["selectedIntegrations"]
-        await manager.create_workflow(workflow_id, workflow_description, selected_integrations)
+    async def _handle_mcp_add(manager, workflow, workflow_id, data):
+        await manager.add_mcp_to_registry(data["mcp_name"], data["mcp_url"])
 
     @staticmethod
-    async def _handle_update_workflow(manager, workflow, workflow_id, data):
-        update_prompt = data["updatePrompt"]
-        selected_integrations = data["selectedIntegrations"]
-        await manager.update_workflow(workflow_id, update_prompt, selected_integrations)
+    async def _handle_mcp_remove(manager, workflow, workflow_id, data):
+        await manager.remove_mcp_from_registry(data["mcp_name"])
+
+    @staticmethod
+    async def _handle_mcp_update_url(manager, workflow, workflow_id, data):
+        await manager.update_mcp_url(data["mcp_name"], data["mcp_url"]) 
+
+    @staticmethod
+    async def _handle_mcp_refresh(manager, workflow, workflow_id, data):
+        print("Refreshing MCP tool websocket")
+        await manager.refresh_mcp_tool(data["mcp_name"])

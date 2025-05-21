@@ -17,7 +17,7 @@ class OutboundHandler:
 
     @staticmethod
     async def send_initial_state(
-        websocket: WebSocket, node_registry: Dict, workflows: Dict, tools: List[Dict[str, str]], authenticated_tools: List[str]
+        websocket: WebSocket, node_registry: Dict, workflows: Dict, tool_registry: Dict
     ):
         """Send initial application state to a new client"""
         await OutboundHandler.send_to_websocket(
@@ -26,19 +26,19 @@ class OutboundHandler:
                 "type": "init",
                 "nodes": node_registry,
                 "workflows": workflows,
-                "tools": [tool for tool, auth in tools.items()],
-                "authenticated_tools": list(set(authenticated_tools)),
+                "tool_registry": {name: [url, registry.get_available_tools()] for name, [url, registry] in tool_registry.items()}
             },
         )
 
     @staticmethod
-    async def broadcast_state(clients: Set[WebSocket], node_registry: Dict, workflows: Dict):
+    async def broadcast_state(clients: Set[WebSocket], node_registry: Dict, workflows: Dict, tool_registry: Dict):
         """Broadcast node registry to all clients"""
         await OutboundHandler.send_to_all(
             clients,
             {
                 "type": "updated_state", 
                 "nodes": node_registry,
-                "workflows": workflows
+                "workflows": workflows,
+                "tool_registry": {name: [url, registry.get_available_tools()] for name, [url, registry] in tool_registry.items()}
             },
         )

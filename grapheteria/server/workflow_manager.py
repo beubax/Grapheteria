@@ -1,4 +1,3 @@
-from grapheteria.composio import ToolManager
 from grapheteria.utils import id_to_path
 import json
 import os
@@ -14,18 +13,18 @@ class WorkflowManager:
         self.clients = set()
         self.node_registry = {} # {folder_name: {node_class_name: [code, module]}}
         self.workflows = {} # {folder_name: workflow_data}
-        self.tool_manager = ToolManager()
+        self.tool_registry = {} # {mcp_name: [url, ToolRegistry]}
 
     def setup_node_registry(self):
         SystemScanner.setup_node_registry()
 
-    def scan_system(self):
-        SystemScanner.scan_system(self)
+    async def scan_system(self):
+        await SystemScanner.scan_system(self)
 
     async def register(self, websocket: WebSocket):
         self.clients.add(websocket)
         await OutboundHandler.send_initial_state(
-            websocket, self.node_registry, self.workflows, self.tool_manager.get_all_tools(), self.tool_manager.get_authenticated_tools()
+            websocket, self.node_registry, self.workflows, self.tool_registry
         )
 
     async def unregister(self, websocket: WebSocket):
@@ -36,7 +35,7 @@ class WorkflowManager:
         await InboundHandler.handle_client_message(self, websocket, data)
 
     async def broadcast_state(self):
-        await OutboundHandler.broadcast_state(self.clients, self.node_registry, self.workflows)
+        await OutboundHandler.broadcast_state(self.clients, self.node_registry, self.workflows, self.tool_registry)
 
     async def scan_workflow(self, file_path):
         await SystemScanner.scan_workflow(self, file_path)
@@ -51,27 +50,66 @@ class WorkflowManager:
         with open(file_path, "w") as f:
             json.dump(workflow, f, indent=2)
 
-    async def create_workflow(self, workflow_id: str, workflow_description: str, selected_integrations: list):
-        if workflow_id in self.workflows:
-            return
+    async def add_mcp_to_registry(self, mcp_name: str, mcp_url: str):
+        mcp_mappings = {}
+        if os.path.exists("mcp.json"):
+            with open("mcp.json", "r") as f:
+                mcp_mappings = json.load(f)
+
+        if mcp_name in mcp_mappings:
+            return {"message": "MCP already exists"}
         
-        if workflow_description == "":
-            workflow_description = None
+        if mcp_url == "":
+            return {"message": "Enter a URL to add the MCP"}
 
-        tool_manager = self.tool_manager if selected_integrations not in [None, []] else None
+        mcp_mappings[mcp_name] = mcp_url
 
-        WorkflowEngine.create_workflow(workflow_id, workflow_description, selected_integrations, tool_manager)
+        with open("mcp.json", "w") as f:
+            json.dump(mcp_mappings, f, indent=2)
 
+        return {"message": "Successfully added the MCP!"}
+    
+    async def remove_mcp_from_registry(self, mcp_name: str):
+        mcp_mappings = {}
+        if os.path.exists("mcp.json"):
+            with open("mcp.json", "r") as f:
+                mcp_mappings = json.load(f)
 
-    async def update_workflow(self, workflow_id: str, update_prompt: str, selected_integrations: list):
-        if workflow_id not in self.workflows:
-            return
+        if mcp_name in mcp_mappings:
+            del mcp_mappings[mcp_name]
 
-        if update_prompt == "":
-            update_prompt = None
+        with open("mcp.json", "w") as f:
+            json.dump(mcp_mappings, f, indent=2)
 
-        tool_manager = self.tool_manager if selected_integrations not in [None, []] else None
-        WorkflowEngine.update_workflow(workflow_id, update_prompt, selected_integrations, tool_manager)
+        return {"message": "Successfully removed the MCP!"}
+    
+    async def update_mcp_url(self, mcp_name: str, mcp_url: str):
+        mcp_mappings = {}
+        if os.path.exists("mcp.json"):
+            with open("mcp.json", "r") as f:
+                mcp_mappings = json.load(f)
+
+        mcp_mappings[mcp_name] = mcp_url    
+
+        with open("mcp.json", "w") as f:
+            json.dump(mcp_mappings, f, indent=2)
+
+        return {"message": "Successfully updated the MCP!"}
+    
+    async def refresh_mcp_tool(self, mcp_name: str):
+        if mcp_name not in self.tool_registry:
+            return {"message": "MCP not found"}
+
+        print("Refreshing MCP tool")
+        mcp_url, registry = self.tool_registry[mcp_name]
+        try:
+            registry.mcp_from_url(mcp_url)
+        except Exception as e:
+            return {"message": f"Error refreshing the MCP: {e}"}
+        
+        self.tool_registry[mcp_name] = [mcp_url, registry]
+        await self.broadcast_state()
+        return {"message": "Successfully refreshed the MCP!"}
 
     async def update_node_source(
         self, module: str, node_class_name: str, new_class_source: str

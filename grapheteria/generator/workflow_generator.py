@@ -4,23 +4,20 @@ import httpx
 from typing import Dict, Any, Tuple, Optional, List
 import re
 from dotenv import load_dotenv
-from grapheteria.generator.tool_manager import ToolManager
 from litellm import completion
-
+from toolregistry import ToolRegistry
 load_dotenv()
 
 class WorkflowGenerator:
     """
     Generates workflow code and schema using Litellm.
     """
-    
-    def __init__(self, tool_manager: ToolManager):
+    def __init__(self):
         """
         Initialize the workflow generator.
         """
         # Load grapheteria guidelines
         self.grapheteria_guide = self._load_grapheteria_guidelines()
-        self.tool_manager = tool_manager
     
     def call_llm(self, prompt: str, llm_model: str) -> str:
         response = completion(
@@ -42,7 +39,7 @@ class WorkflowGenerator:
             with open(guide_path, "r") as f:
                 return f.read()
     
-    def _format_tools_documentation(self, tools: List[str]) -> str:
+    def _format_tools_documentation(self, tool_registry: ToolRegistry) -> str:
         """
         Format the tools documentation for the prompt.
         
@@ -52,63 +49,44 @@ class WorkflowGenerator:
         Returns:
             Formatted string with tool documentation
         """
-        if not tools:
+        if not tool_registry or tool_registry.get_tools_json() == []:
             return ""
-        
-        if not self.tool_manager:
-            raise ValueError("ToolManager not available!")
-        
-        all_tools = self.tool_manager.get_all_tools()
-        authenticated_tools = self.tool_manager.get_authenticated_tools()
 
         sections = ["## Available Tools"]
         
-        for tool_name in tools:
-            if tool_name not in all_tools:
-                raise ValueError(f"Tool '{tool_name}' is not available")
-            
-            if tool_name not in authenticated_tools:
-                raise ValueError(f"Tool '{tool_name}' is not authenticated")
-            
-            tool = self.tool_manager.get_tool_info(tool_name)
-            
-            sections.append(f"### {tool_name.capitalize()} Tool")
-            sections.append("Available functions:")
-            
-            # Add functions with their descriptions
-            sections.append(str(tool))
-            
-            sections.append("")  # Empty line between tools
-        
-        sections.append("Import the toolset and action from composio_openai import ComposioToolSet, Action. Then initialize the toolset with 'toolset = ComposioToolSet()'")
-        sections.append("Execute the function you want to use from the toolset with the format 'toolset.execute_action(action=Action.{function_name}, params=params). Do not await the function, just call it.'")
+        sections.append(json.dumps(tool_registry.get_tools_json(), indent=2))
+
+        sections.append("To call a tool, use the 'registry' parameter passed to the prepare and cleanup methods. For example, to call the 'add' tool, you can do the following:")
+        sections.append("```python")
+        sections.append("add_tool = registry.get_tool('add')")
+        sections.append("result = await add_tool.arun({'a': 5, 'b': 6})")
+        sections.append("```")
         
         return "\n".join(sections)
     
-    def generate_workflow(self, workflow_id: str, task_description: str, llm_model: str, tools: List[str] = None) -> Tuple[str, Dict[str, Any]]:
+    def generate_workflow(self, workflow_id: str, create_description: str, llm_model: str, tool_registry: ToolRegistry) -> Tuple[str, Dict[str, Any]]:
         """
         Generate workflow code and schema based on task description.
         
         Args:
             workflow_id: ID of the workflow to generate
-            task_description: Description of the task to be accomplished
+            create_description: Description of the workflow to be created
             llm_model: LLM model to use
-            tools: List of tool names to include in the workflow
-            
+            tool_registry: Tool registry to use
         Returns:
             Tuple of (nodes_code, workflow_schema)
         """
-        if not task_description:
+        if not create_description:
             return "", {"nodes": []}
         
-        tools_documentation = self._format_tools_documentation(tools or {})
+        tools_documentation = self._format_tools_documentation(tool_registry)
         prompt = f"""
         # Task: Generate a complete workflow for Grapheteria
 
         ## Workflow ID: {workflow_id}
         
         ## Task Description: 
-        {task_description}
+        {create_description}
         
         ## Grapheteria Guidelines:
         {self.grapheteria_guide}
@@ -172,7 +150,7 @@ class WorkflowGenerator:
                       existing_schema: Dict[str, Any],
                       update_description: str,
                       llm_model: str,
-                      tools: List[str] = None,
+                      tool_registry: ToolRegistry,
                       ) -> Tuple[str, Dict[str, Any]]:
         """
         Update an existing workflow based on the update description.
@@ -183,7 +161,7 @@ class WorkflowGenerator:
             existing_schema: Existing workflow schema
             update_description: Description of the updates to be made
             llm_model: LLM model to use
-            tools: Dictionary of tool objects to include in the workflow
+            tool_registry: Tool registry to use
             
         Returns:
             Tuple of (updated_nodes_code, updated_schema)
@@ -191,7 +169,7 @@ class WorkflowGenerator:
         if not update_description:
             return existing_nodes_code, existing_schema
         
-        tools_documentation = self._format_tools_documentation(tools or {})
+        tools_documentation = self._format_tools_documentation(tool_registry)
         
         prompt = f"""
         # Task: Update an existing Grapheteria workflow
@@ -261,9 +239,8 @@ class WorkflowGenerator:
 
 def generator_create_workflow(
     workflow_id: str,
-    task_description: str = None,
-    tools: Optional[List[str]] = None,
-    tool_manager: Optional[ToolManager] = None,
+    create_description: str = None,
+    tool_registry: Optional[ToolRegistry] = None,
     workflows_dir: str = ".",
     overwrite: bool = False,
     llm_model: str = "claude-3-5-sonnet-20240620"
@@ -285,13 +262,13 @@ def generator_create_workflow(
     # Create workflow directory
     os.makedirs(workflow_dir, exist_ok=True)
 
-    workflow_generator = WorkflowGenerator(tool_manager)
+    workflow_generator = WorkflowGenerator()    
 
     # Generate workflow code and schema
     nodes_code, workflow_schema = workflow_generator.generate_workflow(
         workflow_id=workflow_id,
-        task_description=task_description,
-        tools=tools,
+        create_description=create_description,
+        tool_registry=tool_registry,
         llm_model=llm_model
     )
 
@@ -305,25 +282,15 @@ def generator_create_workflow(
     with open(schema_path, "w") as f:
         json.dump(workflow_schema, f, indent=2)
 
-    #Save tool information
-    if tools:
-        tool_info = {
-            "tools": tools
-        }
-        tools_path = os.path.join(workflow_dir, "tools.json")
-        with open(tools_path, "w") as f:
-            json.dump(tool_info, f, indent=2)
-
     if not workflow_schema.get("nodes"):
         return None
-    return WorkflowEngine(workflow_id=workflow_id, workflows_dir=workflows_dir)
+    return WorkflowEngine(workflow_id=workflow_id, workflows_dir=workflows_dir, tool_registry=tool_registry)
 
 
 def generator_update_workflow(
     workflow_id: str,
     update_description: str,
-    tools: Optional[List[str]] = None,
-    tool_manager: Optional[ToolManager] = None,
+    tool_registry: Optional[ToolRegistry] = None,
     workflows_dir: str = ".",
     llm_model: str = "claude-3-5-sonnet-20240620"
 ):
@@ -351,14 +318,14 @@ def generator_update_workflow(
     with open(nodes_path, "r") as f:
         existing_nodes_code = f.read()
 
-    workflow_generator = WorkflowGenerator(tool_manager)
+    workflow_generator = WorkflowGenerator()
     # Generate updated workflow code and schema
     updated_nodes_code, updated_schema = workflow_generator.update_workflow(
         workflow_id=workflow_id,
         existing_nodes_code=existing_nodes_code,
         existing_schema=existing_schema,
         update_description=update_description,
-        tools=tools,
+        tool_registry=tool_registry,
         llm_model=llm_model
     )
 
@@ -385,14 +352,5 @@ def generator_update_workflow(
     with open(schema_path, "w") as f:
         json.dump(updated_schema, f, indent=2)
 
-    #Save tool information
-    if tools:
-        tool_info = {
-            "tools": tools
-        }
-        tools_path = os.path.join(workflow_dir, "tools.json")
-        with open(tools_path, "w") as f:
-            json.dump(tool_info, f, indent=2)
-
     print(f"Updated workflow '{workflow_id}' at {workflow_dir}")
-    return WorkflowEngine(workflow_id=workflow_id, workflows_dir=workflows_dir) 
+    return WorkflowEngine(workflow_id=workflow_id, workflows_dir=workflows_dir, tool_registry=tool_registry) 
