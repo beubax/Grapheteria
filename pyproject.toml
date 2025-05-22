@@ -29,7 +29,11 @@ dependencies = [
     "watchdog",
     "jinja2",
     "uvicorn[standard]",
-    "libcst"
+    "libcst",
+    "fastmcp",
+    "loguru",
+    "deprecated",
+    "litellm",
 ]
 
 [project.urls]

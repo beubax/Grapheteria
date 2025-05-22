@@ -1,0 +1,55 @@
+from dotenv import load_dotenv
+from grapheteria import Node
+from litellm import completion
+
+load_dotenv()
+
+class UserInputNode(Node):
+    async def prepare(self, shared, request_input, _):
+        user_input = await request_input(
+            prompt="How can I assist you today?",
+            input_type="text",
+            request_id="user_input"
+        )
+        shared["chat_history"] = shared.get("chat_history", []) + [{"role": "user", "content": user_input}]
+
+class AgentNode(Node):
+    async def prepare(self, shared, _, registry):
+        chat_history = shared.get("chat_history", [])
+        return chat_history, registry
+
+    def execute(self, prepared_data):
+        chat_history, registry = prepared_data
+        messages = [{"role": "system", "content": "You are a helpful AI assistant. Use the available tools when necessary."}] +  chat_history
+        response = completion(
+            model="claude-3-5-sonnet-20240620",
+            messages=messages,
+            max_tokens=1000,
+            tools=registry.get_tools_json()
+        )
+        return response
+
+    def cleanup(self, shared, _, execution_result, registry):
+        shared["chat_history"] = shared.get("chat_history", []) + [{"role": "assistant", "content": execution_result.choices[0].message.content}]
+        if execution_result.choices[0].message.tool_calls:
+            shared["tool_calls"] = execution_result.choices[0].message.tool_calls
+        else:
+            shared["tool_calls"] = None
+
+class ExecuteToolNode(Node):
+    async def prepare(self, shared, _, registry):
+        return shared["tool_calls"], registry
+
+    async def execute(self, prepared_data):
+        tool_calls, registry = prepared_data
+        tool_responses = registry.execute_tool_calls(tool_calls)
+        assistant_tool_messages = registry.recover_tool_call_assistant_message(tool_calls, tool_responses)
+        return assistant_tool_messages
+
+    def cleanup(self, shared, _, execution_result, registry):
+        shared["chat_history"] = shared.get("chat_history", []) + execution_result
+
+class ResponseNode(Node):
+    async def prepare(self, *args):
+        #Nothing happens here for now, but we can perform actions like writing to a file or database here
+        pass

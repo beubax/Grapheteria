@@ -13,7 +13,7 @@ from abc import ABC
 import inspect
 from uuid import uuid4
 from grapheteria.utils import StorageBackend, FileSystemStorage, _load_workflow_nodes, path_to_id
-from toolregistry import ToolRegistry
+from grapheteria.toolregistry import ToolRegistry
 from grapheteria.generator.workflow_generator import generator_create_workflow, generator_update_workflow
 # At the top of machine.py, before the class definitions
 _NODE_REGISTRY: Dict[str, Type["Node"]] = {}

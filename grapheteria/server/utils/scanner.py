@@ -5,7 +5,7 @@ import os
 import json
 import importlib.util
 from grapheteria import Node, _NODE_REGISTRY
-from toolregistry import ToolRegistry
+from grapheteria.toolregistry import ToolRegistry
 from grapheteria.utils import path_to_id
 import sys
 
@@ -135,15 +135,19 @@ class SystemScanner:
                 with open("mcp.json", "r") as f:
                     mcp_mappings = json.load(f)
             
+            temp_tool_registry = {}
             for mcp_name, mcp_url in mcp_mappings.items():
                 if mcp_name in manager.tool_registry and mcp_url == manager.tool_registry[mcp_name][0]:
+                    temp_tool_registry[mcp_name] = manager.tool_registry.get(mcp_name)
                     continue
                 registry = ToolRegistry()
                 try:
                     await registry.register_from_mcp_async(mcp_url)
                 except Exception as e:
                     print(f"Error loading tool registry {mcp_name}: {e}")
-                manager.tool_registry[mcp_name] = [mcp_url, registry]
+                temp_tool_registry[mcp_name] = [mcp_url, registry]
+            
+            manager.tool_registry = temp_tool_registry
             
             await manager.broadcast_state()
             return

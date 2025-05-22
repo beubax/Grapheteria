@@ -120,6 +120,54 @@ Made a mistake? No sweat:
 ![Time Travel Debug](docs/assets/debug.gif)
 <!-- An animated GIF showing someone debugging, going back in time, fixing a node, and continuing -->
 
+### Seamless MCP Integration
+Connect to any Model Context Protocol compliant transport layer:
+- Add external tools with a single API call
+- Access tools from any MCP server in your workflow nodes
+- Unify local and remote capabilities under one consistent interface
+
+```python
+# Register an MCP server with your workflow
+from grapheteria import WorkflowEngine
+from grapheteria.toolregistry import ToolRegistry
+
+registry = ToolRegistry()
+registry.register_from_mcp("http://localhost:8000/sse")
+
+# Create a workflow that can use these tools
+workflow = WorkflowEngine(
+    workflow_id="data_processor",
+    tool_registry=registry
+)
+
+Now each node has access to this registry.
+```
+
+### Natural Language Workflow Generation
+Build complete workflows using plain English descriptions:
+- Go from idea to working workflow with a single description
+- Let AI handle the tedious parts of connecting nodes and defining logic
+- Focus on your use case, not implementation details
+- Evolve your workflow with simple text instructions
+
+```python
+from grapheteria import WorkflowEngine
+from grapheteria.toolregistry import ToolRegistry
+
+registry = ToolRegistry()
+registry.register_from_mcp("http://localhost:8000") #FastMCP server with your requisite integrations
+
+# Create a workflow from a description
+workflow = WorkflowEngine.create_workflow(
+    workflow_id="customer_support",
+    create_description="Create a workflow that handles customer support tickets. It should classify the ticket by urgency, route to the appropriate department, and generate a response draft.",
+    tool_registry=registry
+)
+
+#Simply run it
+await workflow.run()
+```
+
 ### Built-in Essentials
 - Super detailed logging
 - Auto-saves your state
@@ -136,15 +184,6 @@ From your laptop to the cloud with minimal changes:
 
 ![Scaling Diagram](docs/assets/scaling.png)
 <!-- An illustration showing workflow scaling from local to distributed environments -->
-
-### Vibe-Coding Compatible
-Describe what you want, then fine-tune:
-- Generate workflows with AI
-- Tweak instead of starting from scratch
-- Build complex flows in minutes, not hours
-
-![LLM Generation](docs/assets/llm_generate.gif)
-<!-- An animated GIF showing a text prompt being turned into a workflow -->
 
 ## Ready to Try It?
 

@@ -3,13 +3,13 @@ from fastapi import APIRouter, HTTPException, Body
 from typing import Dict, Any, List, Optional
 from grapheteria.utils import FileSystemStorage
 from grapheteria.server.workflow_manager import WorkflowManager
-from toolregistry import ToolRegistry
+from grapheteria.toolregistry import ToolRegistry
 def get_router(workflow_manager: WorkflowManager):
     router = APIRouter()
 
     def get_consolidated_registry(tool_registry: Dict[str, ToolRegistry]) -> ToolRegistry:
         consolidated_registry = ToolRegistry()
-        for registry in tool_registry.values():
+        for (url, registry) in tool_registry.values():
             consolidated_registry.merge(registry)
         return consolidated_registry
 

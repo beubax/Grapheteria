@@ -1,0 +1,52 @@
+{
+    "nodes": [
+      {
+        "id": "user_input",
+        "class": "UserInputNode",
+        "config": {}
+      },
+      {
+        "id": "agent",
+        "class": "AgentNode",
+        "config": {}
+      },
+      {
+        "id": "execute_tool",
+        "class": "ExecuteToolNode",
+        "config": {}
+      },
+      {
+        "id": "response",
+        "class": "ResponseNode",
+        "config": {}
+      }
+    ],
+    "edges": [
+      {
+        "from": "user_input",
+        "to": "agent"
+      },
+      {
+        "from": "agent",
+        "to": "execute_tool",
+        "condition": "shared[\"tool_calls\"] is not None"
+      },
+      {
+        "from": "agent",
+        "to": "response",
+        "condition": "shared[\"tool_calls\"] is None"
+      },
+      {
+        "from": "execute_tool",
+        "to": "agent" 
+      },
+      {
+        "from": "response",
+        "to": "user_input"
+      }
+    ],
+    "start": "user_input",
+    "initial_state": {
+      "chat_history": []
+    }
+  }

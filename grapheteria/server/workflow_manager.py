@@ -56,13 +56,8 @@ class WorkflowManager:
             with open("mcp.json", "r") as f:
                 mcp_mappings = json.load(f)
 
-        if mcp_name in mcp_mappings:
-            return {"message": "MCP already exists"}
-        
-        if mcp_url == "":
-            return {"message": "Enter a URL to add the MCP"}
-
-        mcp_mappings[mcp_name] = mcp_url
+        if not mcp_name in mcp_mappings or mcp_url == "":
+            mcp_mappings[mcp_name] = mcp_url
 
         with open("mcp.json", "w") as f:
             json.dump(mcp_mappings, f, indent=2)
@@ -98,18 +93,16 @@ class WorkflowManager:
     
     async def refresh_mcp_tool(self, mcp_name: str):
         if mcp_name not in self.tool_registry:
-            return {"message": "MCP not found"}
+            print("MCP not found")
 
-        print("Refreshing MCP tool")
-        mcp_url, registry = self.tool_registry[mcp_name]
+        mcp_url, registry = self.tool_registry.get(mcp_name)
         try:
-            registry.mcp_from_url(mcp_url)
+            await registry.register_from_mcp_async(mcp_url)
         except Exception as e:
-            return {"message": f"Error refreshing the MCP: {e}"}
+            print(f"Error refreshing the MCP: {e}")
         
         self.tool_registry[mcp_name] = [mcp_url, registry]
         await self.broadcast_state()
-        return {"message": "Successfully refreshed the MCP!"}
 
     async def update_node_source(
         self, module: str, node_class_name: str, new_class_source: str
@@ -205,6 +198,10 @@ class WorkflowManager:
             # If file exists, read it and append the new class
             with open(source_file, "r") as f:
                 file_content = f.read()
+
+            # If file is empty, add the import statement
+            if not file_content.strip():
+                file_content = "from grapheteria import Node\n\n"
 
             # Check if the class already exists in the file
             module_tree = cst.parse_module(file_content)

@@ -5,7 +5,7 @@ from typing import Dict, Any, Tuple, Optional, List
 import re
 from dotenv import load_dotenv
 from litellm import completion
-from toolregistry import ToolRegistry
+from grapheteria.toolregistry import ToolRegistry
 load_dotenv()
 
 class WorkflowGenerator:
@@ -27,6 +27,22 @@ class WorkflowGenerator:
             )
         return response.choices[0].message.content
     
+    def _load_react_implementation(self, llm_model: str) -> tuple:
+        """
+        Load react guidelines from file or provide default ReACT implementation.
+        
+        Returns:
+            Tuple of (nodes_code, workflow_schema)
+        """
+        code_path = os.path.join(os.path.dirname(__file__), "ReACT_code.txt")
+        schema_path = os.path.join(os.path.dirname(__file__), "ReACT_schema.json")
+
+        with open(code_path, "r") as f:
+            code = f.read()
+        with open(schema_path, "r") as f:
+            schema = json.load(f)
+        return code.replace("__MODEL_NAME_PLACEHOLDER__", llm_model), schema
+
     def _load_grapheteria_guidelines(self) -> str:
         """
         Load grapheteria guidelines from file or provide default guidelines.
@@ -38,7 +54,7 @@ class WorkflowGenerator:
         if os.path.exists(guide_path):
             with open(guide_path, "r") as f:
                 return f.read()
-    
+
     def _format_tools_documentation(self, tool_registry: ToolRegistry) -> str:
         """
         Format the tools documentation for the prompt.
@@ -78,6 +94,9 @@ class WorkflowGenerator:
         """
         if not create_description:
             return "", {"nodes": []}
+        
+        if create_description == "ReACT":
+            return self._load_react_implementation(llm_model)
         
         tools_documentation = self._format_tools_documentation(tool_registry)
         prompt = f"""

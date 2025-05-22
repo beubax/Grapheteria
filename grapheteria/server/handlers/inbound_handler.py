@@ -8,9 +8,8 @@ class InboundHandler:
         workflow_id = message_data.get("workflow_id")
         if (
             not workflow_id or workflow_id not in manager.workflows
-        ) or (not message_data.get("type").startswith("mcp")):
+        ) and (not message_data.get("type").startswith("mcp")):
             return
-
         workflow = manager.workflows.get(workflow_id, None)
 
         match message_data["type"]:
@@ -190,17 +189,16 @@ class InboundHandler:
 
     @staticmethod
     async def _handle_mcp_add(manager, workflow, workflow_id, data):
-        await manager.add_mcp_to_registry(data["mcp_name"], data["mcp_url"])
+        await manager.add_mcp_to_registry(data["mcpName"], data["mcpUrl"])
 
     @staticmethod
     async def _handle_mcp_remove(manager, workflow, workflow_id, data):
-        await manager.remove_mcp_from_registry(data["mcp_name"])
+        await manager.remove_mcp_from_registry(data["mcpName"])
 
     @staticmethod
     async def _handle_mcp_update_url(manager, workflow, workflow_id, data):
-        await manager.update_mcp_url(data["mcp_name"], data["mcp_url"]) 
+        await manager.update_mcp_url(data["mcpName"], data["mcpUrl"]) 
 
     @staticmethod
     async def _handle_mcp_refresh(manager, workflow, workflow_id, data):
-        print("Refreshing MCP tool websocket")
-        await manager.refresh_mcp_tool(data["mcp_name"])
+        await manager.refresh_mcp_tool(data["mcpName"])
