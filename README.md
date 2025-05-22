@@ -196,9 +196,12 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install Grapheteria
 pip install grapheteria
+
+#For automated workflow generation capabilities
+echo "OPENAI_API_KEY=your_key_here" >> .env
 ```
 
-> **Note:** Grapheteria requires Python 3.6 or higher.
+> **Note:** Grapheteria requires Python 3.10 or higher.
 
 ### Launch the UI
 
