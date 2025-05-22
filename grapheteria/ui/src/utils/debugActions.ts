@@ -103,26 +103,37 @@ export async function runWorkflow(inputData: any): Promise<{error?: string}> {
   }
 }
 
-export async function authenticateIntegration(integration: string): Promise<{data?: any, error?: string}> {
+export async function createWorkflow(workflowName: string, createDescription: string): Promise<{data?: any, error?: string}> {
   try {
     const response = await axios({
-      method: 'get',
-      url: `${API_BASE_URL}/authenticate/${integration}`,
+      method: 'post',
+      url: `${API_BASE_URL}/workflows/create`,
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+      },
+      data: {
+        workflow_name: workflowName,
+        create_description: createDescription
       }
     });
-    
-    const data = response.data;
+
+    const data = response.data; 
     return { data };
 
   } catch (error: unknown) {
-    return { error: 'Failed to authenticate integration' };
+    console.error('Create workflow error:', error);
+    // Provide more detailed error information 
+    if (axios.isAxiosError(error) && error.response) {
+      return { 
+        error: `Error ${error.response.status}: ${error.response.data?.detail || 'Failed to create workflow'}`
+      };
+    }
+    return { error: 'Failed to create workflow' };
   }
 }
 
-export async function updateWorkflow(workflowId: string, updatePrompt: string, selectedIntegrations: string[]): Promise<{data?: any, error?: string}> {
+export async function updateWorkflow(workflowId: string, updateDescription: string): Promise<{data?: any, error?: string}> {
   try {
     const response = await axios({
       method: 'post',
@@ -132,8 +143,7 @@ export async function updateWorkflow(workflowId: string, updatePrompt: string, s
         'Accept': 'application/json',
       },
       data: {
-        update_prompt: updatePrompt,
-        selected_integrations: selectedIntegrations
+        update_description: updateDescription
       }
     });
 

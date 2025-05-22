@@ -7,12 +7,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, RefreshCw, Edit, Plus, Server, Globe, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { Trash2, RefreshCw, Edit, Plus, Server, Globe, CheckCircle2, AlertCircle, Loader2, MoreHorizontal } from "lucide-react"
 import { Alert, AlertDescription } from "../components/ui/alert"
-import IconWrapper from '../components/ui/IconWrapper'
 import { useGraphActions } from '../utils/graphActions'
 import useStore from '../stores/useStore'
+import { ScrollArea } from "./ui/scroll-area"
 
 interface MCPConnectionManagerProps {
   open: boolean
@@ -41,16 +40,27 @@ export function MCPConnectionManager({ open, onOpenChange }: MCPConnectionManage
   const [refreshingMCP, setRefreshingMCP] = useState<string | null>(null)
   const [deletingMCP, setDeletingMCP] = useState<string | null>(null)
   const [waitingForResponse, setWaitingForResponse] = useState(false)
+  const [currentOperation, setCurrentOperation] = useState<'add' | 'edit' | 'refresh' | 'delete' | null>(null)
   
   // Form states
   const [newMCPName, setNewMCPName] = useState('')
   const [newMCPUrl, setNewMCPUrl] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
 
+  const [activeToolsMCP, setActiveToolsMCP] = useState<FormattedMCP | null>(null)
+  const [showToolsDialog, setShowToolsDialog] = useState(false)
+
   // Watch for notification flag changes to detect completed operations
   useEffect(() => {
     if (waitingForResponse && notificationFlag) {
       setWaitingForResponse(false)
+      setCurrentOperation(null)
+      
+      // Close dialog only after operation completes successfully
+      setActiveDialog(null)
+      setNewMCPName('')
+      setNewMCPUrl('')
+      
       loadMCPs()
     }
   }, [notificationFlag, waitingForResponse])
@@ -103,18 +113,19 @@ export function MCPConnectionManager({ open, onOpenChange }: MCPConnectionManage
     
     setFormError(null)
     setWaitingForResponse(true)
+    setCurrentOperation('add')
     setNotificationFlag(false)
     
     try {
       onMCPAdd(newMCPName.trim(), newMCPUrl.trim())
       
-      setNewMCPName('')
-      setNewMCPUrl('')
+      // Don't close dialog until we get response
       setActiveDialog(null)
     } catch (err) {
       setFormError('Failed to add MCP connection')
       console.error('Error adding MCP:', err)
       setWaitingForResponse(false)
+      setCurrentOperation(null)
     }
   }
 
@@ -133,6 +144,7 @@ export function MCPConnectionManager({ open, onOpenChange }: MCPConnectionManage
     
     setFormError(null)
     setWaitingForResponse(true)
+    setCurrentOperation('edit')
     setNotificationFlag(false)
     
     try {
@@ -144,12 +156,14 @@ export function MCPConnectionManager({ open, onOpenChange }: MCPConnectionManage
       setFormError('Failed to update MCP URL')
       console.error('Error updating MCP URL:', err)
       setWaitingForResponse(false)
+      setCurrentOperation(null)
     }
   }
 
   const handleRefreshMCP = (mcpName: string) => {
     setRefreshingMCP(mcpName)
     setWaitingForResponse(true)
+    setCurrentOperation('refresh')
     setNotificationFlag(false)
     
     try {
@@ -158,6 +172,7 @@ export function MCPConnectionManager({ open, onOpenChange }: MCPConnectionManage
       setError('Failed to refresh MCP tools')
       console.error('Error refreshing MCP tools:', err)
       setWaitingForResponse(false)
+      setCurrentOperation(null)
       setRefreshingMCP(null)
     }
   }
@@ -165,6 +180,7 @@ export function MCPConnectionManager({ open, onOpenChange }: MCPConnectionManage
   const handleDeleteMCP = (mcpName: string) => {
     setDeletingMCP(mcpName)
     setWaitingForResponse(true)
+    setCurrentOperation('delete')
     setNotificationFlag(false)
     
     try {
@@ -173,6 +189,7 @@ export function MCPConnectionManager({ open, onOpenChange }: MCPConnectionManage
       setError('Failed to remove MCP connection')
       console.error('Error removing MCP:', err)
       setWaitingForResponse(false)
+      setCurrentOperation(null)
       setDeletingMCP(null)
     }
   }
@@ -193,6 +210,16 @@ export function MCPConnectionManager({ open, onOpenChange }: MCPConnectionManage
     setActiveDialog(null)
     setActiveEditMCP(null)
     setFormError(null)
+  }
+
+  const openToolsDialog = (mcp: FormattedMCP) => {
+    setActiveToolsMCP(mcp)
+    setShowToolsDialog(true)
+  }
+  
+  const closeToolsDialog = () => {
+    setShowToolsDialog(false)
+    setActiveToolsMCP(null)
   }
 
   const renderAddEditDialog = () => {
@@ -240,7 +267,7 @@ export function MCPConnectionManager({ open, onOpenChange }: MCPConnectionManage
                 className="border-2 focus:ring-2 focus:ring-gray-200"
               />
               <p className="text-sm text-gray-500">
-                The URL where the MCP service is running
+                Supports Websockets, FastMCP, Streamable HTTP, SSE or STDIO
               </p>
             </div>
 
@@ -280,12 +307,68 @@ export function MCPConnectionManager({ open, onOpenChange }: MCPConnectionManage
     )
   }
 
+  const renderToolsDialog = () => {
+    if (!activeToolsMCP) return null;
+    
+    return (
+      <Dialog open={showToolsDialog} onOpenChange={(open) => !open && closeToolsDialog()}>
+        <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-hidden bg-white rounded-xl border-4 border-gray-200 shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center text-lg font-bold text-black tracking-wide">
+              <Server className="h-5 w-5 text-gray-600 mr-2" />
+              {activeToolsMCP.name} Tools
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="py-4">
+            <div className="space-y-2">
+              <div className="text-xs uppercase font-medium text-gray-500">Available Tools ({activeToolsMCP.tools.length})</div>
+              <ScrollArea className="h-[60vh] pr-4">
+                <div className="space-y-3">
+                  {activeToolsMCP.tools.map((tool) => (
+                    <div key={tool.name} className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
+                      <div className="font-medium text-gray-900 text-base tracking-wide">
+                        {tool.name}
+                      </div>
+                      {tool.description && (
+                        <div className="text-sm text-gray-500 mt-1">{tool.description}</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button 
+              onClick={closeToolsDialog} 
+              className="bg-black text-white hover:bg-gray-800 transform hover:scale-105 transition-all cursor-pointer"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
   const renderMCPCards = () => {
     if (isLoading && formattedMCPs.length === 0) {
       return (
         <div className="flex justify-center items-center h-40">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
           <span className="ml-3 text-gray-700">Loading MCP connections...</span>
+        </div>
+      );
+    }
+
+    // Add a loading state when adding a new MCP
+    if (waitingForResponse && currentOperation === 'add') {
+      return (
+        <div className="flex flex-col justify-center items-center h-40">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-gray-900 mb-4"></div>
+          <span className="text-gray-700 text-lg font-medium">Adding new MCP connection...</span>
         </div>
       );
     }
@@ -333,17 +416,30 @@ export function MCPConnectionManager({ open, onOpenChange }: MCPConnectionManage
 
             <CardContent className="pb-2">
               <div className="space-y-2">
-                <div className="text-xs uppercase font-medium text-gray-500">Available Tools</div>
+                <div className="text-xs uppercase font-medium text-gray-500">
+                  Available Tools ({mcp.tools.length})
+                </div>
                 {mcp.tools && mcp.tools.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {mcp.tools.map((tool) => (
-                      <div key={tool.name} className="mb-2">
-                        <div className="flex items-center">
-                          <IconWrapper name={tool.name} icon={tool.icon || ''} color="" size="sm" />
-                          <span className="ml-2 font-medium text-gray-800">{tool.name}</span>
-                        </div>
+                  <div className="flex flex-col space-y-2">
+                    {/* Show only the first 2 tools */}
+                    {mcp.tools.slice(0, 2).map((tool) => (
+                      <div key={tool.name} className="py-2 px-3 bg-gray-50 rounded-lg">
+                        <span className="font-medium text-gray-900 tracking-wide">{tool.name}</span>
                       </div>
                     ))}
+                    
+                    {/* Show "View more" button if more than 2 tools */}
+                    {mcp.tools.length > 2 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openToolsDialog(mcp)}
+                        className="mt-1 border-dashed border-gray-300 text-gray-600 hover:text-black hover:border-gray-500 transition-all"
+                      >
+                        <MoreHorizontal className="h-4 w-4 mr-1" />
+                        View {mcp.tools.length - 2} more {mcp.tools.length - 2 === 1 ? 'tool' : 'tools'}
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <div className="text-sm text-gray-500 italic p-2 bg-gray-50 border border-gray-100 rounded-md">
@@ -396,9 +492,9 @@ export function MCPConnectionManager({ open, onOpenChange }: MCPConnectionManage
     );
   };
 
-  // Global spinner for any operation in progress
+  // Global spinner for any operation in progress except adding
   const renderGlobalSpinner = () => {
-    if (waitingForResponse) {
+    if (waitingForResponse && currentOperation && currentOperation !== 'add') {
       return (
         <div className="fixed top-4 right-4 bg-black bg-opacity-80 rounded-full p-2 shadow-lg z-50">
           <Loader2 className="h-6 w-6 text-white animate-spin" />
@@ -449,6 +545,7 @@ export function MCPConnectionManager({ open, onOpenChange }: MCPConnectionManage
       </Dialog>
 
       {renderAddEditDialog()}
+      {renderToolsDialog()}
       {renderGlobalSpinner()}
     </>
   );

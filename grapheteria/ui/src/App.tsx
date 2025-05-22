@@ -57,7 +57,7 @@ const AppLayout = () => {
                 className="flex items-center gap-2 border-gray-300 hover:bg-gray-100"
               >
                 <Settings className="h-4 w-4" />
-                Integrations
+                MCP
               </Button>
               
               <Button 

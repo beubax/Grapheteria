@@ -1,30 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Plus, ArrowRight, Layers, Activity } from 'lucide-react';
+import { Plus, ArrowRight, Layers, Activity, Bot, Braces } from 'lucide-react';
 import useStore from '../stores/useStore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
-import { useGraphActions } from '../utils/graphActions';
-import IntegrationSelector from '@/components/IntegrationSelector';
-import IconWrapper from '../components/ui/IconWrapper';
-import { getToolsData } from '../utils/toolUtils';
+import { createWorkflow } from '../utils/debugActions';
 
 const HomePage = () => {
   const { workflows, setSelectedWorkflow, updateFlowStructure, toggleDebugMode } = useStore();
-  const { onCreateWorkflow } = useGraphActions();
   const navigate = useNavigate();
 
   const [newWorkflowDialogOpen, setNewWorkflowDialogOpen] = useState(false);
   const [newWorkflowName, setNewWorkflowName] = useState('');
   const [workflowDescription, setWorkflowDescription] = useState('');
   const [nameError, setNameError] = useState('');
-  const [selectedIntegrations, setSelectedIntegrations] = useState<string[]>([]);
   const [creationStep, setCreationStep] = useState(1);
   const [isCreating, setIsCreating] = useState(false);
+  const [workflowType, setWorkflowType] = useState<'react' | 'complex' | null>(null);
 
   // Reset selected workflow when HomePage mounts
   useEffect(() => {
@@ -35,15 +31,6 @@ const HomePage = () => {
     // Close any open debug drawer
     toggleDebugMode(false);
   }, [setSelectedWorkflow, updateFlowStructure, toggleDebugMode]);
-
-  // Toggle integration selection
-  const toggleIntegration = (integrationId: string) => {
-    setSelectedIntegrations(prev => 
-      prev.includes(integrationId) 
-        ? prev.filter(id => id !== integrationId)
-        : [...prev, integrationId]
-    );
-  };
 
   const handleWorkflowSelect = (workflowId: string) => {
     // Close debug drawer when switching workflows
@@ -56,9 +43,9 @@ const HomePage = () => {
     setNewWorkflowName('');
     setWorkflowDescription('');
     setNameError('');
-    setSelectedIntegrations([]);
     setCreationStep(1);
     setIsCreating(false);
+    setWorkflowType(null);
     setNewWorkflowDialogOpen(true);
   };
 
@@ -87,7 +74,13 @@ const HomePage = () => {
       if (!validateWorkflowName()) return;
       setCreationStep(2);
     } else if (creationStep === 2) {
-      setCreationStep(3);
+      if (workflowType === 'react') {
+        // If simple ReACT agent is chosen, create workflow directly
+        handleCreateWorkflow();
+      } else if (workflowType === 'complex') {
+        // If complex workflow is chosen, go to description step
+        setCreationStep(3);
+      }
     } else {
       handleCreateWorkflow();
     }
@@ -99,22 +92,21 @@ const HomePage = () => {
     }
   };
 
-  const handleCreateWorkflow = () => {
+  const handleCreateWorkflow = async () => {
     if (!validateWorkflowName()) return;
     
     // Save workflow name for later use
     const workflowNameToCreate = newWorkflowName;
-    const workflowDescriptionToCreate = workflowDescription;
-    const selectedIntegrationsToCreate = selectedIntegrations;
+    const workflowDescriptionToCreate = workflowType === 'react' ? 'ReACT' : workflowDescription;
     
     // Create the workflow
-    onCreateWorkflow(workflowNameToCreate, workflowDescriptionToCreate, selectedIntegrationsToCreate);
-    
-    // Close dialog
-    setNewWorkflowDialogOpen(false);
+    await createWorkflow(workflowNameToCreate, workflowDescriptionToCreate);
     
     // Navigate immediately to the flow page without waiting for confirmation
     navigate(`/flow/${workflowNameToCreate.replace(" ", "_").toLowerCase()}`);
+
+    // Close dialog
+    setNewWorkflowDialogOpen(false);
   };
 
   // Generate a unique but subtle pattern for each workflow
@@ -128,6 +120,13 @@ const HomePage = () => {
     
     const index = workflowId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % patterns.length;
     return patterns[index];
+  };
+
+  const handleKeyDown = (e: KeyboardEvent, step: number) => {
+    if (e.key === 'Enter' && step !== 3) {
+      e.preventDefault();
+      nextStep();
+    }
   };
 
   const renderStepContent = () => {
@@ -144,6 +143,7 @@ const HomePage = () => {
                   setNewWorkflowName(e.target.value);
                   setNameError('');
                 }}
+                onKeyDown={(e) => handleKeyDown(e, 1)}
                 placeholder="my_new_workflow"
                 className="mt-2"
               />
@@ -157,6 +157,69 @@ const HomePage = () => {
           </div>
         );
       case 2:
+        return (
+          <div className="space-y-6">
+            <div>
+              <Label className="text-base font-medium mb-4 block">Choose workflow type</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <Card 
+                  className={`p-4 cursor-pointer transition-all ${
+                    workflowType === 'react' 
+                      ? 'border-2 border-blue-500 bg-blue-50' 
+                      : 'border border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                  }`}
+                  onClick={() => setWorkflowType('react')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setWorkflowType('react');
+                      nextStep();
+                    }
+                  }}
+                  tabIndex={0}
+                  role="button"
+                >
+                  <div className="flex flex-col items-center text-center p-3">
+                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-3">
+                      <Bot className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <h3 className="font-semibold text-lg text-gray-900 mb-2">ReACT Agent</h3>
+                    <p className="text-sm text-gray-600">
+                      Tools, Memory & Reasoning to accomplish tasks.
+                    </p>
+                  </div>
+                </Card>
+                
+                <Card 
+                  className={`p-4 cursor-pointer transition-all ${
+                    workflowType === 'complex' 
+                      ? 'border-2 border-blue-500 bg-blue-50' 
+                      : 'border border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                  }`}
+                  onClick={() => setWorkflowType('complex')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setWorkflowType('complex');
+                      nextStep();
+                    }
+                  }}
+                  tabIndex={0}
+                  role="button"
+                >
+                  <div className="flex flex-col items-center text-center p-3">
+                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-3">
+                      <Braces className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <h3 className="font-semibold text-lg text-gray-900 mb-2">Complex Workflow</h3>
+                    <p className="text-sm text-gray-600">
+                      Advanced multi-step workflow with custom configuration.
+                    </p>
+                  </div>
+                </Card>
+              </div>
+            </div>
+          </div>
+        );
+      case 3:
         return (
           <div className="space-y-4">
             <div>
@@ -174,22 +237,6 @@ const HomePage = () => {
             </div>
           </div>
         );
-      case 3:
-        return (
-          <div className="space-y-4">
-            <div>
-              <Label className="text-base font-medium block mb-2">Select Integrations (Optional)</Label>
-              <p className="text-sm text-gray-500 mb-3">
-                Connect services that this workflow will interact with. You can add more later.
-              </p>
-              <IntegrationSelector 
-                selectedIntegrations={selectedIntegrations}
-                onToggleIntegration={toggleIntegration}
-                maxHeight="180px"
-              />
-            </div>
-          </div>
-        );
       default:
         return null;
     }
@@ -200,6 +247,13 @@ const HomePage = () => {
     <Card 
       className="overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer border border-dashed border-gray-300 bg-white group hover:border-blue-400"
       onClick={openCreateWorkflowDialog}
+      tabIndex={0}
+      role="button"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          openCreateWorkflowDialog();
+        }
+      }}
     >
       <div className="p-6 h-full flex flex-col items-center justify-center text-center">
         <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mb-3 group-hover:bg-blue-100 transition-colors">
@@ -231,6 +285,13 @@ const HomePage = () => {
                     key={workflowId} 
                     className={`overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer border border-gray-200 bg-white group ${pattern}`}
                     onClick={() => handleWorkflowSelect(workflowId)}
+                    tabIndex={0}
+                    role="button"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleWorkflowSelect(workflowId);
+                      }
+                    }}
                   >
                     <div className="p-6">
                       <div className="mb-4">
@@ -253,21 +314,6 @@ const HomePage = () => {
                             <span>{edgeCount} connection{edgeCount !== 1 ? 's' : ''}</span>
                           </div>
                         </div>
-                      </div>
-                      
-                      <div>
-                        <div className="text-xs uppercase text-gray-500 font-medium mb-1">Integrations</div>
-                        {workflows[workflowId].tools && workflows[workflowId].tools.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                            {getToolsData(workflows[workflowId].tools).map(tool => (
-                              <IconWrapper key={tool.name} name={tool.name || ''} icon={tool.icon || ''} color={tool.color || ''} size="sm" />
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-sm text-gray-500 italic p-2 bg-gray-50 border border-gray-100 rounded-md">
-                            No integrations
-                          </div>
-                        )}
                       </div>
                     </div>
                   </Card>
@@ -342,10 +388,11 @@ const HomePage = () => {
                   <Button 
                     onClick={nextStep}
                     className="bg-gray-900 hover:bg-gray-800 text-white"
-                    disabled={creationStep === 1 && !newWorkflowName.trim()}
+                    disabled={(creationStep === 1 && !newWorkflowName.trim()) || 
+                             (creationStep === 2 && !workflowType)}
                   >
-                    {creationStep === 3 ? 'Create Workflow' : 'Next'}
-                    {creationStep !== 3 && <ArrowRight className="h-4 w-4 ml-2" />}
+                    {creationStep === 3 ? 'Create Workflow' : (creationStep === 2 && workflowType === 'react') ? 'Create ReACT Agent' : 'Next'}
+                    {creationStep !== 3 && creationStep !== 2 && <ArrowRight className="h-4 w-4 ml-2" />}
                   </Button>
                 </div>
                 
