@@ -22,7 +22,7 @@ observer = Observer()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    watch_dir = os.environ.get("WORKFLOW_WATCH_DIR", ".")
+    watch_dir = os.environ.get("WORKFLOW_WATCH_DIR", os.getcwd())
     observer.schedule(
         NodeChangeHandler(workflow_manager), path=watch_dir, recursive=True
     )
@@ -115,7 +115,7 @@ def run_app():
         webbrowser.open(url)
     
     # Launch browser in a separate thread to avoid blocking server startup
-    threading.Thread(target=open_browser, daemon=True).start()
+    # threading.Thread(target=open_browser, daemon=True).start()
 
     # We're using the same function, but might add additional setup in the future
     run_server()

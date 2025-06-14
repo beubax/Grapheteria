@@ -311,7 +311,7 @@ class WorkflowEngine:
         initial_shared_state: Optional[Dict[str, Any]] = None,
         nodes: Optional[List[Node]] = None,
         start: Optional[Node] = None,
-        workflows_dir: str = ".",
+        workflows_dir: str = os.getcwd(),
         tool_registry: Optional[ToolRegistry] = None,
     ):      
         self.workflows_dir = workflows_dir

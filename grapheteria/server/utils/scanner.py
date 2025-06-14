@@ -41,6 +41,22 @@ class SystemScanner:
         Node.__init_subclass__ = classmethod(custom_init_subclass)
 
     @staticmethod
+    def get_relative_path(full_path, project_root):
+        return os.path.relpath(full_path, os.path.dirname(project_root))
+
+    @staticmethod
+    def _get_module_path(file_path, cwd):
+        """Convert file path to module path, ensuring it's relative to cwd"""
+        # Convert to relative path if it's absolute
+        if os.path.isabs(file_path):
+            rel_path = os.path.relpath(file_path, cwd)
+        else:
+            rel_path = file_path
+        
+        # Use path_to_id to convert to module format
+        return path_to_id(rel_path)
+
+    @staticmethod
     async def scan_system(manager):
         """Scan directory for both Python node files and workflow JSON files in a single pass"""
         # Clear existing temporary data
@@ -65,12 +81,14 @@ class SystemScanner:
         try:
             # Add current directory to path if not already there
             cwd = os.getcwd()
+            project_root = os.path.basename(cwd)
             if cwd not in sys.path and "" not in sys.path:
                 sys.path.insert(0, cwd)
 
             mcp_mappings = {}
-            if os.path.exists("mcp.json"):
-                with open("mcp.json", "r") as f:
+            mcp_json_path = os.path.join(cwd, "mcp.json")
+            if os.path.exists(mcp_json_path):
+                with open(mcp_json_path, "r") as f:
                     mcp_mappings = json.load(f)
             
             for mcp_name, mcp_url in mcp_mappings.items():
@@ -81,17 +99,18 @@ class SystemScanner:
                     print(f"Error loading tool registry {mcp_name}: {e}")
                 manager.tool_registry[mcp_name] = [mcp_url, registry]
 
-            for root, dirs, files in os.walk("."):
+            for root, dirs, files in os.walk(cwd):
                 # Remove directories to skip from dirs list to prevent recursion into them
                 dirs[:] = [d for d in dirs if d not in skip_dirs]
 
                 # Skip processing files in the root directory
-                if root == "." or root == "./":
+                if os.path.abspath(root) == cwd:
                     continue
 
                 # Extract the top directory name (not root) to use as key
-                path_parts = root.split(os.sep)
-                top_dir = path_parts[1] if len(path_parts) > 1 and path_parts[1] not in ["", "."] else None
+                rel_path = os.path.relpath(root, cwd)
+                path_parts = rel_path.split(os.sep)
+                top_dir = path_parts[0] if len(path_parts) > 0 and path_parts[0] not in ["", os.curdir] else None
                 
                 # Skip if we couldn't determine a valid top directory
                 if not top_dir:
@@ -99,10 +118,9 @@ class SystemScanner:
 
                 for file in files:
                     file_path = os.path.join(root, file)
-                    
                     # Process Python files
                     if file.endswith(".py"):
-                        module_path = path_to_id(file_path)
+                        module_path = SystemScanner._get_module_path(file_path, cwd)
                         SystemScanner._load_module(module_path, reload=False)
                     
                     # Process schema.json files
@@ -129,10 +147,13 @@ class SystemScanner:
         Unified function to scan a directory for both Python node files and workflow JSON files.
         This will update the manager's node registry and workflows data.
         """
-        if file_path == "./mcp.json":
+        cwd = os.getcwd()
+        mcp_json_path = os.path.join(cwd, "mcp.json")
+        
+        if os.path.abspath(file_path) == mcp_json_path:
             mcp_mappings = {}
-            if os.path.exists("mcp.json"):
-                with open("mcp.json", "r") as f:
+            if os.path.exists(mcp_json_path):
+                with open(mcp_json_path, "r") as f:
                     mcp_mappings = json.load(f)
             
             temp_tool_registry = {}
@@ -152,9 +173,9 @@ class SystemScanner:
             await manager.broadcast_state()
             return
 
-        directory_path = os.path.dirname(file_path)
+        directory_path = os.path.dirname(os.path.abspath(file_path))
         # Skip if directory is the root directory
-        if directory_path == "" or directory_path == "." or directory_path == "./":
+        if directory_path == cwd:
             return
         
         # List of directories to skip
@@ -170,8 +191,9 @@ class SystemScanner:
         }
 
         # Extract the top directory name to use as key
-        path_parts = directory_path.split(os.sep)
-        top_dir = path_parts[1] if len(path_parts) > 1 and path_parts[1] not in ["", "."] else None
+        rel_path = os.path.relpath(directory_path, cwd)
+        path_parts = rel_path.split(os.sep)
+        top_dir = path_parts[0] if len(path_parts) > 0 and path_parts[0] not in ["", os.curdir] else None
         # Skip if we couldn't determine a valid top directory
         if not top_dir:
             return
@@ -202,12 +224,14 @@ class SystemScanner:
 
         try:
             # Add current directory to path if not already there
-            cwd = os.getcwd()
             if cwd not in sys.path and "" not in sys.path:
                 sys.path.insert(0, cwd)
                 
+            # Get the absolute path of the top directory
+            top_dir_path = os.path.join(cwd, top_dir)
+            
             # Walk through all files in the directory
-            for root, dirs, files in os.walk(top_dir):
+            for root, dirs, files in os.walk(top_dir_path):
                 # Skip forbidden directories
                 dirs[:] = [d for d in dirs if d not in skip_dirs]
                 
@@ -216,7 +240,7 @@ class SystemScanner:
                     
                     # Process Python files
                     if file.endswith(".py"):
-                        module_path = path_to_id(file_path)
+                        module_path = SystemScanner._get_module_path(file_path, cwd)
                         SystemScanner._load_module(module_path)
                     # Process schema.json files
                     elif file == "schema.json":

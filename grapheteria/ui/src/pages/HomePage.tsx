@@ -99,8 +99,8 @@ const HomePage = () => {
     const workflowNameToCreate = newWorkflowName;
     const workflowDescriptionToCreate = workflowType === 'react' ? 'ReACT' : workflowDescription;
     
-    // Create the workflow
-    await createWorkflow(workflowNameToCreate, workflowDescriptionToCreate);
+    // Create the workflow (runs in background)
+    createWorkflow(workflowNameToCreate, workflowDescriptionToCreate);
     
     // Navigate immediately to the flow page without waiting for confirmation
     navigate(`/flow/${workflowNameToCreate.replace(" ", "_").toLowerCase()}`);
